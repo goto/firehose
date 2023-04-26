@@ -141,3 +141,11 @@ This config if set to true will allow body for the HTTP DELETE method, otherwise
 - Example value: `false`
 - Type: `optional`
 - Default value: `true`
+
+### `SINK_HTTP_SIMPLE_DATE_FORMAT_ENABLE`
+
+This config if set to `true` will enable the simple date format for timestamps in case of JSON payload.
+
+- Example value: `true`
+- Type: `optional`
+- Default value: `false`
