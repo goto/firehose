@@ -146,6 +146,6 @@ This config if set to true will allow body for the HTTP DELETE method, otherwise
 
 This config if set to `true` will enable the simple date format for timestamps in case of JSON payload.
 
-- Example value: `true`
+- Example value: `false`
 - Type: `optional`
-- Default value: `false`
+- Default value: `true`
