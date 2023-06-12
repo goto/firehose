@@ -3,6 +3,7 @@ package com.gotocompany.firehose.config.enums;
 public enum SinkType {
     JDBC,
     HTTP,
+    HTTPV2,
     LOG,
     CLEVERTAP,
     INFLUXDB,
