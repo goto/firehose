@@ -42,6 +42,7 @@ public class SinkFactory {
     private BigTableSinkFactory bigTableSinkFactory;
     private LogSinkFactory logSinkFactory;
     private RedisSinkFactory redisSinkFactory;
+    private com.gotocompany.depot.http.HttpSinkFactory httpv2SinkFactory;
 
     public SinkFactory(KafkaConsumerConfig kafkaConsumerConfig,
                        StatsDReporter statsDReporter,
@@ -93,6 +94,12 @@ public class SinkFactory {
                         statsDReporter);
                 bigTableSinkFactory.init();
                 return;
+            case HTTPV2:
+                httpv2SinkFactory = new com.gotocompany.depot.http.HttpSinkFactory(
+                        ConfigFactory.create(com.gotocompany.depot.http.HttpSinkConfig.class, config),
+                        statsDReporter);
+                httpv2SinkFactory.init();
+                return;
             default:
                 throw new ConfigurationException("Invalid Firehose SINK_TYPE");
         }
@@ -126,6 +133,8 @@ public class SinkFactory {
                 return new GenericSink(new FirehoseInstrumentation(statsDReporter, BigTableSink.class), sinkType.name(), bigTableSinkFactory.create());
             case MONGODB:
                 return MongoSinkFactory.create(config, statsDReporter, stencilClient);
+            case HTTPV2:
+                return new GenericSink(new FirehoseInstrumentation(statsDReporter, com.gotocompany.depot.http.HttpSink.class), sinkType.name(), httpv2SinkFactory.create());
             default:
                 throw new ConfigurationException("Invalid Firehose SINK_TYPE");
         }
