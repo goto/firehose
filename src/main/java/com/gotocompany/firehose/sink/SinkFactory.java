@@ -96,7 +96,7 @@ public class SinkFactory {
                 return;
             case HTTPV2:
                 httpv2SinkFactory = new com.gotocompany.depot.http.HttpSinkFactory(
-                        ConfigFactory.create(com.gotocompany.depot.http.HttpSinkConfig.class, config),
+                        ConfigFactory.create(com.gotocompany.depot.config.HttpSinkConfig.class, config),
                         statsDReporter);
                 httpv2SinkFactory.init();
                 return;
