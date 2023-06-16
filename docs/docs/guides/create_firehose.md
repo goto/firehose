@@ -142,6 +142,7 @@ _**Note:**_ [_**DATABASE**_](../sinks/influxdb-sink.md#sink_influx_db_name) _**a
 
 ## Create an HTTPV2 Sink
 
+- HttpV2 Sink is implemented in Firehose using the Http sink connector implementation in Depot library. For details on all the features supported by HttpV2 Sink, please refer the Depot documentation [here](https://github.com/goto/depot/blob/main/docs/sinks/http.md).
 - it requires the following environment  [variables](https://github.com/goto/depot/blob/main/docs/reference/configuration/http.md) ,which are required by Depot library, to be set along with the generic firehose variables.
 
 If you'd like to connect to a sink which is not yet supported, you can create a new sink by following the [contribution guidelines](../contribute/contribution.md)
