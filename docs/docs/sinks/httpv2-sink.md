@@ -1,6 +1,6 @@
 # HttpV2 Sink
 
-HttpV2 Sink is implemented in Firehose using the Http sink connector implementation in Depot. You can check out Depot Github repository [here](https://github.com/goto/depot).
+HttpV2 Sink is implemented in Firehose using the Http sink connector implementation in Depot library. For details on all the features supported by HttpV2 Sink, please refer the Depot documentation [here](https://github.com/goto/depot/blob/main/docs/sinks/http.md).
 
 ### Configuration
 
