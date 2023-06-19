@@ -4,7 +4,7 @@ public enum SinkType {
     JDBC,
     /**
      * @deprecated
-     * HTTP is deprecated. Please consider using HTTPV2 instead.
+     * HTTP is deprecated from Firehose v0.8.11 onwards. Please consider using HTTPV2 instead.
      */
     @Deprecated
     HTTP,
