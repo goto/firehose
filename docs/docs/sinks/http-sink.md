@@ -1,5 +1,7 @@
 # HTTP
 
+Note: HTTP sink type is deprecated from Firehose version 0.8.11 onwards. Please consider using HTTPV2 sink type instead.
+
 REST API stands for Representational State Transfer and is an architectural pattern for creating web services.
 
 An Http sink Firehose \(`SINK_TYPE`=`http`\) requires the following variables to be set along with Generic ones.
