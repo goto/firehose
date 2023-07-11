@@ -139,7 +139,7 @@ public class WriterOrchestrator implements Closeable {
             writer.close();
         }
         for (LocalFileWriter p : timePartitionWriterMap.values()) {
-            localStorage.deleteLocalFile(p.getMetadata().getFullPath());
+            localStorage.deleteLocalFile(p.getFullPath());
         }
     }
 }
