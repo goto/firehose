@@ -71,8 +71,8 @@ public class LocalParquetFileWriter implements LocalFileWriter {
         return metadata;
     }
 
-	@Override
-	public String getFullPath() {
-		return fullPath;
-	}
+    @Override
+    public String getFullPath() {
+        return fullPath;
+    }
 }
