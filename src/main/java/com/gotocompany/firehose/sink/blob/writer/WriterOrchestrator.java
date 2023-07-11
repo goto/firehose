@@ -125,7 +125,7 @@ public class WriterOrchestrator implements Closeable {
         if (!writer.write(record)) {
             return write(record, timePartitionedPath);
         }
-        return writer.getMetadata().getFullPath();
+        return writer.getFullPath();
     }
 
     @Override
