@@ -231,11 +231,13 @@ public class SinkWithRetryTest {
 
     @Test
     public void shouldRetryMessagesWhenErrorTypesConfigured() throws IOException {
-        Message messageWithError = new Message("key".getBytes(), "value".getBytes(), "topic", 1, 1, null, 0, 0, new ErrorInfo(null, ErrorType.DESERIALIZATION_ERROR));
+        InputSchemaType inputSchemaType = InputSchemaType.PROTOBUF;
+        ErrorInfo errorInfo = new ErrorInfo(null, ErrorType.DESERIALIZATION_ERROR);
+        Message messageWithError = new Message("key".getBytes(), "value".getBytes(), "topic", 1, 1, null, 0, 0, errorInfo, inputSchemaType);
 
         ArrayList<Message> messages = new ArrayList<>();
         messages.add(messageWithError);
-        messages.add(new Message(message, new ErrorInfo(null, ErrorType.SINK_UNKNOWN_ERROR)));
+        messages.add(new Message(message, new ErrorInfo(null, ErrorType.SINK_UNKNOWN_ERROR), inputSchemaType));
         when(sinkDecorator.pushMessage(anyList())).thenReturn(messages).thenReturn(new LinkedList<>());
 
         HashSet<ErrorType> errorTypes = new HashSet<>();

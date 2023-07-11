@@ -1,6 +1,7 @@
 package com.gotocompany.firehose.sinkdecorator;
 
 import com.gotocompany.firehose.config.ErrorConfig;
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.error.ErrorHandler;
 import com.gotocompany.firehose.exception.SinkException;
 import com.gotocompany.firehose.message.Message;
@@ -37,7 +38,7 @@ public class SinkWithFailHandlerTest {
         List<Message> messages = new LinkedList<>();
         messages.add(new Message("".getBytes(), "".getBytes(), "basic", 1, 1,
                 null, 0, 0,
-                new ErrorInfo(new RuntimeException(), ErrorType.DESERIALIZATION_ERROR)));
+                new ErrorInfo(new RuntimeException(), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF));
 
         when(sink.pushMessage(anyList())).thenReturn(messages);
 
@@ -54,7 +55,7 @@ public class SinkWithFailHandlerTest {
         List<Message> messages = new LinkedList<>();
         messages.add(new Message("".getBytes(), "".getBytes(), "basic", 1, 1,
                 null, 0, 0,
-                new ErrorInfo(new RuntimeException(), ErrorType.DESERIALIZATION_ERROR)));
+                new ErrorInfo(new RuntimeException(), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF));
 
         when(sink.pushMessage(anyList())).thenReturn(messages);
 
