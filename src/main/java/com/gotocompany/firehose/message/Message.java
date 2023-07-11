@@ -1,6 +1,7 @@
 package com.gotocompany.firehose.message;
 
 
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.exception.DefaultException;
 import com.gotocompany.depot.error.ErrorInfo;
 import com.gotocompany.depot.error.ErrorType;
@@ -29,6 +30,8 @@ public class Message {
     private long consumeTimestamp;
     @Setter
     private ErrorInfo errorInfo;
+
+    private InputSchemaType inputSchemaType;
 
     public void setDefaultErrorIfNotPresent() {
         if (errorInfo == null) {
@@ -65,8 +68,8 @@ public class Message {
      * @param timestamp
      * @param consumeTimestamp
      */
-    public Message(byte[] logKey, byte[] logMessage, String topic, int partition, long offset, Headers headers, long timestamp, long consumeTimestamp) {
-        this(logKey, logMessage, topic, partition, offset, headers, timestamp, consumeTimestamp, null);
+    public Message(byte[] logKey, byte[] logMessage, String topic, int partition, long offset, Headers headers, long timestamp, long consumeTimestamp, InputSchemaType inputSchemaType) {
+        this(logKey, logMessage, topic, partition, offset, headers, timestamp, consumeTimestamp, null, inputSchemaType);
     }
 
     public Message(Message message, ErrorInfo errorInfo) {
@@ -78,7 +81,8 @@ public class Message {
                 message.getHeaders(),
                 message.getTimestamp(),
                 message.getConsumeTimestamp(),
-                errorInfo);
+                errorInfo,
+                message.getInputSchemaType());
     }
 
     /**
