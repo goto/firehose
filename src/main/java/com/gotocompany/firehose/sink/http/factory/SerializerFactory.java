@@ -27,6 +27,11 @@ public class SerializerFactory {
         if (isProtoSchemaEmpty() || httpSinkConfig.getSinkHttpDataFormat() == HttpSinkDataFormatType.PROTO) {
             firehoseInstrumentation.logDebug("Serializer type: JsonWrappedProtoByte");
             // Fallback to json wrapped proto byte
+
+            // todo(sushmith):
+            //  here output is proto, but input expected is also proto.
+            //  need to have json as input and proto as output.
+            //  this is currently not possible because of the way we are using the parser.
             return new JsonWrappedProtoByte();
         }
 

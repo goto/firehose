@@ -1,6 +1,7 @@
 package com.gotocompany.firehose.serializer;
 
 
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.exception.ConfigurationException;
@@ -12,9 +13,11 @@ import com.google.protobuf.util.JsonFormat;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.gotocompany.stencil.Parser;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -77,9 +80,18 @@ public class MessageToTemplatizedJson implements MessageSerializer {
         try {
             String jsonMessage;
             String jsonString;
-            // only supports messages not keys
-            DynamicMessage msg = protoParser.parse(message.getLogMessage());
-            jsonMessage = JsonFormat.printer().includingDefaultValueFields().preservingProtoFieldNames().print(msg);
+
+            if (message.getInputSchemaType() == InputSchemaType.JSON) {
+                JSONParser parser = new JSONParser();
+                JSONObject json = (JSONObject) parser.parse(new String(message.getLogMessage(), StandardCharsets.UTF_8));
+                jsonMessage = json.toJSONString();
+            } else {
+                // only supports messages not keys
+                DynamicMessage msg = protoParser.parse(message.getLogMessage());
+                jsonMessage = JsonFormat.printer().includingDefaultValueFields().preservingProtoFieldNames().print(msg);
+            }
+
+
             String finalMessage = httpSinkJsonBodyTemplate;
             for (String path : pathsToReplace) {
                 if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {
@@ -91,7 +103,7 @@ public class MessageToTemplatizedJson implements MessageSerializer {
                 finalMessage = finalMessage.replace(path, jsonString);
             }
             return finalMessage;
-        } catch (InvalidProtocolBufferException | PathNotFoundException e) {
+        } catch (InvalidProtocolBufferException | ParseException | PathNotFoundException e) {
             throw new DeserializerException(e.getMessage());
         }
     }

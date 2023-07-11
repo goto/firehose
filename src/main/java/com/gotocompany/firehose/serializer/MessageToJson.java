@@ -1,6 +1,7 @@
 package com.gotocompany.firehose.serializer;
 
 
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.google.gson.ExclusionStrategy;
@@ -17,6 +18,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +56,13 @@ public class MessageToJson implements MessageSerializer {
         try {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("topic", message.getTopic());
+
+            if (message.getInputSchemaType() == InputSchemaType.JSON) {
+                JSONParser parser = new JSONParser();
+                JSONObject json = (JSONObject) parser.parse(new String(message.getLogMessage(), StandardCharsets.UTF_8));
+                jsonObject.put("logMessage", json);
+                return jsonObject.toJSONString();
+            }
 
             if (message.getLogKey() != null && message.getLogKey().length != 0) {
                 DynamicMessage key = protoParser.parse(message.getLogKey());
