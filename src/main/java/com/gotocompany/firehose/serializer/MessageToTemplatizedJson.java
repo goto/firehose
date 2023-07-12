@@ -82,8 +82,7 @@ public class MessageToTemplatizedJson implements MessageSerializer {
             String jsonString;
 
             if (message.getInputSchemaType() == InputSchemaType.JSON) {
-                JSONParser parser = new JSONParser();
-                JSONObject json = (JSONObject) parser.parse(new String(message.getLogMessage(), StandardCharsets.UTF_8));
+                JSONObject json = (JSONObject) jsonParser.parse(new String(message.getLogMessage(), StandardCharsets.UTF_8));
                 jsonMessage = json.toJSONString();
             } else {
                 // only supports messages not keys
