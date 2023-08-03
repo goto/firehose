@@ -90,7 +90,6 @@ public class MessageToTemplatizedJson implements MessageSerializer {
                 jsonMessage = JsonFormat.printer().includingDefaultValueFields().preservingProtoFieldNames().print(msg);
             }
 
-
             String finalMessage = httpSinkJsonBodyTemplate;
             for (String path : pathsToReplace) {
                 if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {

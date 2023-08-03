@@ -60,7 +60,11 @@ public class MessageToJson implements MessageSerializer {
             if (message.getInputSchemaType() == InputSchemaType.JSON) {
                 JSONParser parser = new JSONParser();
                 JSONObject json = (JSONObject) parser.parse(new String(message.getLogMessage(), StandardCharsets.UTF_8));
-                jsonObject.put("logMessage", json);
+                jsonObject.put("logMessage", gson.toJson(json));
+                if (message.getLogKey() != null && message.getLogKey().length != 0) {
+                    jsonObject.put("logKey", new String(message.getLogKey(), StandardCharsets.UTF_8));
+                }
+
                 return jsonObject.toJSONString();
             }
 
