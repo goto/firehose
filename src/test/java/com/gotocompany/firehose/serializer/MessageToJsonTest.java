@@ -30,14 +30,14 @@ public class MessageToJsonTest {
         logMessage = "CgYIyOm+xgUSBgiE6r7GBRgNIICAgIDA9/y0LigCMAM\u003d";
         logKey = "CgYIyOm+xgUSBgiE6r7GBRgNIICAgIDA9/y0LigC";
 
-        logMessageJSONString = "{\n" +
-                "    \"uniqueDrivers\": \"3\",\n" +
-                "    \"windowStartTime\": \"Mar 20, 2017 10:54:00 AM\",\n" +
-                "    \"windowEndTime\": \"Mar 20, 2017 10:55:00 AM\",\n" +
-                "    \"s2IdLevel\": 13,\n" +
-                "    \"vehicleType\": \"BIKE\",\n" +
-                "    \"s2Id\": \"3344472187078705152\"\n" +
-                "  }";
+        logMessageJSONString = "{\n"
+                + "    \"uniqueDrivers\": \"3\",\n"
+                + "    \"windowStartTime\": \"Mar 20, 2017 10:54:00 AM\",\n"
+                + "    \"windowEndTime\": \"Mar 20, 2017 10:55:00 AM\",\n"
+                + "    \"s2IdLevel\": 13,\n"
+                + "    \"vehicleType\": \"BIKE\",\n"
+                + "    \"s2Id\": \"3344472187078705152\"\n"
+                + "  }";
         logKeyJSONString = "sample-key1";
     }
 
@@ -68,11 +68,11 @@ public class MessageToJsonTest {
         Message message = new Message(logKeyJSONString.getBytes(), logMessageJSONString.getBytes(), "sample-topic", 0, 100);
         message.setInputSchemaType(InputSchemaType.JSON);
 
-        String expectedOutput = "{\"logMessage\":\"{\\\"uniqueDrivers\\\":\\\"3\\\"," +
-                "\\\"windowStartTime\\\":\\\"Mar 20, 2017 10:54:00 AM\\\"," +
-                "\\\"windowEndTime\\\":\\\"Mar 20, 2017 10:55:00 AM\\\"," +
-                "\\\"s2IdLevel\\\":13,\\\"vehicleType\\\":\\\"BIKE\\\",\\\"s2Id\\\":\\\"3344472187078705152\\\"}\"," +
-                "\"topic\":\"sample-topic\",\"logKey\":\"sample-key1\"}";
+        String expectedOutput = "{\"logMessage\":\"{\\\"uniqueDrivers\\\":\\\"3\\\","
+                + "\\\"windowStartTime\\\":\\\"Mar 20, 2017 10:54:00 AM\\\","
+                + "\\\"windowEndTime\\\":\\\"Mar 20, 2017 10:55:00 AM\\\","
+                + "\\\"s2IdLevel\\\":13,\\\"vehicleType\\\":\\\"BIKE\\\",\\\"s2Id\\\":\\\"3344472187078705152\\\"}\","
+                + "\"topic\":\"sample-topic\",\"logKey\":\"sample-key1\"}";
 
         String actualOutput = messageToJson.serialize(message);
         assertEquals(expectedOutput, actualOutput);
