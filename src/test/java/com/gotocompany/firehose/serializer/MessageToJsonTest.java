@@ -10,7 +10,6 @@ import com.gotocompany.stencil.Parser;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
