@@ -12,6 +12,7 @@ import com.gotocompany.stencil.client.StencilClient;
 import org.aeonbits.owner.ConfigFactory;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Factory class to create the GrpcSink.
@@ -29,12 +30,25 @@ public class GrpcSinkFactory {
                 grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort(), grpcConfig.getSinkGrpcMethodUrl(), grpcConfig.getSinkGrpcResponseSchemaProtoClass());
         firehoseInstrumentation.logDebug(grpcSinkConfig);
 
-        ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort()).usePlaintext().build();
+        ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
+                .usePlaintext();
+        ManagedChannel managedChannel = decorateManagedChannelBuilder(grpcConfig, managedChannelBuilder).build();
 
         GrpcClient grpcClient = new GrpcClient(new FirehoseInstrumentation(statsDReporter, GrpcClient.class), grpcConfig, managedChannel, stencilClient);
+        grpcClient.initialize();
         firehoseInstrumentation.logInfo("GRPC connection established");
 
         return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient);
+    }
+
+    protected static ManagedChannelBuilder<?> decorateManagedChannelBuilder(GrpcSinkConfig grpcConfig, ManagedChannelBuilder<?> channelBuilder) {
+        if (grpcConfig.getSinkGrpcArgKeepaliveTimeMS() != null && grpcConfig.getSinkGrpcArgKeepaliveTimeMS() > 0) {
+            channelBuilder = channelBuilder.keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS);
+        }
+        if (grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS() != null && grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS() > 0) {
+            channelBuilder = channelBuilder.keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS);
+        }
+        return channelBuilder;
     }
 
 }
