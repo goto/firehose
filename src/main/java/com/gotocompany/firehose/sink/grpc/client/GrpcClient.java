@@ -36,7 +36,7 @@ public class GrpcClient {
     private final GrpcSinkConfig grpcSinkConfig;
     private StencilClient stencilClient;
     private ManagedChannel managedChannel;
-    private MethodDescriptor<byte[], byte[]> methodeBuilder;
+    private MethodDescriptor<byte[], byte[]> methodDescriptor;
 
     public GrpcClient(FirehoseInstrumentation firehoseInstrumentation, GrpcSinkConfig grpcSinkConfig, ManagedChannel managedChannel, StencilClient stencilClient) {
         this.firehoseInstrumentation = firehoseInstrumentation;
@@ -47,7 +47,7 @@ public class GrpcClient {
 
     public void initialize() {
         MethodDescriptor.Marshaller<byte[]> marshaller = getMarshaller();
-        this.methodeBuilder = MethodDescriptor.newBuilder(marshaller, marshaller)
+        this.methodDescriptor = MethodDescriptor.newBuilder(marshaller, marshaller)
                 .setType(MethodDescriptor.MethodType.UNARY)
                 .setFullMethodName(grpcSinkConfig.getSinkGrpcMethodUrl())
                 .build();
@@ -55,7 +55,6 @@ public class GrpcClient {
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
 
-        CallOptions callOption = CallOptions.DEFAULT;
         try {
             Metadata metadata = new Metadata();
             for (Header header : headers) {
@@ -63,11 +62,10 @@ public class GrpcClient {
             }
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
                      MetadataUtils.newAttachHeadersInterceptor(metadata));
-            callOption = decorateCallOptions(callOption);
             byte[] response = ClientCalls.blockingUnaryCall(
                     decoratedChannel,
-                    methodeBuilder,
-                    callOption,
+                    methodDescriptor,
+                    decorateCallOptions(CallOptions.DEFAULT),
                     logMessage);
 
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
@@ -83,11 +81,11 @@ public class GrpcClient {
         return DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
     }
 
-    protected CallOptions decorateCallOptions(CallOptions defaultCallOptions) {
+    protected CallOptions decorateCallOptions(CallOptions defaultCallOption) {
         if (grpcSinkConfig.getSinkGrpcArgDeadlineMS() != null && grpcSinkConfig.getSinkGrpcArgDeadlineMS() > 0) {
-            defaultCallOptions = defaultCallOptions.withDeadlineAfter(grpcSinkConfig.getSinkGrpcArgDeadlineMS(), TimeUnit.MILLISECONDS);
+            defaultCallOption = defaultCallOption.withDeadlineAfter(grpcSinkConfig.getSinkGrpcArgDeadlineMS(), TimeUnit.MILLISECONDS);
         }
-        return defaultCallOptions;
+        return defaultCallOption;
     }
 
     private MethodDescriptor.Marshaller<byte[]> getMarshaller() {
