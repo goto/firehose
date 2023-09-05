@@ -41,23 +41,7 @@ public class UriParser {
     }
 
     public String parse(Message message, String serviceUrl) {
-
-//        if (message.getInputSchemaType() == InputSchemaType.JSON) {
-//            JSONObject jsonObject = parseJsonMessage(message);
-//
-//        }
-//        create jonobject if input is json
-//        {
-//        }
-//        DynamicMessage parsedMessage = parseEsbMessage(message);
-
-//        -- > mpve this to directlydo it inside parseServiceURl
-
-
-//        take call inside parseService Url
-//        overload parseServiceUrl function to take jsonObject
         return parseServiceUrl(message, serviceUrl);
-
     }
 
     private DynamicMessage parseEsbMessage(Message message) {
