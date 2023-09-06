@@ -82,7 +82,9 @@ public class MessageToTemplatizedJson implements MessageSerializer {
             String jsonString;
 
             if (message.getInputSchemaType() == InputSchemaType.JSON) {
+                System.out.println(new String(message.getLogMessage()));
                 JSONObject json = (JSONObject) jsonParser.parse(new String(message.getLogMessage(), StandardCharsets.UTF_8));
+                System.out.println(json.toJSONString());
                 jsonMessage = json.toJSONString();
             } else {
                 // only supports messages not keys
@@ -101,7 +103,8 @@ public class MessageToTemplatizedJson implements MessageSerializer {
                 finalMessage = finalMessage.replace(path, jsonString);
             }
             return finalMessage;
-        } catch (InvalidProtocolBufferException | ParseException | PathNotFoundException e) {
+         } catch (InvalidProtocolBufferException | ParseException | PathNotFoundException e) {
+            e.printStackTrace();
             throw new DeserializerException(e.getMessage());
         }
     }
