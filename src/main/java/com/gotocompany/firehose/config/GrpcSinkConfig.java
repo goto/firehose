@@ -18,11 +18,13 @@ public interface GrpcSinkConfig extends AppConfig {
     String getSinkGrpcResponseSchemaProtoClass();
 
     @Config.Key("SINK_GRPC_ARG_KEEPALIVE_TIME_MS")
-    Integer getSinkGrpcArgKeepaliveTimeMS();
+    @Config.DefaultValue("9223372036854775807")
+    Long getSinkGrpcArgKeepaliveTimeMS();
 
     @Config.Key("SINK_GRPC_ARG_KEEPALIVE_TIMEOUT_MS")
-    Integer getSinkGrpcArgKeepaliveTimeoutMS();
+    @DefaultValue("20000")
+    Long getSinkGrpcArgKeepaliveTimeoutMS();
 
     @Config.Key("SINK_GRPC_ARG_DEADLINE_MS")
-    Integer getSinkGrpcArgDeadlineMS();
+    Long getSinkGrpcArgDeadlineMS();
 }

@@ -30,25 +30,15 @@ public class GrpcSinkFactory {
                 grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort(), grpcConfig.getSinkGrpcMethodUrl(), grpcConfig.getSinkGrpcResponseSchemaProtoClass());
         firehoseInstrumentation.logDebug(grpcSinkConfig);
 
-        ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
-                .usePlaintext();
-        ManagedChannel managedChannel = decorateManagedChannelBuilder(grpcConfig, managedChannelBuilder).build();
+        ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
+                        .keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS)
+                        .keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS)
+                        .usePlaintext().build();
 
         GrpcClient grpcClient = new GrpcClient(new FirehoseInstrumentation(statsDReporter, GrpcClient.class), grpcConfig, managedChannel, stencilClient);
-        grpcClient.initialize();
         firehoseInstrumentation.logInfo("GRPC connection established");
 
         return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient);
-    }
-
-    protected static ManagedChannelBuilder<?> decorateManagedChannelBuilder(GrpcSinkConfig grpcConfig, ManagedChannelBuilder<?> channelBuilder) {
-        if (grpcConfig.getSinkGrpcArgKeepaliveTimeMS() != null && grpcConfig.getSinkGrpcArgKeepaliveTimeMS() > 0) {
-            channelBuilder = channelBuilder.keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS);
-        }
-        if (grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS() != null && grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS() > 0) {
-            channelBuilder = channelBuilder.keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS);
-        }
-        return channelBuilder;
     }
 
 }

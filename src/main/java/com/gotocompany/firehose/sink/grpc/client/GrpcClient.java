@@ -36,21 +36,20 @@ public class GrpcClient {
     private final GrpcSinkConfig grpcSinkConfig;
     private StencilClient stencilClient;
     private ManagedChannel managedChannel;
-    private MethodDescriptor<byte[], byte[]> methodDescriptor;
+    private final MethodDescriptor<byte[], byte[]> methodDescriptor;
+    private final DynamicMessage emptyResponse;
 
     public GrpcClient(FirehoseInstrumentation firehoseInstrumentation, GrpcSinkConfig grpcSinkConfig, ManagedChannel managedChannel, StencilClient stencilClient) {
         this.firehoseInstrumentation = firehoseInstrumentation;
         this.grpcSinkConfig = grpcSinkConfig;
         this.stencilClient = stencilClient;
         this.managedChannel = managedChannel;
-    }
-
-    public void initialize() {
         MethodDescriptor.Marshaller<byte[]> marshaller = getMarshaller();
         this.methodDescriptor = MethodDescriptor.newBuilder(marshaller, marshaller)
                 .setType(MethodDescriptor.MethodType.UNARY)
                 .setFullMethodName(grpcSinkConfig.getSinkGrpcMethodUrl())
                 .build();
+        this.emptyResponse = DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
     }
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
@@ -65,7 +64,7 @@ public class GrpcClient {
             byte[] response = ClientCalls.blockingUnaryCall(
                     decoratedChannel,
                     methodDescriptor,
-                    decorateCallOptions(CallOptions.DEFAULT),
+                    decoratedDefaultCallOptions(),
                     logMessage);
 
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
@@ -74,16 +73,16 @@ public class GrpcClient {
             firehoseInstrumentation.logWarn(sre.getMessage());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL,  "status=" + sre.getStatus().getCode());
         } catch (Exception e) {
-            e.printStackTrace();
             firehoseInstrumentation.logWarn(e.getMessage());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL, "status=UNIDENTIFIED");
         }
-        return DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
+        return emptyResponse;
     }
 
-    protected CallOptions decorateCallOptions(CallOptions defaultCallOption) {
+    protected CallOptions decoratedDefaultCallOptions() {
+        CallOptions defaultCallOption = CallOptions.DEFAULT;
         if (grpcSinkConfig.getSinkGrpcArgDeadlineMS() != null && grpcSinkConfig.getSinkGrpcArgDeadlineMS() > 0) {
-            defaultCallOption = defaultCallOption.withDeadlineAfter(grpcSinkConfig.getSinkGrpcArgDeadlineMS(), TimeUnit.MILLISECONDS);
+            return defaultCallOption.withDeadlineAfter(grpcSinkConfig.getSinkGrpcArgDeadlineMS(), TimeUnit.MILLISECONDS);
         }
         return defaultCallOption;
     }

@@ -17,10 +17,9 @@ import org.mockito.Mock;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class GrpcSinkFactoryTest {
@@ -68,41 +67,7 @@ public class GrpcSinkFactoryTest {
         Sink sink = GrpcSinkFactory.create(config, statsDReporter, stencilClient);
 
         Assert.assertNotNull(sink);
+
         server.shutdownNow();
-    }
-
-    @Test
-    public void channelBuilderShouldBeDecoratedWithKeepaliveAndTimeOutMS() {
-        when(grpcConfig.getSinkGrpcArgKeepaliveTimeMS()).thenReturn(1000);
-        when(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS()).thenReturn(100);
-        when(channelBuilder.keepAliveTime(Integer.parseInt("1000"), TimeUnit.MILLISECONDS)).thenReturn(channelBuilder);
-
-        GrpcSinkFactory.decorateManagedChannelBuilder(grpcConfig, channelBuilder);
-
-        verify(channelBuilder, times(1)).keepAliveTimeout(Integer.parseInt("100"), TimeUnit.MILLISECONDS);
-        verify(channelBuilder, times(1)).keepAliveTime(Integer.parseInt("1000"), TimeUnit.MILLISECONDS);
-    }
-
-    @Test
-    public void channelBuilderShouldBeDecoratedWithOnlyKeepaliveMS() {
-        when(grpcConfig.getSinkGrpcArgKeepaliveTimeMS()).thenReturn(1000);
-        when(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS()).thenReturn(-1);
-        when(channelBuilder.keepAliveTime(anyInt(), eq(TimeUnit.MILLISECONDS))).thenReturn(channelBuilder);
-
-        GrpcSinkFactory.decorateManagedChannelBuilder(grpcConfig, channelBuilder);
-
-        verify(channelBuilder, times(0)).keepAliveTimeout(anyInt(), eq(TimeUnit.MILLISECONDS));
-        verify(channelBuilder, times(1)).keepAliveTime(Integer.parseInt("1000"), TimeUnit.MILLISECONDS);
-    }
-
-    @Test
-    public void channelBuilderShouldNotBeDecoratedWithKeepaliveAndTimeoutMS() {
-        when(grpcConfig.getSinkGrpcArgKeepaliveTimeMS()).thenReturn(-1);
-        when(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS()).thenReturn(-1);
-        //when(channelBuilder.keepAliveTime(anyInt(), eq(TimeUnit.MILLISECONDS))).thenReturn(channelBuilder);
-
-        GrpcSinkFactory.decorateManagedChannelBuilder(grpcConfig, channelBuilder);
-        verify(channelBuilder, times(0)).keepAliveTimeout(anyInt(), eq(TimeUnit.MILLISECONDS));
-        verify(channelBuilder, times(0)).keepAliveTime(anyInt(), eq(TimeUnit.MILLISECONDS));
     }
 }

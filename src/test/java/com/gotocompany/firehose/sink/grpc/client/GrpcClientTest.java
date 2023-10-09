@@ -30,11 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class GrpcClientTest {
@@ -70,7 +66,6 @@ public class GrpcClientTest {
         StencilClient stencilClient = StencilClientFactory.getClient();
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();
         grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient);
-        grpcClient.initialize();
         headers = new RecordHeaders();
     }
 
@@ -163,8 +158,8 @@ public class GrpcClientTest {
 
     @Test
     public void shouldNotDecorateCallOptionsWithDeadline() {
-        CallOptions decorateCallOptions = grpcClient.decorateCallOptions(CallOptions.DEFAULT);
-        assertNull(decorateCallOptions.getDeadline());
+        CallOptions decoratedCallOptions = grpcClient.decoratedDefaultCallOptions();
+        assertNull(decoratedCallOptions.getDeadline());
     }
 
     @Test
@@ -180,8 +175,8 @@ public class GrpcClientTest {
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();
         grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient);
 
-        CallOptions decorateCallOptions = grpcClient.decorateCallOptions(CallOptions.DEFAULT);
-        assertNotNull(decorateCallOptions.getDeadline());
+        CallOptions decoratedCallOptions = grpcClient.decoratedDefaultCallOptions();
+        assertNotNull(decoratedCallOptions.getDeadline());
     }
 
     @Test
