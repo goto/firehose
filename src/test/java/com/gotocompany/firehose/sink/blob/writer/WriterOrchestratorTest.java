@@ -24,6 +24,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -58,6 +60,7 @@ public class WriterOrchestratorTest {
         MockitoAnnotations.initMocks(this);
         this.sinkConfig = Mockito.mock(BlobSinkConfig.class);
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampTimezone()).thenReturn(zone);
+        Mockito.when(sinkConfig.getFilePartitionProcessingTimeEnabled()).thenReturn(false);
         Mockito.when(sinkConfig.getOutputKafkaMetadataColumnName()).thenReturn("");
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampFieldName()).thenReturn(timeStampFieldName);
         Mockito.when(sinkConfig.getFilePartitionTimeGranularityType()).thenReturn(Constants.FilePartitionType.HOUR);
@@ -68,6 +71,7 @@ public class WriterOrchestratorTest {
     @Test
     public void shouldCreateLocalFileWriter() throws Exception {
         Record record = Mockito.mock(Record.class);
+        Mockito.when(record.getLocalDateTime(sinkConfig)).thenReturn(LocalDateTime.now());
         Mockito.when(record.getTimestamp(timeStampFieldName)).thenReturn(Instant.ofEpochMilli(1L));
         Mockito.when(record.getTopic("")).thenReturn(defaultTopic);
         Mockito.when(localFileWriter1.getFullPath()).thenReturn("/tmp/test");
@@ -82,6 +86,7 @@ public class WriterOrchestratorTest {
     @Test
     public void shouldCreateMultipleWriterBasedOnPartition() throws Exception {
         Record record1 = Mockito.mock(Record.class);
+        Mockito.when(record1.getLocalDateTime(sinkConfig)).thenReturn(LocalDateTime.ofInstant(Instant.ofEpochMilli(3600000L), ZoneId.of(zone)));
         Mockito.when(record1.getTimestamp(timeStampFieldName)).thenReturn(Instant.ofEpochMilli(3600000L));
         Mockito.when(record1.getTopic("")).thenReturn(defaultTopic);
         Mockito.when(localStorage.createLocalFileWriter(TimePartitionedPathUtils.getTimePartitionedPath(record1, sinkConfig))).thenReturn(localFileWriter1);
@@ -89,6 +94,7 @@ public class WriterOrchestratorTest {
         Mockito.when(localFileWriter1.getFullPath()).thenReturn("/tmp/test1");
 
         Record record2 = Mockito.mock(Record.class);
+        Mockito.when(record2.getLocalDateTime(sinkConfig)).thenReturn(LocalDateTime.ofInstant(Instant.ofEpochMilli(7200000L), ZoneId.of(zone)));
         Mockito.when(record2.getTimestamp(timeStampFieldName)).thenReturn(Instant.ofEpochMilli(7200000L));
         Mockito.when(record2.getTopic("")).thenReturn(defaultTopic);
         Mockito.when(localStorage.createLocalFileWriter(TimePartitionedPathUtils.getTimePartitionedPath(record2, sinkConfig))).thenReturn(localFileWriter2);
@@ -106,6 +112,7 @@ public class WriterOrchestratorTest {
     @Test(expected = IOException.class)
     public void shouldThrowIOExceptionWhenWriteThrowsException() throws Exception {
         Record record = Mockito.mock(Record.class);
+        Mockito.when(record.getLocalDateTime(sinkConfig)).thenReturn(LocalDateTime.now());
         Mockito.when(record.getTimestamp(timeStampFieldName)).thenReturn(Instant.ofEpochMilli(3600000L));
         Mockito.when(record.getTopic("")).thenReturn(defaultTopic);
         Mockito.when(localFileWriter1.getMetadata()).thenReturn(new LocalFileMetadata("/tmp/", "/tmp/test1", 0, 0, 0));
@@ -120,6 +127,7 @@ public class WriterOrchestratorTest {
     public void shouldThrowIOExceptionWhenOpenNewWriterFailed() throws Exception {
         expectedException.expect(LocalFileWriterFailedException.class);
         Record record = Mockito.mock(Record.class);
+        Mockito.when(record.getLocalDateTime(sinkConfig)).thenReturn(LocalDateTime.now());
         Mockito.when(record.getTimestamp(timeStampFieldName)).thenReturn(Instant.ofEpochMilli(3600000L));
         Mockito.when(record.getTopic("")).thenReturn(defaultTopic);
         Mockito.when(localFileWriter1.getMetadata()).thenReturn(new LocalFileMetadata("/tmp/", "/tmp/test1", 0, 0, 0));
@@ -133,6 +141,7 @@ public class WriterOrchestratorTest {
     public void shouldGetEmptyFlushedPath() throws Exception {
         Record record = Mockito.mock(Record.class);
         Mockito.when(record.getTimestamp(timeStampFieldName)).thenReturn(Instant.ofEpochMilli(1L));
+        Mockito.when(record.getLocalDateTime(sinkConfig)).thenReturn(LocalDateTime.ofInstant(Instant.ofEpochMilli(1L), ZoneId.of(zone)));
         Mockito.when(record.getTopic("")).thenReturn(defaultTopic);
         Mockito.when(localFileWriter1.getFullPath()).thenReturn("/tmp/test");
         Mockito.when(localStorage.createLocalFileWriter(TimePartitionedPathUtils.getTimePartitionedPath(record, sinkConfig))).thenReturn(localFileWriter1);

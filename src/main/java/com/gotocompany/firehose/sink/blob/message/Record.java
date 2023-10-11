@@ -2,11 +2,14 @@ package com.gotocompany.firehose.sink.blob.message;
 
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
+import com.gotocompany.firehose.config.BlobSinkConfig;
 import com.gotocompany.firehose.sink.blob.proto.KafkaMetadataProtoMessage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @AllArgsConstructor
 @Data
@@ -33,5 +36,15 @@ public class Record {
         long seconds = (long) timestamp.getField(timestamp.getDescriptorForType().findFieldByName("seconds"));
         int nanos = (int) timestamp.getField(timestamp.getDescriptorForType().findFieldByName("nanos"));
         return Instant.ofEpochSecond(seconds, nanos);
+    }
+
+    public LocalDateTime getLocalDateTime(BlobSinkConfig config) {
+        if (config.getFilePartitionProcessingTimeEnabled()) {
+            return LocalDateTime.now();
+        } else {
+            return LocalDateTime.ofInstant(
+                    getTimestamp(config.getFilePartitionProtoTimestampFieldName()),
+                    ZoneId.of(config.getFilePartitionProtoTimestampTimezone()));
+        }
     }
 }

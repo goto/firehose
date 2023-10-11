@@ -49,6 +49,10 @@ public interface BlobSinkConfig extends AppConfig {
     @Key("SINK_BLOB_FILE_PARTITION_PROTO_TIMESTAMP_FIELD_NAME")
     String getFilePartitionProtoTimestampFieldName();
 
+    @Key("SINK_BLOB_FILE_PARTITION_PROCESSING_TIME_ENABLED")
+    @DefaultValue("false")
+    boolean getFilePartitionProcessingTimeEnabled();
+
     @Key("SINK_BLOB_FILE_PARTITION_TIME_GRANULARITY_TYPE")
     @DefaultValue("day")
     @ConverterClass(BlobSinkFilePartitionTypeConverter.class)
