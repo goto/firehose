@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.blob.message;
 
 import com.google.protobuf.DynamicMessage;
 import com.gotocompany.firehose.config.BlobSinkConfig;
+import com.gotocompany.firehose.config.enums.TimePartitionType;
 import com.gotocompany.firehose.sink.blob.TestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,13 +42,13 @@ public class RecordTest {
         DynamicMessage message = TestUtils.createMessage(defaultTimestamp, defaultOrderNumber);
         DynamicMessage metadata = TestUtils.createMetadata("nested_field", defaultTimestamp, defaultOffset, defaultPartition, defaultTopic);
         Record record = new Record(message, metadata);
-        Assert.assertEquals(defaultTimestamp, record.getTimestamp("created_time"));
+        Assert.assertEquals(defaultTimestamp, record.getTimestampFromMessage("created_time"));
     }
 
     @Test
     public void shouldGetDateTimeLocally() throws InterruptedException {
         BlobSinkConfig config = Mockito.mock(BlobSinkConfig.class);
-        Mockito.when(config.getFilePartitionProcessingTimeEnabled()).thenReturn(true);
+        Mockito.when(config.getFilePartitionTimeType()).thenReturn(TimePartitionType.PROCESSING_TIMESTAMP);
         DynamicMessage message = TestUtils.createMessage(defaultTimestamp, defaultOrderNumber);
         DynamicMessage metadata = TestUtils.createMetadata("nested_field", defaultTimestamp, defaultOffset, defaultPartition, defaultTopic);
         Record record = new Record(message, metadata);
@@ -63,7 +64,6 @@ public class RecordTest {
     @Test
     public void shouldGetDateTimeFromMessage() throws InterruptedException {
         BlobSinkConfig config = Mockito.mock(BlobSinkConfig.class);
-        Mockito.when(config.getFilePartitionProcessingTimeEnabled()).thenReturn(false);
         Mockito.when(config.getFilePartitionProtoTimestampFieldName()).thenReturn("created_time");
         Mockito.when(config.getFilePartitionProtoTimestampTimezone()).thenReturn("UTC");
         DynamicMessage message = TestUtils.createMessage(defaultTimestamp, defaultOrderNumber);
