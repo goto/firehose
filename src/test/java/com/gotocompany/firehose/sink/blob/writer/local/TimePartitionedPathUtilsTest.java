@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.blob.writer.local;
 
 import com.google.protobuf.DynamicMessage;
 import com.gotocompany.firehose.config.BlobSinkConfig;
+import com.gotocompany.firehose.config.enums.TimePartitionType;
 import com.gotocompany.firehose.sink.blob.Constants;
 import com.gotocompany.firehose.sink.blob.TestProtoMessage;
 import com.gotocompany.firehose.sink.blob.TestUtils;
@@ -41,6 +42,7 @@ public class TimePartitionedPathUtilsTest {
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampTimezone()).thenReturn(zone);
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampFieldName()).thenReturn(timeStampFieldName);
         Mockito.when(sinkConfig.getFilePartitionTimeGranularityType()).thenReturn(Constants.FilePartitionType.DAY);
+        Mockito.when(sinkConfig.getFilePartitionTimeType()).thenReturn(TimePartitionType.EVENT_TIMESTAMP);
         Mockito.when(sinkConfig.getOutputKafkaMetadataColumnName()).thenReturn(kafkaMetadataFieldName);
         Mockito.when(sinkConfig.getFilePartitionTimeDatePrefix()).thenReturn("date=");
         Mockito.when(sinkConfig.getFilePartitionTimeHourPrefix()).thenReturn("");
@@ -58,6 +60,7 @@ public class TimePartitionedPathUtilsTest {
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampTimezone()).thenReturn(zone);
         Mockito.when(sinkConfig.getOutputKafkaMetadataColumnName()).thenReturn(kafkaMetadataFieldName);
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampFieldName()).thenReturn(timeStampFieldName);
+        Mockito.when(sinkConfig.getFilePartitionTimeType()).thenReturn(TimePartitionType.EVENT_TIMESTAMP);
         Mockito.when(sinkConfig.getFilePartitionTimeGranularityType()).thenReturn(Constants.FilePartitionType.HOUR);
         Mockito.when(sinkConfig.getFilePartitionTimeDatePrefix()).thenReturn(datePrefix);
         Mockito.when(sinkConfig.getFilePartitionTimeHourPrefix()).thenReturn(hourPrefix);
@@ -91,6 +94,7 @@ public class TimePartitionedPathUtilsTest {
         BlobSinkConfig sinkConfig = Mockito.mock(BlobSinkConfig.class);
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampTimezone()).thenReturn(zone);
         Mockito.when(sinkConfig.getFilePartitionTimeGranularityType()).thenReturn(Constants.FilePartitionType.DAY);
+        Mockito.when(sinkConfig.getFilePartitionTimeType()).thenReturn(TimePartitionType.EVENT_TIMESTAMP);
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampFieldName()).thenReturn(timeStampFieldName);
         Mockito.when(sinkConfig.getFilePartitionTimeDatePrefix()).thenReturn(datePrefix);
         Mockito.when(sinkConfig.getFilePartitionTimeHourPrefix()).thenReturn(hourPrefix);
@@ -107,6 +111,7 @@ public class TimePartitionedPathUtilsTest {
         Record record = new Record(message, metadata);
         BlobSinkConfig sinkConfig = Mockito.mock(BlobSinkConfig.class);
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampTimezone()).thenReturn(zone);
+        Mockito.when(sinkConfig.getFilePartitionTimeType()).thenReturn(TimePartitionType.EVENT_TIMESTAMP);
         Mockito.when(sinkConfig.getFilePartitionTimeGranularityType()).thenReturn(Constants.FilePartitionType.DAY);
         Mockito.when(sinkConfig.getFilePartitionProtoTimestampFieldName()).thenReturn(timeStampFieldName);
         Mockito.when(sinkConfig.getFilePartitionTimeDatePrefix()).thenReturn(datePrefix);

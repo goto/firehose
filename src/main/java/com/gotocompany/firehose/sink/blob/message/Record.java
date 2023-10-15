@@ -29,12 +29,23 @@ public class Record {
         return (String) metadata.getField(metadataDescriptor.findFieldByName(KafkaMetadataProtoMessage.MESSAGE_TOPIC_FIELD_NAME));
     }
 
-    public Instant getTimestampFromMessage(String fieldName) {
-        return getTimeStampFromDescriptor(fieldName, message);
+    public Instant getMessageTimeStamp(String metadataColumnName) {
+        Descriptors.Descriptor metadataDescriptor = metadata.getDescriptorForType();
+        com.google.protobuf.Timestamp timestamp;
+        if (!metadataColumnName.isEmpty()) {
+            DynamicMessage nestedMetadataMessage = (DynamicMessage) metadata.getField(metadataDescriptor.findFieldByName(metadataColumnName));
+            Descriptors.Descriptor nestedMetadataMessageDescriptor = nestedMetadataMessage.getDescriptorForType();
+            timestamp = (com.google.protobuf.Timestamp) nestedMetadataMessage.getField(nestedMetadataMessageDescriptor.findFieldByName(KafkaMetadataProtoMessage.MESSAGE_TIMESTAMP_FIELD_NAME));
+        } else {
+            timestamp = (com.google.protobuf.Timestamp) metadata.getField(metadataDescriptor.findFieldByName(KafkaMetadataProtoMessage.MESSAGE_TIMESTAMP_FIELD_NAME));
+        }
+        long seconds = (long) timestamp.getField(timestamp.getDescriptorForType().findFieldByName("seconds"));
+        int nanos = (int) timestamp.getField(timestamp.getDescriptorForType().findFieldByName("nanos"));
+        return Instant.ofEpochSecond(seconds, nanos);
     }
 
-    public Instant getTimestampFromMetadata(String fieldName) {
-        return getTimeStampFromDescriptor(fieldName, metadata);
+    public Instant getTimestampFromMessage(String fieldName) {
+        return getTimeStampFromDescriptor(fieldName, message);
     }
 
     public Instant getTimeStampFromDescriptor(String fieldName, DynamicMessage m) {
@@ -50,8 +61,8 @@ public class Record {
         switch (config.getFilePartitionTimeType()) {
             case MESSAGE_TIMESTAMP:
                 return LocalDateTime.ofInstant(
-                        getTimestampFromMetadata(KafkaMetadataProtoMessage.MESSAGE_TIMESTAMP_FIELD_NAME),
-                        ZoneId.of(config.getFilePartitionProtoTimestampTimezone()));
+                        getMessageTimeStamp(config.getOutputKafkaMetadataColumnName()),
+                        ZoneId.of("UTC"));
             case PROCESSING_TIMESTAMP:
                 return LocalDateTime.now();
             default:
