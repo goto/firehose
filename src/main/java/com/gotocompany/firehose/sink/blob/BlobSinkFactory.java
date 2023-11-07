@@ -7,6 +7,7 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.sink.blob.message.MessageDeSerializer;
 import com.gotocompany.firehose.sink.blob.writer.WriterOrchestrator;
 import com.gotocompany.firehose.sink.blob.writer.local.LocalStorage;
+import com.gotocompany.firehose.sink.blob.writer.local.policy.GlobalWriterPolicy;
 import com.gotocompany.firehose.sink.blob.writer.local.policy.SizeBasedRotatingPolicy;
 import com.gotocompany.firehose.sink.blob.writer.local.policy.TimeBasedRotatingPolicy;
 import com.gotocompany.firehose.sink.blob.writer.local.policy.WriterPolicy;
@@ -53,13 +54,16 @@ public class BlobSinkFactory {
         Descriptors.Descriptor outputMessageDescriptor = stencilClient.get(sinkConfig.getInputSchemaProtoClass());
         Descriptors.Descriptor metadataMessageDescriptor = getMetadataMessageDescriptor(sinkConfig);
         List<WriterPolicy> writerPolicies = new ArrayList<>();
+        List<GlobalWriterPolicy> globalWriterPolicies = new ArrayList<>();
         writerPolicies.add(new TimeBasedRotatingPolicy(sinkConfig.getLocalFileRotationDurationMS()));
         writerPolicies.add(new SizeBasedRotatingPolicy(sinkConfig.getLocalFileRotationMaxSizeBytes()));
+        globalWriterPolicies.add(new SizeBasedRotatingPolicy(sinkConfig.getGlobalFileRotationMaxSizeBytes()));
         return new LocalStorage(
                 sinkConfig,
                 outputMessageDescriptor,
                 metadataMessageDescriptor.getFields(),
                 writerPolicies,
+                globalWriterPolicies,
                 new FirehoseInstrumentation(statsDReporter, LocalStorage.class));
     }
 

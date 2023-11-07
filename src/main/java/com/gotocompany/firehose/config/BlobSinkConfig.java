@@ -50,6 +50,11 @@ public interface BlobSinkConfig extends AppConfig {
     @Key("SINK_BLOB_FILE_PARTITION_PROTO_TIMESTAMP_FIELD_NAME")
     String getFilePartitionProtoTimestampFieldName();
 
+    @Key("SINK_BLOB_GLOBAL_FILE_ROTATION_MAX_SIZE_BYTES")
+    @DefaultValue("268435456")
+    long getGlobalFileRotationMaxSizeBytes();
+
+
     @Key("SINK_BLOB_FILE_PARTITION_TIME_TYPE")
     @DefaultValue("EVENT_TIMESTAMP")
     TimePartitionType getFilePartitionTimeType();
