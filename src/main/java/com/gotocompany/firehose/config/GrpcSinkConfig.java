@@ -17,4 +17,6 @@ public interface GrpcSinkConfig extends AppConfig {
     @Config.Key("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS")
     String getSinkGrpcResponseSchemaProtoClass();
 
+    @Config.Key("SINK_GRPC_SERVICE_AUTHORITY")
+    String getSinkGrpcServiceAuthority();
 }
