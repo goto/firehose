@@ -56,13 +56,17 @@ public class GrpcClient {
 
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
                      MetadataUtils.newAttachHeadersInterceptor(metadata));
+            CallOptions co = CallOptions.DEFAULT;
+            if (grpcSinkConfig.getSinkGrpcServiceAuthority() != null && !grpcSinkConfig.getSinkGrpcServiceAuthority().isEmpty()) {
+                co = co.withAuthority(grpcSinkConfig.getSinkGrpcServiceAuthority());
+            }
             byte[] response = ClientCalls.blockingUnaryCall(
                     decoratedChannel,
                     MethodDescriptor.newBuilder(marshaller, marshaller)
                             .setType(MethodDescriptor.MethodType.UNARY)
                             .setFullMethodName(grpcSinkConfig.getSinkGrpcMethodUrl())
                             .build(),
-                    CallOptions.DEFAULT,
+                    co,
                     logMessage);
 
             dynamicMessage = stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
