@@ -1,6 +1,6 @@
 # HTTP
 
-Note: HTTP sink type is deprecated from Firehose version 0.8.11 onwards. Please consider using HTTPV2 sink type instead.
+Note: HTTP sink type is deprecated from Firehose version 0.10.0 onwards. Please consider using HTTPV2 sink type instead.
 
 REST API stands for Representational State Transfer and is an architectural pattern for creating web services.
 
