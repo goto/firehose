@@ -26,6 +26,9 @@ import com.gotocompany.depot.log.LogSinkFactory;
 import com.gotocompany.depot.metrics.StatsDReporter;
 import com.gotocompany.depot.redis.RedisSink;
 import com.gotocompany.depot.redis.RedisSinkFactory;
+import com.gotocompany.depot.http.HttpSink;
+import com.gotocompany.depot.config.HttpSinkConfig;
+import com.gotocompany.depot.http.HttpSinkFactory;
 import com.gotocompany.stencil.client.StencilClient;
 import org.aeonbits.owner.ConfigFactory;
 
@@ -42,7 +45,7 @@ public class SinkFactory {
     private BigTableSinkFactory bigTableSinkFactory;
     private LogSinkFactory logSinkFactory;
     private RedisSinkFactory redisSinkFactory;
-    private com.gotocompany.depot.http.HttpSinkFactory httpv2SinkFactory;
+    private HttpSinkFactory httpv2SinkFactory;
 
     public SinkFactory(KafkaConsumerConfig kafkaConsumerConfig,
                        StatsDReporter statsDReporter,
@@ -95,8 +98,8 @@ public class SinkFactory {
                 bigTableSinkFactory.init();
                 return;
             case HTTPV2:
-                httpv2SinkFactory = new com.gotocompany.depot.http.HttpSinkFactory(
-                        ConfigFactory.create(com.gotocompany.depot.config.HttpSinkConfig.class, config),
+                httpv2SinkFactory = new HttpSinkFactory(
+                        ConfigFactory.create(HttpSinkConfig.class, config),
                         statsDReporter);
                 httpv2SinkFactory.init();
                 return;
@@ -134,7 +137,7 @@ public class SinkFactory {
             case MONGODB:
                 return MongoSinkFactory.create(config, statsDReporter, stencilClient);
             case HTTPV2:
-                return new GenericSink(new FirehoseInstrumentation(statsDReporter, com.gotocompany.depot.http.HttpSink.class), sinkType.name(), httpv2SinkFactory.create());
+                return new GenericSink(new FirehoseInstrumentation(statsDReporter, HttpSink.class), sinkType.name(), httpv2SinkFactory.create());
             default:
                 throw new ConfigurationException("Invalid Firehose SINK_TYPE");
         }
