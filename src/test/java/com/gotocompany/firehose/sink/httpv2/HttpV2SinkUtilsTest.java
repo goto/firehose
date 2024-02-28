@@ -27,5 +27,4 @@ public class HttpV2SinkUtilsTest {
         HttpV2SinkUtils.addAdditionalConfigsForHttpV2Sink(config);
         Assert.assertEquals(config.get("SINK_HTTPV2_MAX_CONNECTIONS"), "10");
     }
-
 }
