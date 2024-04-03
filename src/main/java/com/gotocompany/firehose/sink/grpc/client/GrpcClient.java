@@ -38,6 +38,7 @@ public class GrpcClient {
     private ManagedChannel managedChannel;
     private final MethodDescriptor<byte[], byte[]> methodDescriptor;
     private final DynamicMessage emptyResponse;
+    private final Metadata grpcAdditionalMetadata;
 
     public GrpcClient(FirehoseInstrumentation firehoseInstrumentation, GrpcSinkConfig grpcSinkConfig, ManagedChannel managedChannel, StencilClient stencilClient) {
         this.firehoseInstrumentation = firehoseInstrumentation;
@@ -50,15 +51,12 @@ public class GrpcClient {
                 .setFullMethodName(grpcSinkConfig.getSinkGrpcMethodUrl())
                 .build();
         this.emptyResponse = DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
+        this.grpcAdditionalMetadata = grpcSinkConfig.getSinkGrpcMetadata();
     }
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
-
+        Metadata metadata = buildMetadata(headers);
         try {
-            Metadata metadata = new Metadata();
-            for (Header header : headers) {
-                metadata.put(Metadata.Key.of(header.key(), Metadata.ASCII_STRING_MARSHALLER), new String(header.value()));
-            }
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
                      MetadataUtils.newAttachHeadersInterceptor(metadata));
             byte[] response = ClientCalls.blockingUnaryCall(
@@ -70,13 +68,22 @@ public class GrpcClient {
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
 
         } catch (StatusRuntimeException sre) {
-            firehoseInstrumentation.logWarn(sre.getMessage());
+            firehoseInstrumentation.logError("GRPC call failed with metadata: {}, error message: {}", metadata.toString(), sre.getMessage());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL,  "status=" + sre.getStatus().getCode());
         } catch (Exception e) {
-            firehoseInstrumentation.logWarn(e.getMessage());
+            firehoseInstrumentation.logError("GRPC call failed with metadata: {}, error message: {}", metadata.toString(), e.getMessage());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL, "status=UNIDENTIFIED");
         }
         return emptyResponse;
+    }
+
+    protected Metadata buildMetadata(Headers headers) {
+        Metadata metadata = new Metadata();
+        for (Header header : headers) {
+            metadata.put(Metadata.Key.of(header.key(), Metadata.ASCII_STRING_MARSHALLER), new String(header.value()));
+        }
+        metadata.merge(grpcAdditionalMetadata);
+        return metadata;
     }
 
     protected CallOptions decoratedDefaultCallOptions() {
