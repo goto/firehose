@@ -68,10 +68,12 @@ public class GrpcClient {
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
 
         } catch (StatusRuntimeException sre) {
-            firehoseInstrumentation.logError("GRPC call failed with metadata: {}, error message: {}", metadata.toString(), sre.getMessage());
+            firehoseInstrumentation.logError("GRPC call failed with error message: {}", sre.getMessage());
+            firehoseInstrumentation.logDebug("GRPC call metadata: {}", metadata.toString());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL,  "status=" + sre.getStatus().getCode());
         } catch (Exception e) {
-            firehoseInstrumentation.logError("GRPC call failed with metadata: {}, error message: {}", metadata.toString(), e.getMessage());
+            firehoseInstrumentation.logError("GRPC call failed with error message: {}", e.getMessage());
+            firehoseInstrumentation.logDebug("GRPC call metadata: {}", metadata.toString());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL, "status=UNIDENTIFIED");
         }
         return emptyResponse;
