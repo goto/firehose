@@ -59,6 +59,7 @@ public class GrpcClient {
         try {
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
                      MetadataUtils.newAttachHeadersInterceptor(metadata));
+            firehoseInstrumentation.logDebug("Calling gRPC with metadata: {}", metadata.toString());
             byte[] response = ClientCalls.blockingUnaryCall(
                     decoratedChannel,
                     methodDescriptor,
@@ -68,12 +69,10 @@ public class GrpcClient {
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
 
         } catch (StatusRuntimeException sre) {
-            firehoseInstrumentation.logError("GRPC call failed with error message: {}", sre.getMessage());
-            firehoseInstrumentation.logDebug("GRPC call metadata: {}", metadata.toString());
+            firehoseInstrumentation.logError("gRPC call failed with error message: {}", sre.getMessage());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL,  "status=" + sre.getStatus().getCode());
         } catch (Exception e) {
-            firehoseInstrumentation.logError("GRPC call failed with error message: {}", e.getMessage());
-            firehoseInstrumentation.logDebug("GRPC call metadata: {}", metadata.toString());
+            firehoseInstrumentation.logError("gRPC call failed with error message: {}", e.getMessage());
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL, "status=UNIDENTIFIED");
         }
         return emptyResponse;
