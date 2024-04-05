@@ -38,7 +38,7 @@ public class GrpcClient {
     private ManagedChannel managedChannel;
     private final MethodDescriptor<byte[], byte[]> methodDescriptor;
     private final DynamicMessage emptyResponse;
-    private final Metadata grpcAdditionalMetadata;
+    private final Metadata grpcStaticMetadata;
 
     public GrpcClient(FirehoseInstrumentation firehoseInstrumentation, GrpcSinkConfig grpcSinkConfig, ManagedChannel managedChannel, StencilClient stencilClient) {
         this.firehoseInstrumentation = firehoseInstrumentation;
@@ -51,7 +51,7 @@ public class GrpcClient {
                 .setFullMethodName(grpcSinkConfig.getSinkGrpcMethodUrl())
                 .build();
         this.emptyResponse = DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
-        this.grpcAdditionalMetadata = grpcSinkConfig.getSinkGrpcMetadata();
+        this.grpcStaticMetadata = grpcSinkConfig.getSinkGrpcMetadata();
     }
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
@@ -83,7 +83,7 @@ public class GrpcClient {
         for (Header header : headers) {
             metadata.put(Metadata.Key.of(header.key(), Metadata.ASCII_STRING_MARSHALLER), new String(header.value()));
         }
-        metadata.merge(grpcAdditionalMetadata);
+        metadata.merge(grpcStaticMetadata);
         return metadata;
     }
 

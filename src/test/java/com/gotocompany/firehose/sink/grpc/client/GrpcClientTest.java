@@ -138,7 +138,7 @@ public class GrpcClientTest {
         config.put("SINK_GRPC_SERVICE_PORT", "5000");
         config.put("SINK_GRPC_METHOD_URL", "com.gotocompany.firehose.consumer.TestServer/TestRpcMethod");
         config.put("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS", "com.gotocompany.firehose.consumer.TestGrpcResponse");
-        config.put("SINK_GRPC_METADATA", "token:123,dlq:true");
+        config.put("SINK_GRPC_METADATA", " ,token: 123, dlq:true,");
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
         StencilClient stencilClient = StencilClientFactory.getClient();
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();
@@ -151,6 +151,11 @@ public class GrpcClientTest {
         Metadata resultMetadata = grpcClient.buildMetadata(headers);
 
         assertEquals(Arrays.asList("dlq", "test-header-key-1", "test-header-key-2", "token").stream().collect(Collectors.toSet()), resultMetadata.keys());
+
+        assertEquals("true", resultMetadata.get(Metadata.Key.of("dlq", Metadata.ASCII_STRING_MARSHALLER)));
+        assertEquals("test-value-1", resultMetadata.get(Metadata.Key.of("test-header-key-1", Metadata.ASCII_STRING_MARSHALLER)));
+        assertEquals("test-value-2", resultMetadata.get(Metadata.Key.of("test-header-key-2", Metadata.ASCII_STRING_MARSHALLER)));
+        assertEquals("123", resultMetadata.get(Metadata.Key.of("token", Metadata.ASCII_STRING_MARSHALLER)));
     }
 
     @Test

@@ -10,14 +10,17 @@ public class GrpcMetadataConverter implements Converter<Metadata> {
 
     @Override
     public Metadata convert(Method method, String input) {
-
         Metadata metadata = new Metadata();
+        Arrays.stream(input.split(","))
+                .filter(metadataKeyValue -> !metadataKeyValue.trim().isEmpty())
+                .map(metadataKeyValue -> metadataKeyValue.split(":", 2))
+                .forEach(keyValue -> {
+                    if (keyValue.length != 2) {
+                        throw new IllegalArgumentException(String.format("provided metadata %s is invalid", input));
+                    }
+                    metadata.put(Metadata.Key.of(keyValue[0].trim(), Metadata.ASCII_STRING_MARSHALLER), keyValue[1].trim());
+                });
 
-        Arrays.stream(input.split(",")).filter(metadataKeyValue -> !metadataKeyValue.trim().isEmpty()).forEach(metadataKeyValue -> {
-            if (metadataKeyValue.contains(":")) {
-                metadata.put(Metadata.Key.of(metadataKeyValue.split(":")[0], Metadata.ASCII_STRING_MARSHALLER), metadataKeyValue.split(":")[1]);
-            }
-        });
         return metadata;
     }
 }
