@@ -8,7 +8,7 @@ public class HttpV2SinkUtils {
 
     public static void addAdditionalConfigsForHttpV2Sink(Map<String, String> env) {
 
-        switch (KafkaConsumerMode.valueOf(env.getOrDefault("SOURCE_KAFKA_CONSUMER_MODE", "SYNC"))) {
+        switch (KafkaConsumerMode.valueOf(env.getOrDefault("SOURCE_KAFKA_CONSUMER_MODE", "SYNC").toUpperCase())) {
             case SYNC:
                 env.put("SINK_HTTPV2_MAX_CONNECTIONS", "1");
                 break;
