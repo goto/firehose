@@ -14,11 +14,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class SerializedNumericTypecastConverter implements Converter<Map<String, Function<String, Number>>> {
+public class JsonSerializerTypecastConverter implements Converter<Map<String, Function<String, Number>>> {
 
     private final ObjectMapper objectMapper;
 
-    public SerializedNumericTypecastConverter() {
+    public JsonSerializerTypecastConverter() {
         this.objectMapper = new ObjectMapper();
     }
 
@@ -42,4 +42,5 @@ public class SerializedNumericTypecastConverter implements Converter<Map<String,
         private String jsonPath;
         private NumericType type;
     }
+
 }

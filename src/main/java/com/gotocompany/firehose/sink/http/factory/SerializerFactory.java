@@ -33,12 +33,11 @@ public class SerializerFactory {
             Parser protoParser = stencilClient.getParser(httpSinkConfig.getInputSchemaProtoClass());
             if (httpSinkConfig.getSinkHttpJsonBodyTemplate().isEmpty()) {
                 firehoseInstrumentation.logDebug("Serializer type: EsbMessageToJson", HttpSinkDataFormatType.JSON);
-                return new MessageToJson(protoParser, false, httpSinkConfig.getSinkHttpSimpleDateFormatEnable());
+                return getTypecastedJsonSerializer(new MessageToJson(protoParser, false, httpSinkConfig.getSinkHttpSimpleDateFormatEnable()));
             } else {
                 firehoseInstrumentation.logDebug("Serializer type: EsbMessageToTemplatizedJson");
-                MessageToTemplatizedJson messageToTemplatizedJson =
-                        MessageToTemplatizedJson.create(new FirehoseInstrumentation(statsDReporter, MessageToTemplatizedJson.class), httpSinkConfig.getSinkHttpJsonBodyTemplate(), protoParser);
-                return new NumericTypecastedMessageToTemplatizedJson(messageToTemplatizedJson, serializerConfig);
+                return getTypecastedJsonSerializer(
+                        MessageToTemplatizedJson.create(new FirehoseInstrumentation(statsDReporter, MessageToTemplatizedJson.class), httpSinkConfig.getSinkHttpJsonBodyTemplate(), protoParser));
             }
         }
 
@@ -47,6 +46,10 @@ public class SerializerFactory {
 
         firehoseInstrumentation.logDebug("Serializer type: JsonWrappedProtoByte");
         return new JsonWrappedProtoByte();
+    }
+
+    private MessageSerializer getTypecastedJsonSerializer(MessageSerializer messageSerializer) {
+        return new TypecastedJsonSerializer(messageSerializer, serializerConfig);
     }
 
     private boolean isProtoSchemaEmpty() {
