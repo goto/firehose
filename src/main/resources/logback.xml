@@ -13,5 +13,6 @@
         <resetJUL>true</resetJUL>
     </contextListener>
     <!-- Adding different log level To fix https://github.com/protocolbuffers/protobuf/issues/9478 -->
+    <logger name="com.google.protobuf.TextFormat" level="DEBUG"/>
     <logger name="com.google.protobuf.TextFormat" level="WARN"/>
 </configuration>

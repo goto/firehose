@@ -1,12 +1,10 @@
 package com.gotocompany.firehose.sink.http.factory;
 
 import com.gotocompany.firehose.config.HttpSinkConfig;
+import com.gotocompany.firehose.config.SerializerConfig;
 import com.gotocompany.firehose.config.enums.HttpSinkDataFormatType;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
-import com.gotocompany.firehose.serializer.JsonWrappedProtoByte;
-import com.gotocompany.firehose.serializer.MessageSerializer;
-import com.gotocompany.firehose.serializer.MessageToJson;
-import com.gotocompany.firehose.serializer.MessageToTemplatizedJson;
+import com.gotocompany.firehose.serializer.*;
 import com.gotocompany.depot.metrics.StatsDReporter;
 import com.gotocompany.stencil.client.StencilClient;
 import com.gotocompany.stencil.Parser;
@@ -19,6 +17,7 @@ import lombok.AllArgsConstructor;
 public class SerializerFactory {
 
     private HttpSinkConfig httpSinkConfig;
+    private SerializerConfig serializerConfig;
     private StencilClient stencilClient;
     private StatsDReporter statsDReporter;
 
@@ -37,7 +36,9 @@ public class SerializerFactory {
                 return new MessageToJson(protoParser, false, httpSinkConfig.getSinkHttpSimpleDateFormatEnable());
             } else {
                 firehoseInstrumentation.logDebug("Serializer type: EsbMessageToTemplatizedJson");
-                return MessageToTemplatizedJson.create(new FirehoseInstrumentation(statsDReporter, MessageToTemplatizedJson.class), httpSinkConfig.getSinkHttpJsonBodyTemplate(), protoParser);
+                MessageToTemplatizedJson messageToTemplatizedJson =
+                        MessageToTemplatizedJson.create(new FirehoseInstrumentation(statsDReporter, MessageToTemplatizedJson.class), httpSinkConfig.getSinkHttpJsonBodyTemplate(), protoParser);
+                return new NumericTypecastedMessageToTemplatizedJson(messageToTemplatizedJson, serializerConfig);
             }
         }
 

@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.http;
 
 
 import com.gotocompany.firehose.config.HttpSinkConfig;
+import com.gotocompany.firehose.config.SerializerConfig;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.sink.http.auth.OAuth2Credential;
 import com.gotocompany.firehose.sink.http.request.RequestFactory;
@@ -37,7 +38,7 @@ public class HttpSinkFactory {
      */
     public static AbstractSink create(Map<String, String> configuration, StatsDReporter statsDReporter, StencilClient stencilClient) {
         HttpSinkConfig httpSinkConfig = ConfigFactory.create(HttpSinkConfig.class, configuration);
-
+        SerializerConfig serializerConfig = ConfigFactory.create(SerializerConfig.class, configuration);
         FirehoseInstrumentation firehoseInstrumentation = new FirehoseInstrumentation(statsDReporter, HttpSinkFactory.class);
 
         CloseableHttpClient closeableHttpClient = newHttpClient(httpSinkConfig, statsDReporter);
@@ -45,7 +46,7 @@ public class HttpSinkFactory {
 
         UriParser uriParser = new UriParser(stencilClient.getParser(httpSinkConfig.getInputSchemaProtoClass()), httpSinkConfig.getKafkaRecordParserMode());
 
-        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser).createRequest();
+        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser, serializerConfig).createRequest();
 
         return new HttpSink(new FirehoseInstrumentation(statsDReporter, HttpSink.class), request, closeableHttpClient, stencilClient, httpSinkConfig.getSinkHttpRetryStatusCodeRanges(), httpSinkConfig.getSinkHttpRequestLogStatusCodeRanges());
     }
