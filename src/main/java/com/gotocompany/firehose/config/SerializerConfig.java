@@ -9,5 +9,6 @@ import java.util.function.Function;
 public interface SerializerConfig extends Config {
     @Config.Key("SERIALIZER_JSON_NUMERIC_TYPECAST")
     @Config.ConverterClass(SerializedNumericTypecastConverter.class)
+    @DefaultValue("{}")
     Map<String, Function<String, Number>> serializerJsonNumericTypecast();
 }
