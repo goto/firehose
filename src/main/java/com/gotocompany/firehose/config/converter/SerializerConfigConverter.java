@@ -33,7 +33,7 @@ public class SerializerConfigConverter implements Converter<Map<String, Function
                     .collect(Collectors.toMap(JsonTypecastField::getJsonPath, jtf -> jtf.getType()::cast));
         } catch (IOException e) {
             log.error("Error when parsing serializer json config", e);
-            throw new JsonParseException(e.getMessage(), e.getCause());
+            throw new IllegalArgumentException(e.getMessage(), e.getCause());
         }
     }
 

@@ -30,7 +30,7 @@ public class SerializerConfigConverterTest {
     public void convert_GivenInvalidJsonFormat_ShouldThrowJsonParseException() {
         String malformedConfigJson = "[{\"jsonPath\": \"$.root.field\" \"type\": \"LONG\"";
 
-        Assertions.assertThrows(JsonParseException.class,
+        Assertions.assertThrows(IllegalArgumentException.class,
                 () -> serializerConfigConverter.convert(null, malformedConfigJson));
     }
 }
