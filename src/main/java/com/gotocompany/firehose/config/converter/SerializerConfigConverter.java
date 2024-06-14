@@ -1,7 +1,7 @@
 package com.gotocompany.firehose.config.converter;
 
 import com.gotocompany.firehose.exception.JsonParseException;
-import com.gotocompany.firehose.serializer.constant.NumericType;
+import com.gotocompany.firehose.serializer.constant.TypecastTarget;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.Converter;
@@ -43,7 +43,7 @@ public class SerializerConfigConverter implements Converter<Map<String, Function
     @Builder
     private static class JsonTypecastField {
         private String jsonPath;
-        private NumericType type;
+        private TypecastTarget type;
     }
 
 }

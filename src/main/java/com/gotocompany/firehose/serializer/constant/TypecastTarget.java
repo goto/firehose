@@ -3,23 +3,23 @@ package com.gotocompany.firehose.serializer.constant;
 import lombok.Getter;
 
 @Getter
-public enum NumericType {
+public enum TypecastTarget {
     INTEGER {
         @Override
-        public Number getValue(String input) {
+        public Object getValue(String input) {
             return Integer.valueOf(input);
         }
     }, LONG {
         @Override
-        public Number getValue(String input) {
+        public Object getValue(String input) {
             return Long.valueOf(input);
         }
     }, DOUBLE {
         @Override
-        public Number getValue(String input) {
+        public Object getValue(String input) {
             return Double.valueOf(input);
         }
     };
 
-    public abstract Number getValue(String input);
+    public abstract Object getValue(String input);
 }
