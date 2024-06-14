@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.http.request;
 
 
 import com.gotocompany.firehose.config.HttpSinkConfig;
+import com.gotocompany.firehose.config.SerializerConfig;
 import com.gotocompany.firehose.sink.http.request.uri.UriParser;
 import com.gotocompany.depot.metrics.StatsDReporter;
 import com.gotocompany.firehose.sink.http.request.types.SimpleRequest;
@@ -15,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +31,7 @@ public class RequestFactoryTest {
     @Mock
     private UriParser uriParser;
     private HttpSinkConfig httpSinkConfig;
+    private SerializerConfig serializerConfig;
 
     private Map<String, String> configuration = new HashMap<>();
 
@@ -36,6 +39,7 @@ public class RequestFactoryTest {
     public void setup() {
         initMocks(this);
         configuration = new HashMap<String, String>();
+        serializerConfig = ConfigFactory.create(SerializerConfig.class, Collections.emptyMap());
     }
 
     @Test
@@ -43,7 +47,7 @@ public class RequestFactoryTest {
         configuration.put("SINK_HTTP_SERVICE_URL", "http://127.0.0.1:1080/api");
         httpSinkConfig = ConfigFactory.create(HttpSinkConfig.class, configuration);
 
-        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser).createRequest();
+        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser, serializerConfig).createRequest();
 
         assertTrue(request instanceof SimpleRequest);
     }
@@ -53,7 +57,7 @@ public class RequestFactoryTest {
         configuration.put("SINK_HTTP_SERVICE_URL", "http://127.0.0.1:1080/api,%s");
         httpSinkConfig = ConfigFactory.create(HttpSinkConfig.class, configuration);
 
-        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser).createRequest();
+        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser, serializerConfig).createRequest();
 
         assertTrue(request instanceof DynamicUrlRequest);
     }
@@ -65,7 +69,7 @@ public class RequestFactoryTest {
         configuration.put("SINK_HTTP_SERVICE_URL", "http://127.0.0.1:1080/api,%s");
         httpSinkConfig = ConfigFactory.create(HttpSinkConfig.class, configuration);
 
-        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser).createRequest();
+        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser, serializerConfig).createRequest();
 
         assertTrue(request instanceof ParameterizedHeaderRequest);
     }
@@ -77,7 +81,7 @@ public class RequestFactoryTest {
         configuration.put("SINK_HTTP_SERVICE_URL", "http://127.0.0.1:1080/api,%s");
         httpSinkConfig = ConfigFactory.create(HttpSinkConfig.class, configuration);
 
-        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser).createRequest();
+        Request request = new RequestFactory(statsDReporter, httpSinkConfig, stencilClient, uriParser, serializerConfig).createRequest();
 
         assertTrue(request instanceof ParameterizedUriRequest);
     }
