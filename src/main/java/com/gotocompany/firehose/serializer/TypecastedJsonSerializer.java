@@ -25,7 +25,7 @@ public class TypecastedJsonSerializer implements MessageSerializer {
         String jsonString = messageSerializer.serialize(message);
         DocumentContext documentContext = JsonPath.parse(jsonString);
 
-        for (Map.Entry<String, Function<String, Number>> entry : serializerConfig.serializerJsonTypecast()
+        for (Map.Entry<String, Function<String, Object>> entry : serializerConfig.serializerJsonTypecast()
                 .entrySet()) {
             documentContext.map(entry.getKey(), (currentValue, configuration) -> entry.getValue()
                             .apply(currentValue.toString()));
