@@ -1,6 +1,6 @@
 package com.gotocompany.firehose.converter;
 
-import com.gotocompany.firehose.config.converter.JsonSerializerTypecastConverter;
+import com.gotocompany.firehose.config.converter.SerializerConfigConverter;
 import com.gotocompany.firehose.exception.JsonParseException;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
@@ -8,16 +8,16 @@ import org.junit.jupiter.api.Assertions;
 import java.util.Map;
 import java.util.function.Function;
 
-public class JsonSerializerTypecastConverterTest {
+public class SerializerConfigConverterTest {
 
-    private final JsonSerializerTypecastConverter jsonSerializerTypecastConverter = new JsonSerializerTypecastConverter();
+    private final SerializerConfigConverter serializerConfigConverter = new SerializerConfigConverter();
 
     @Test
     public void convert_GivenValidJsonConfig_ShouldConvertToPropertyMap() {
         String configJson = "[{\"jsonPath\": \"$.root.field\", \"type\": \"LONG\"}]";
         String expectedPropertyMapKey = "$.root.field";
 
-        Map<String, Function<String, Object>> result = jsonSerializerTypecastConverter.convert(null, configJson);
+        Map<String, Function<String, Object>> result = serializerConfigConverter.convert(null, configJson);
         Function<String, Object> mapper = result.get(expectedPropertyMapKey);
         Object mapperResult = mapper.apply("4");
 
@@ -31,6 +31,6 @@ public class JsonSerializerTypecastConverterTest {
         String malformedConfigJson = "[{\"jsonPath\": \"$.root.field\" \"type\": \"LONG\"";
 
         Assertions.assertThrows(JsonParseException.class,
-                () -> jsonSerializerTypecastConverter.convert(null, malformedConfigJson));
+                () -> serializerConfigConverter.convert(null, malformedConfigJson));
     }
 }

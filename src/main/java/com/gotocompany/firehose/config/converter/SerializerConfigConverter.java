@@ -16,11 +16,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class JsonSerializerTypecastConverter implements Converter<Map<String, Function<String, Object>>> {
+public class SerializerConfigConverter implements Converter<Map<String, Function<String, Object>>> {
 
     private final ObjectMapper objectMapper;
 
-    public JsonSerializerTypecastConverter() {
+    public SerializerConfigConverter() {
         this.objectMapper = new ObjectMapper();
     }
 

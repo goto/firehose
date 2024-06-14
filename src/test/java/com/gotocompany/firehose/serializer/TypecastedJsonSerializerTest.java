@@ -1,7 +1,7 @@
 package com.gotocompany.firehose.serializer;
 
 import com.gotocompany.firehose.config.SerializerConfig;
-import com.gotocompany.firehose.config.converter.JsonSerializerTypecastConverter;
+import com.gotocompany.firehose.config.converter.SerializerConfigConverter;
 import com.gotocompany.firehose.message.Message;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -30,13 +30,13 @@ public class TypecastedJsonSerializerTest {
     @Mock
     private SerializerConfig serializerConfig;
 
-    private JsonSerializerTypecastConverter jsonSerializerTypecastConverter = new JsonSerializerTypecastConverter();
+    private SerializerConfigConverter serializerConfigConverter = new SerializerConfigConverter();
 
     @Before
     public void setup() {
         messageSerializer = Mockito.mock(MessageSerializer.class);
         serializerConfig = Mockito.mock(SerializerConfig.class);
-        Map<String, Function<String, Object>> property = jsonSerializerTypecastConverter.convert(null, DEFAULT_PARAMETERS);
+        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, DEFAULT_PARAMETERS);
         Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(DEFAULT_JSON_MESSAGE);
         Mockito.when(serializerConfig.serializerJsonTypecast()).thenReturn(property);
         typecastedJsonSerializer = new TypecastedJsonSerializer(
