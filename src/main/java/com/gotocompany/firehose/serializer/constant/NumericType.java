@@ -14,6 +14,11 @@ public enum NumericType {
         public Number getValue(String input) {
             return Long.valueOf(input);
         }
+    }, DOUBLE {
+        @Override
+        public Number getValue(String input) {
+            return Double.valueOf(input);
+        }
     };
 
     public abstract Number getValue(String input);
