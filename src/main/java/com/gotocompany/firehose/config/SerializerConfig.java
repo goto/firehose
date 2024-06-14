@@ -9,6 +9,6 @@ import java.util.function.Function;
 public interface SerializerConfig extends Config {
     @Config.Key("SERIALIZER_JSON_TYPECAST")
     @Config.ConverterClass(SerializerConfigConverter.class)
-    @DefaultValue("{}")
+    @DefaultValue("[]")
     Map<String, Function<String, Object>> getJsonTypecastMapping();
 }
