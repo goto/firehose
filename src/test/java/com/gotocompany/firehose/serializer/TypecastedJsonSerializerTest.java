@@ -20,7 +20,7 @@ import java.util.function.Function;
 public class TypecastedJsonSerializerTest {
 
     private static final String DEFAULT_JSON_MESSAGE = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}}";
-    private static final String DEFAULT_PARAMETERS = "[{\"jsonPath\": \"$..int\", \"type\": \"INTEGER\"}, {\"jsonPath\": \"$..long\", \"type\": \"LONG\"}]";
+    private static final String DEFAULT_PARAMETERS = "[{\"jsonPath\": \"$..int\", \"type\": \"INTEGER\"}, {\"jsonPath\": \"$..long\", \"type\": \"LONG\"}, {\"jsonPath\": \"$..unrecognizedPath\", \"type\": \"INTEGER\"}]";
 
     private TypecastedJsonSerializer typecastedJsonSerializer;
 
