@@ -29,7 +29,7 @@ public class SerializerConfigConverter implements Converter<Map<String, Function
             List<JsonTypecast> jsonTypecasts =
                     objectMapper.readValue(input, new TypeReference<List<JsonTypecast>>(){});
             return jsonTypecasts.stream()
-                    .collect(Collectors.toMap(JsonTypecast::getJsonPath, jtf -> jtf.getType()::cast));
+                    .collect(Collectors.toMap(JsonTypecast::getJsonPath, jsonTypecast -> jsonTypecast.getType()::cast));
         } catch (IOException e) {
             log.error("Error when parsing serializer json config", e);
             throw new IllegalArgumentException(e.getMessage(), e.getCause());
