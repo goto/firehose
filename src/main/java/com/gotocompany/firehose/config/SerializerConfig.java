@@ -10,5 +10,5 @@ public interface SerializerConfig extends Config {
     @Config.Key("SERIALIZER_JSON_TYPECAST")
     @Config.ConverterClass(SerializerConfigConverter.class)
     @DefaultValue("{}")
-    Map<String, Function<String, Object>> serializerJsonTypecast();
+    Map<String, Function<String, Object>> getJsonTypecastMapping();
 }

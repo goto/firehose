@@ -37,7 +37,7 @@ public class TypecastedJsonSerializerTest {
         serializerConfig = Mockito.mock(SerializerConfig.class);
         Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, DEFAULT_PARAMETERS);
         Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(DEFAULT_JSON_MESSAGE);
-        Mockito.when(serializerConfig.serializerJsonTypecast()).thenReturn(property);
+        Mockito.when(serializerConfig.getJsonTypecastMapping()).thenReturn(property);
         typecastedJsonSerializer = new TypecastedJsonSerializer(
                 messageSerializer, serializerConfig
         );
