@@ -79,8 +79,7 @@ public class MessageToTemplatizedJson implements MessageSerializer {
             String jsonString;
             // only supports messages not keys
             DynamicMessage msg = protoParser.parse(message.getLogMessage());
-            jsonMessage = JsonFormat.printer().includingDefaultValueFields()
-                    .preservingProtoFieldNames().print(msg);
+            jsonMessage = JsonFormat.printer().includingDefaultValueFields().preservingProtoFieldNames().print(msg);
             String finalMessage = httpSinkJsonBodyTemplate;
             for (String path : pathsToReplace) {
                 if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {
