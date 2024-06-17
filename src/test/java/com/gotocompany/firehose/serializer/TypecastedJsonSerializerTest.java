@@ -59,6 +59,20 @@ public class TypecastedJsonSerializerTest {
         Assertions.assertEquals(doubleJsonArray.get(0), 12.1);
     }
 
+    @Test
+    public void serialize_GivenMessageWithNullMessage_ShouldIgnore() {
+        String jsonWithNullMappedValue = "{\"key\": \"value\", \"long\":null}";
+        Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(jsonWithNullMappedValue);
+        String processedJsonString = typecastedJsonSerializer.serialize(buildMessage("key", jsonWithNullMappedValue));
+        DocumentContext jsonPath = JsonPath.parse(processedJsonString);
+        JSONArray fieldWithValue = jsonPath.read("$..key");
+        JSONArray integerJsonArray = jsonPath.read("$..long");
+
+        Assertions.assertEquals("value", fieldWithValue.get(0));
+        Assertions.assertNull(integerJsonArray.get(0));
+    }
+
+
     private Message buildMessage(String key, String payload) {
         return new Message(
                 key.getBytes(StandardCharsets.UTF_8),

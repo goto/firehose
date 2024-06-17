@@ -9,6 +9,7 @@ import com.jayway.jsonpath.PathNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 /***
@@ -25,8 +26,8 @@ public class TypecastedJsonSerializer implements MessageSerializer {
      * Constructor for TypecastedJsonSerializer.
      *
      * @param messageSerializer the inner serializer to be wrapped
-     * @param serializerConfig the configuration for typecasting, where each map contains
-     *                       a JSON path and the desired type
+     * @param serializerConfig  the configuration for typecasting, where each map contains
+     *                          a JSON path and the desired type
      */
     public TypecastedJsonSerializer(MessageSerializer messageSerializer,
                                     SerializerConfig serializerConfig) {
@@ -49,8 +50,10 @@ public class TypecastedJsonSerializer implements MessageSerializer {
         for (Map.Entry<String, Function<String, Object>> entry : serializerConfig.getJsonTypecastMapping()
                 .entrySet()) {
             try {
-                documentContext.map(entry.getKey(), (currentValue, configuration) -> entry.getValue()
-                        .apply(currentValue.toString()));
+                documentContext.map(entry.getKey(), (currentValue, configuration) -> Optional.ofNullable(currentValue)
+                        .map(v -> entry.getValue().apply(v.toString()))
+                        .orElse(null)
+                );
             } catch (PathNotFoundException e) {
                 log.info("Could not find path '" + entry.getKey() + "'");
             }
