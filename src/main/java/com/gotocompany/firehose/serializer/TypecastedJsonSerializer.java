@@ -3,9 +3,10 @@ package com.gotocompany.firehose.serializer;
 import com.gotocompany.firehose.config.SerializerConfig;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.message.Message;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
+import com.jayway.jsonpath.Option;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -21,6 +22,7 @@ public class TypecastedJsonSerializer implements MessageSerializer {
 
     private final MessageSerializer messageSerializer;
     private final SerializerConfig serializerConfig;
+    private final Configuration configuration;
 
     /**
      * Constructor for TypecastedJsonSerializer.
@@ -33,6 +35,9 @@ public class TypecastedJsonSerializer implements MessageSerializer {
                                     SerializerConfig serializerConfig) {
         this.messageSerializer = messageSerializer;
         this.serializerConfig = serializerConfig;
+        this.configuration = Configuration.builder()
+                .options(Option.SUPPRESS_EXCEPTIONS)
+                .build();
     }
 
     /**
@@ -45,19 +50,16 @@ public class TypecastedJsonSerializer implements MessageSerializer {
     @Override
     public String serialize(Message message) throws DeserializerException {
         String jsonString = messageSerializer.serialize(message);
-        DocumentContext documentContext = JsonPath.parse(jsonString);
+        DocumentContext documentContext = JsonPath
+                .using(configuration)
+                .parse(jsonString);
 
         for (Map.Entry<String, Function<String, Object>> entry : serializerConfig.getJsonTypecastMapping()
                 .entrySet()) {
-            try {
-                documentContext.map(entry.getKey(), (currentValue, configuration) -> Optional.ofNullable(currentValue)
-                        .map(v -> entry.getValue().apply(v.toString()))
-                        .orElse(null)
-                );
-            } catch (PathNotFoundException e) {
-                log.info("Could not find path for key {}", entry.getKey());
-            }
-
+            documentContext.map(entry.getKey(), (currentValue, configuration) -> Optional.ofNullable(currentValue)
+                    .map(v -> entry.getValue().apply(v.toString()))
+                    .orElse(null)
+            );
         }
         return documentContext.jsonString();
     }
