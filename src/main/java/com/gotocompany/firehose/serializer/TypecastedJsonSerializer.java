@@ -55,7 +55,7 @@ public class TypecastedJsonSerializer implements MessageSerializer {
                         .orElse(null)
                 );
             } catch (PathNotFoundException e) {
-                log.info("Could not find path '" + entry.getKey() + "'");
+                log.info("Could not find path for key {}", entry.getKey());
             }
 
         }
