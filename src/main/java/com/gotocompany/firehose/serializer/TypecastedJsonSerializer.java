@@ -14,15 +14,14 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /***
- * MessageSerializer wrapping other JSON MessageSerializer which add capability to typecast
- * some of the fields from the inner serializer
+ * MessageSerializer wrapping other JSON MessageSerializer which add capability to typecast some of the fields from the inner serializer.
  */
 @Slf4j
 public class TypecastedJsonSerializer implements MessageSerializer {
 
     private final MessageSerializer messageSerializer;
     private final SerializerConfig serializerConfig;
-    private final Configuration configuration;
+    private final Configuration jsonPathConfiguration;
 
     /**
      * Constructor for TypecastedJsonSerializer.
@@ -35,7 +34,7 @@ public class TypecastedJsonSerializer implements MessageSerializer {
                                     SerializerConfig serializerConfig) {
         this.messageSerializer = messageSerializer;
         this.serializerConfig = serializerConfig;
-        this.configuration = Configuration.builder()
+        this.jsonPathConfiguration = Configuration.builder()
                 .options(Option.SUPPRESS_EXCEPTIONS)
                 .build();
     }
@@ -51,7 +50,7 @@ public class TypecastedJsonSerializer implements MessageSerializer {
     public String serialize(Message message) throws DeserializerException {
         String jsonString = messageSerializer.serialize(message);
         DocumentContext documentContext = JsonPath
-                .using(configuration)
+                .using(jsonPathConfiguration)
                 .parse(jsonString);
 
         for (Map.Entry<String, Function<String, Object>> entry : serializerConfig.getJsonTypecastMapping()

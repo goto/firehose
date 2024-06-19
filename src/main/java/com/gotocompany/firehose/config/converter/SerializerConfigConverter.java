@@ -1,7 +1,10 @@
 package com.gotocompany.firehose.config.converter;
 
 import com.gotocompany.firehose.serializer.constant.TypecastTarget;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.Converter;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -27,7 +30,8 @@ public class SerializerConfigConverter implements Converter<Map<String, Function
     public Map<String, Function<String, Object>> convert(Method method, String input) {
         try {
             List<JsonTypecast> jsonTypecasts =
-                    objectMapper.readValue(input, new TypeReference<List<JsonTypecast>>(){});
+                    objectMapper.readValue(input, new TypeReference<List<JsonTypecast>>() {
+                    });
             return jsonTypecasts.stream()
                     .collect(Collectors.toMap(JsonTypecast::getJsonPath, jsonTypecast -> jsonTypecast.getType()::cast));
         } catch (IOException e) {
