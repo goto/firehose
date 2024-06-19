@@ -2,7 +2,6 @@ package com.gotocompany.firehose.sink.http.request;
 
 
 import com.gotocompany.firehose.config.HttpSinkConfig;
-import com.gotocompany.firehose.config.SerializerConfig;
 import com.gotocompany.firehose.config.enums.HttpSinkRequestMethodType;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.proto.ProtoToFieldMapper;
@@ -31,7 +30,6 @@ import java.util.List;
 public class RequestFactory {
 
     private HttpSinkConfig httpSinkConfig;
-    private SerializerConfig serializerConfig;
     private UriParser uriParser;
     private StencilClient stencilClient;
     private StatsDReporter statsDReporter;
@@ -45,12 +43,11 @@ public class RequestFactory {
      * @param stencilClient  the stencil client
      * @param uriParser      the uri parser
      */
-    public RequestFactory(StatsDReporter statsDReporter, HttpSinkConfig httpSinkConfig, StencilClient stencilClient, UriParser uriParser, SerializerConfig serializerConfig) {
+    public RequestFactory(StatsDReporter statsDReporter, HttpSinkConfig httpSinkConfig, StencilClient stencilClient, UriParser uriParser) {
         this.statsDReporter = statsDReporter;
         this.stencilClient = stencilClient;
         this.httpSinkConfig = httpSinkConfig;
         this.uriParser = uriParser;
-        this.serializerConfig = serializerConfig;
         firehoseInstrumentation = new FirehoseInstrumentation(this.statsDReporter, RequestFactory.class);
     }
 
@@ -84,7 +81,6 @@ public class RequestFactory {
     private JsonBody createBody() {
         MessageSerializer messageSerializer = new SerializerFactory(
                 httpSinkConfig,
-                serializerConfig,
                 stencilClient,
                 statsDReporter)
                 .build();

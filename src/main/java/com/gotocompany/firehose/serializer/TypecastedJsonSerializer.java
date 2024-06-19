@@ -1,6 +1,6 @@
 package com.gotocompany.firehose.serializer;
 
-import com.gotocompany.firehose.config.SerializerConfig;
+import com.gotocompany.firehose.config.HttpSinkConfig;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.message.Message;
 import com.jayway.jsonpath.Configuration;
@@ -20,20 +20,20 @@ import java.util.function.Function;
 public class TypecastedJsonSerializer implements MessageSerializer {
 
     private final MessageSerializer messageSerializer;
-    private final SerializerConfig serializerConfig;
+    private final HttpSinkConfig httpSinkConfig;
     private final Configuration jsonPathConfiguration;
 
     /**
      * Constructor for TypecastedJsonSerializer.
      *
      * @param messageSerializer the inner serializer to be wrapped
-     * @param serializerConfig  the configuration for typecasting, where each map contains
-     *                          a JSON path and the desired type
+     * @param httpSinkConfig  the HTTP Sink config configuration containing typecasting parameters,
+     *                        where each map entry contains a JSON path and the desired type
      */
     public TypecastedJsonSerializer(MessageSerializer messageSerializer,
-                                    SerializerConfig serializerConfig) {
+                                    HttpSinkConfig httpSinkConfig) {
         this.messageSerializer = messageSerializer;
-        this.serializerConfig = serializerConfig;
+        this.httpSinkConfig = httpSinkConfig;
         this.jsonPathConfiguration = Configuration.builder()
                 .options(Option.SUPPRESS_EXCEPTIONS)
                 .build();
@@ -53,7 +53,7 @@ public class TypecastedJsonSerializer implements MessageSerializer {
                 .using(jsonPathConfiguration)
                 .parse(jsonString);
 
-        for (Map.Entry<String, Function<String, Object>> entry : serializerConfig.getJsonTypecastMapping()
+        for (Map.Entry<String, Function<String, Object>> entry : httpSinkConfig.getJsonTypecastMapping()
                 .entrySet()) {
             documentContext.map(entry.getKey(), (currentValue, configuration) -> Optional.ofNullable(currentValue)
                     .map(v -> entry.getValue().apply(v.toString()))

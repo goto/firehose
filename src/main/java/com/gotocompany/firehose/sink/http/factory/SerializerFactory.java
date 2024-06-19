@@ -1,7 +1,6 @@
 package com.gotocompany.firehose.sink.http.factory;
 
 import com.gotocompany.firehose.config.HttpSinkConfig;
-import com.gotocompany.firehose.config.SerializerConfig;
 import com.gotocompany.firehose.config.enums.HttpSinkDataFormatType;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.serializer.JsonWrappedProtoByte;
@@ -21,7 +20,6 @@ import lombok.AllArgsConstructor;
 public class SerializerFactory {
 
     private HttpSinkConfig httpSinkConfig;
-    private SerializerConfig serializerConfig;
     private StencilClient stencilClient;
     private StatsDReporter statsDReporter;
 
@@ -53,7 +51,7 @@ public class SerializerFactory {
     }
 
     private MessageSerializer getTypecastedJsonSerializer(MessageSerializer messageSerializer) {
-        return new TypecastedJsonSerializer(messageSerializer, serializerConfig);
+        return new TypecastedJsonSerializer(messageSerializer, httpSinkConfig);
     }
 
     private boolean isProtoSchemaEmpty() {
