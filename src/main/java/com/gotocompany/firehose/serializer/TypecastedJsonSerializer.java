@@ -9,9 +9,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 /***
  * MessageSerializer wrapping other JSON MessageSerializer which add capability to typecast some of the fields from the inner serializer.
