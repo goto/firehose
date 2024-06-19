@@ -53,7 +53,7 @@ public class TypecastedJsonSerializer implements MessageSerializer {
                 .using(jsonPathConfiguration)
                 .parse(jsonString);
 
-        for (Map.Entry<String, Function<String, Object>> entry : httpSinkConfig.getJsonTypecastMapping()
+        for (Map.Entry<String, Function<String, Object>> entry : httpSinkConfig.getSinkHttpSerializerJsonTypecast()
                 .entrySet()) {
             documentContext.map(entry.getKey(), (currentValue, configuration) -> Optional.ofNullable(currentValue)
                     .map(v -> entry.getValue().apply(v.toString()))

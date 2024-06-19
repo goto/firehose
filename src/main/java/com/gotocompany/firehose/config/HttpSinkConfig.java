@@ -99,6 +99,6 @@ public interface HttpSinkConfig extends AppConfig {
     @Key("SINK_HTTP_SERIALIZER_JSON_TYPECAST")
     @ConverterClass(HttpSinkSerializerJsonTypecastConfigConverter.class)
     @DefaultValue("[]")
-    Map<String, Function<String, Object>> getJsonTypecastMapping();
+    Map<String, Function<String, Object>> getSinkHttpSerializerJsonTypecast();
 
 }
