@@ -32,4 +32,12 @@ public class SerializerConfigConverterTest {
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> serializerConfigConverter.convert(null, malformedConfigJson));
     }
+
+    @Test
+    public void convertShouldThrowJsonParseExceptionWhenUnregisteredTypecastingProvided() {
+        String malformedConfigJson = "[{\"jsonPath\": \"$.root.field\", \"type\": \"BIG_INTEGER\"}]";
+
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> serializerConfigConverter.convert(null, malformedConfigJson));
+    }
 }

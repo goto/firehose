@@ -13,13 +13,14 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
 public class TypecastedJsonSerializerTest {
 
     private static final String DEFAULT_JSON_MESSAGE = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\"}";
-    private static final String DEFAULT_PARAMETERS = "[{\"jsonPath\": \"$..int\", \"type\": \"INTEGER\"}, {\"jsonPath\": \"$..long\", \"type\": \"LONG\"}, {\"jsonPath\": \"$..double\", \"type\": \"DOUBLE\"}, {\"jsonPath\": \"$..unrecognizedPath\", \"type\": \"INTEGER\"}]";
+    private static final String DEFAULT_PARAMETERS = "[{\"jsonPath\": \"$..int\", \"type\": \"INTEGER\"}, {\"jsonPath\": \"$..long\", \"type\": \"LONG\"}, {\"jsonPath\": \"$..double\", \"type\": \"DOUBLE\"}]";
 
     private TypecastedJsonSerializer typecastedJsonSerializer;
 
@@ -72,6 +73,29 @@ public class TypecastedJsonSerializerTest {
         Assertions.assertNull(integerJsonArray.get(0));
     }
 
+    @Test
+    public void serializeShouldReturnMessageAsItIsWhenNoJsonPathConfigurationGiven() {
+        Mockito.when(serializerConfig.getJsonTypecastMapping()).thenReturn(new HashMap<>());
+        typecastedJsonSerializer = new TypecastedJsonSerializer(
+                messageSerializer, serializerConfig
+        );
+
+        String result = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));
+
+        Assertions.assertEquals(JsonPath.parse(DEFAULT_JSON_MESSAGE).jsonString(), JsonPath.parse(result).jsonString());
+    }
+
+    @Test
+    public void serializeShouldReturnMessageAsItIsWhenJsonPathConfigurationDoesNotMatch() {
+        String parameters = "[{\"jsonPath\": \"$..unrecognizedPath\", \"type\": \"INTEGER\"}]";
+        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Mockito.when(serializerConfig.getJsonTypecastMapping()).thenReturn(property);
+
+        String result = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));
+
+        Assertions.assertEquals(JsonPath.parse(DEFAULT_JSON_MESSAGE).jsonString(), JsonPath.parse(result).jsonString());
+    }
+
 
     private Message buildMessage(String key, String payload) {
         return new Message(
@@ -82,5 +106,4 @@ public class TypecastedJsonSerializerTest {
                 1
         );
     }
-
 }
