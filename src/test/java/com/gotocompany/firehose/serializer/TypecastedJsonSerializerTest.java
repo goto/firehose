@@ -96,6 +96,18 @@ public class TypecastedJsonSerializerTest {
         Assertions.assertEquals(JsonPath.parse(DEFAULT_JSON_MESSAGE).jsonString(), JsonPath.parse(result).jsonString());
     }
 
+    @Test
+    public void serializeShouldThrowNumberFormatExceptionWhenPayloadTypecastIsUnparseable() {
+        String payload = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\"}";
+        String parameters = "[{\"jsonPath\": \"$.key\", \"type\": \"INTEGER\"}]";
+        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Mockito.when(serializerConfig.getJsonTypecastMapping()).thenReturn(property);
+        Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(payload);
+
+        Assertions.assertThrows(NumberFormatException.class,
+                () -> typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE)));
+    }
+
 
     private Message buildMessage(String key, String payload) {
         return new Message(
