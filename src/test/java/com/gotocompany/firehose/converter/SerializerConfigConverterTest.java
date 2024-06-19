@@ -1,7 +1,6 @@
 package com.gotocompany.firehose.converter;
 
 import com.gotocompany.firehose.config.converter.SerializerConfigConverter;
-import com.gotocompany.firehose.exception.JsonParseException;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 
@@ -13,7 +12,7 @@ public class SerializerConfigConverterTest {
     private final SerializerConfigConverter serializerConfigConverter = new SerializerConfigConverter();
 
     @Test
-    public void convert_GivenValidJsonConfig_ShouldConvertToPropertyMap() {
+    public void convertShouldConvertToPropertyMapWhenValidJsonConfig() {
         String configJson = "[{\"jsonPath\": \"$.root.field\", \"type\": \"LONG\"}]";
         String expectedPropertyMapKey = "$.root.field";
 
@@ -27,7 +26,7 @@ public class SerializerConfigConverterTest {
     }
 
     @Test
-    public void convert_GivenInvalidJsonFormat_ShouldThrowJsonParseException() {
+    public void convertShouldThrowJsonParseExceptionWhenInvalidJsonFormatProvided() {
         String malformedConfigJson = "[{\"jsonPath\": \"$.root.field\" \"type\": \"LONG\"";
 
         Assertions.assertThrows(IllegalArgumentException.class,

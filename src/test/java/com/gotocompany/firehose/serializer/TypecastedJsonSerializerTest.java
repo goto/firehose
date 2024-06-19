@@ -44,7 +44,7 @@ public class TypecastedJsonSerializerTest {
     }
 
     @Test
-    public void serialize_GivenMessageWithQuoteWrappedNumber_ShouldCastToNumber() {
+    public void serializeShouldCastToNumberWhenGivenMessageWithQuoteWrappedNumberAndMatchingJsonPathConfiguration() {
         String processedJsonString = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));
         DocumentContext jsonPath = JsonPath.parse(processedJsonString);
         JSONArray integerJsonArray = jsonPath.read("$..int");
@@ -60,7 +60,7 @@ public class TypecastedJsonSerializerTest {
     }
 
     @Test
-    public void serialize_GivenMessageWithNullMessage_ShouldIgnore() {
+    public void serializeShouldIgnoreWhenGivenNullMessageValue() {
         String jsonWithNullMappedValue = "{\"key\": \"value\", \"long\":null}";
         Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(jsonWithNullMappedValue);
         String processedJsonString = typecastedJsonSerializer.serialize(buildMessage("key", jsonWithNullMappedValue));
