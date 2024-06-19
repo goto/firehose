@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.Converter;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -20,7 +19,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Slf4j
 public class HttpSinkSerializerJsonTypecastConfigConverter implements Converter<Map<String, Function<String, Object>>> {
 
     private final ObjectMapper objectMapper;
@@ -41,8 +39,7 @@ public class HttpSinkSerializerJsonTypecastConfigConverter implements Converter<
             return jsonTypecasts.stream()
                     .collect(Collectors.toMap(JsonTypecast::getJsonPath, jsonTypecast -> jsonTypecast.getType()::cast));
         } catch (IOException e) {
-            log.error("Error when parsing serializer json config", e);
-            throw new IllegalArgumentException(e.getMessage(), e.getCause());
+            throw new IllegalArgumentException("Error when parsing serializer json config: " + e.getMessage(), e);
         }
     }
 

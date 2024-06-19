@@ -20,8 +20,8 @@ import java.util.function.Function;
 
 public class TypecastedJsonSerializerTest {
 
-    private static final String DEFAULT_JSON_MESSAGE = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\"}";
-    private static final String DEFAULT_PARAMETERS = "[{\"jsonPath\": \"$..int\", \"type\": \"INTEGER\"}, {\"jsonPath\": \"$..long\", \"type\": \"LONG\"}, {\"jsonPath\": \"$..double\", \"type\": \"DOUBLE\"}]";
+    private static final String DEFAULT_JSON_MESSAGE = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\", \"numeric\": 10}";
+    private static final String DEFAULT_PARAMETERS = "[{\"jsonPath\": \"$..int\", \"type\": \"INTEGER\"}, {\"jsonPath\": \"$..long\", \"type\": \"LONG\"}, {\"jsonPath\": \"$..double\", \"type\": \"DOUBLE\"}, {\"jsonPath\": \"$.numeric\", \"type\": \"STRING\"}]";
 
     private TypecastedJsonSerializer typecastedJsonSerializer;
 
@@ -52,13 +52,16 @@ public class TypecastedJsonSerializerTest {
         JSONArray integerJsonArray = jsonPath.read("$..int");
         JSONArray longJsonArray = jsonPath.read("$..long");
         JSONArray doubleJsonArray = jsonPath.read("$..double");
+        JSONArray castedNumericArray = jsonPath.read("$..numeric");
 
         Assertions.assertTrue(integerJsonArray.get(0) instanceof Integer);
         Assertions.assertTrue(longJsonArray.get(0) instanceof Long);
         Assertions.assertTrue(doubleJsonArray.get(0) instanceof Double);
+        Assertions.assertTrue(castedNumericArray.get(0) instanceof String);
         Assertions.assertEquals(integerJsonArray.get(0), 1234);
         Assertions.assertEquals(longJsonArray.get(0), 1234568129012312L);
         Assertions.assertEquals(doubleJsonArray.get(0), 12.1);
+        Assertions.assertEquals(castedNumericArray.get(0), "10");
     }
 
     @Test
@@ -135,14 +138,38 @@ public class TypecastedJsonSerializerTest {
     }
 
     @Test
-    public void shouldThrowNumberFormatExceptionWhenPayloadTypecastIsUnparseable() {
+    public void shouldThrowNumberFormatExceptionWhenPayloadTypecastIntegerIsUnparseable() {
         String payload = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\"}";
         String parameters = "[{\"jsonPath\": \"$.key\", \"type\": \"INTEGER\"}]";
         Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
         Mockito.when(httpSinkConfig.getSinkHttpSerializerJsonTypecast()).thenReturn(property);
         Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(payload);
 
-        Assertions.assertThrows(NumberFormatException.class,
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE)));
+    }
+
+    @Test
+    public void shouldThrowNumberFormatExceptionWhenPayloadTypecastDoubleIsUnparseable() {
+        String payload = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\"}";
+        String parameters = "[{\"jsonPath\": \"$.key\", \"type\": \"DOUBLE\"}]";
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
+        Mockito.when(httpSinkConfig.getSinkHttpSerializerJsonTypecast()).thenReturn(property);
+        Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(payload);
+
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE)));
+    }
+
+    @Test
+    public void shouldThrowNumberFormatExceptionWhenPayloadTypecastLongIsUnparseable() {
+        String payload = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\"}";
+        String parameters = "[{\"jsonPath\": \"$.key\", \"type\": \"LONG\"}]";
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
+        Mockito.when(httpSinkConfig.getSinkHttpSerializerJsonTypecast()).thenReturn(property);
+        Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(payload);
+
+        Assertions.assertThrows(IllegalArgumentException.class,
                 () -> typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE)));
     }
 

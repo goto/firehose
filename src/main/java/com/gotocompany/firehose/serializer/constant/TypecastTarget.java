@@ -4,17 +4,29 @@ public enum TypecastTarget {
     INTEGER {
         @Override
         public Object cast(String input) {
-            return Integer.valueOf(input);
+            try {
+                return Integer.valueOf(input);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid input for INTEGER: " + input, e);
+            }
         }
     }, LONG {
         @Override
         public Object cast(String input) {
-            return Long.valueOf(input);
+            try {
+                return Long.valueOf(input);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid input for LONG: " + input, e);
+            }
         }
     }, DOUBLE {
         @Override
         public Object cast(String input) {
-            return Double.valueOf(input);
+            try {
+                return Double.valueOf(input);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid input for DOUBLE: " + input, e);
+            }
         }
     }, STRING {
         @Override
