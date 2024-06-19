@@ -75,6 +75,43 @@ public class TypecastedJsonSerializerTest {
     }
 
     @Test
+    public void serializeShouldHandleEmptyJsonMessage() {
+        String emptyJsonMessage = "{}";
+        Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(emptyJsonMessage);
+        String processedJsonString = typecastedJsonSerializer.serialize(buildMessage("key", emptyJsonMessage));
+        DocumentContext jsonPath = JsonPath.parse(processedJsonString);
+
+        Assertions.assertEquals(JsonPath.parse(emptyJsonMessage).jsonString(), jsonPath.jsonString());
+        Assertions.assertEquals(emptyJsonMessage, processedJsonString);
+    }
+
+    @Test
+    public void serializeShouldThrowExceptionForInvalidJsonMessage() {
+        String invalidJsonMessage = "{key value}";
+        Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(invalidJsonMessage);
+
+        Assertions.assertThrows(InvalidJsonException.class,
+                () -> typecastedJsonSerializer.serialize(buildMessage("key", invalidJsonMessage)));
+    }
+
+    @Test
+    public void serializeShouldHandleNestedJsonPathConfiguration() {
+        String nestedJsonMessage = "{\"key\": \"value\", \"nested\": {\"int\": \"1234\"}}";
+        String parameters = "[{\"jsonPath\": \"$.nested.int\", \"type\": \"INTEGER\"}]";
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
+        Mockito.when(httpSinkConfig.getSinkHttpSerializerJsonTypecast()).thenReturn(property);
+        Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(nestedJsonMessage);
+
+        String processedJsonString = typecastedJsonSerializer.serialize(buildMessage("key", nestedJsonMessage));
+        DocumentContext jsonPath = JsonPath.parse(processedJsonString);
+        Object integerJsonArray = jsonPath.read("$.nested.int");
+
+        Assertions.assertTrue(integerJsonArray instanceof Integer);
+        Assertions.assertEquals(integerJsonArray, 1234);
+        Assertions.assertEquals("{\"key\":\"value\",\"nested\":{\"int\":1234}}", processedJsonString);
+    }
+
+    @Test
     public void shouldReturnMessageAsItIsWhenNoJsonPathConfigurationGiven() {
         Mockito.when(httpSinkConfig.getSinkHttpSerializerJsonTypecast()).thenReturn(new HashMap<>());
         typecastedJsonSerializer = new TypecastedJsonSerializer(
