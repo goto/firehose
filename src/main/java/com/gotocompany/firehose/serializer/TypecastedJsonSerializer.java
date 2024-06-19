@@ -27,8 +27,8 @@ public class TypecastedJsonSerializer implements MessageSerializer {
      * Constructor for TypecastedJsonSerializer.
      *
      * @param messageSerializer the inner serializer to be wrapped
-     * @param httpSinkConfig  the HTTP Sink config configuration containing typecasting parameters,
-     *                        where each map entry contains a JSON path and the desired type
+     * @param httpSinkConfig    the HTTP Sink config configuration containing typecasting parameters,
+     *                          where each map entry contains a JSON path and the desired type
      */
     public TypecastedJsonSerializer(MessageSerializer messageSerializer,
                                     HttpSinkConfig httpSinkConfig) {
@@ -52,14 +52,12 @@ public class TypecastedJsonSerializer implements MessageSerializer {
         DocumentContext documentContext = JsonPath
                 .using(jsonPathConfiguration)
                 .parse(jsonString);
-
-        for (Map.Entry<String, Function<String, Object>> entry : httpSinkConfig.getSinkHttpSerializerJsonTypecast()
-                .entrySet()) {
-            documentContext.map(entry.getKey(), (currentValue, configuration) -> Optional.ofNullable(currentValue)
-                    .map(v -> entry.getValue().apply(v.toString()))
-                    .orElse(null)
-            );
-        }
+        httpSinkConfig.getSinkHttpSerializerJsonTypecast()
+                .forEach((jsonPath, typecastFunction) -> documentContext.map(jsonPath,
+                        (currentValue, configuration) -> Optional.ofNullable(currentValue)
+                                .map(v -> typecastFunction.apply(v.toString()))
+                                .orElse(null)
+                ));
         return documentContext.jsonString();
     }
 }
