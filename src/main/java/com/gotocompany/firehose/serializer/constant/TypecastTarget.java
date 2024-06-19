@@ -16,6 +16,11 @@ public enum TypecastTarget {
         public Object cast(String input) {
             return Double.valueOf(input);
         }
+    }, STRING {
+        @Override
+        public Object cast(String input) {
+            return String.valueOf(input);
+        }
     };
 
     public abstract Object cast(String input);

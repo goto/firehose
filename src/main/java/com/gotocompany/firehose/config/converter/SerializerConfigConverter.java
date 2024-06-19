@@ -7,13 +7,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aeonbits.owner.Converter;
+import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,15 +31,26 @@ public class SerializerConfigConverter implements Converter<Map<String, Function
 
     @Override
     public Map<String, Function<String, Object>> convert(Method method, String input) {
+        if (StringUtils.isBlank(input)) {
+            return Collections.emptyMap();
+        }
         try {
-            List<JsonTypecast> jsonTypecasts =
-                    objectMapper.readValue(input, new TypeReference<List<JsonTypecast>>() {
+            List<JsonTypecast> jsonTypecasts = objectMapper.readValue(input, new TypeReference<List<JsonTypecast>>() {
                     });
+            validate(jsonTypecasts);
             return jsonTypecasts.stream()
                     .collect(Collectors.toMap(JsonTypecast::getJsonPath, jsonTypecast -> jsonTypecast.getType()::cast));
         } catch (IOException e) {
             log.error("Error when parsing serializer json config", e);
             throw new IllegalArgumentException(e.getMessage(), e.getCause());
+        }
+    }
+
+    private void validate(List<JsonTypecast> jsonTypecasts) {
+        boolean invalidConfigurationExist = jsonTypecasts.stream()
+                .anyMatch(jt -> Objects.isNull(jt.getJsonPath()) || Objects.isNull(jt.getType()));
+        if (invalidConfigurationExist) {
+            throw new IllegalArgumentException("Invalid configuration: jsonPath or type should not be null");
         }
     }
 
