@@ -21,11 +21,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class SerializerConfigConverter implements Converter<Map<String, Function<String, Object>>> {
+public class HttpSinkSerializerJsonTypecastConfigConverter implements Converter<Map<String, Function<String, Object>>> {
 
     private final ObjectMapper objectMapper;
 
-    public SerializerConfigConverter() {
+    public HttpSinkSerializerJsonTypecastConfigConverter() {
         this.objectMapper = new ObjectMapper();
     }
 

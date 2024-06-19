@@ -1,7 +1,7 @@
 package com.gotocompany.firehose.serializer;
 
 import com.gotocompany.firehose.config.HttpSinkConfig;
-import com.gotocompany.firehose.config.converter.SerializerConfigConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkSerializerJsonTypecastConfigConverter;
 import com.gotocompany.firehose.message.Message;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.InvalidJsonException;
@@ -31,13 +31,13 @@ public class TypecastedJsonSerializerTest {
     @Mock
     private HttpSinkConfig httpSinkConfig;
 
-    private SerializerConfigConverter serializerConfigConverter = new SerializerConfigConverter();
+    private HttpSinkSerializerJsonTypecastConfigConverter httpSinkSerializerJsonTypecastConfigConverter = new HttpSinkSerializerJsonTypecastConfigConverter();
 
     @Before
     public void setup() {
         messageSerializer = Mockito.mock(MessageSerializer.class);
         httpSinkConfig = Mockito.mock(HttpSinkConfig.class);
-        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, DEFAULT_PARAMETERS);
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, DEFAULT_PARAMETERS);
         Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(DEFAULT_JSON_MESSAGE);
         Mockito.when(httpSinkConfig.getJsonTypecastMapping()).thenReturn(property);
         typecastedJsonSerializer = new TypecastedJsonSerializer(
@@ -89,7 +89,7 @@ public class TypecastedJsonSerializerTest {
     @Test
     public void shouldReturnMessageAsItIsWhenJsonPathConfigurationDoesNotMatch() {
         String parameters = "[{\"jsonPath\": \"$..unrecognizedPath\", \"type\": \"INTEGER\"}]";
-        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
         Mockito.when(httpSinkConfig.getJsonTypecastMapping()).thenReturn(property);
 
         String result = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));
@@ -101,7 +101,7 @@ public class TypecastedJsonSerializerTest {
     public void shouldThrowNumberFormatExceptionWhenPayloadTypecastIsUnparseable() {
         String payload = "{\"key\": \"value\", \"long\":\"1234568129012312\",\"nested\": {\"int\": \"1234\"}, \"double\": \"12.1\"}";
         String parameters = "[{\"jsonPath\": \"$.key\", \"type\": \"INTEGER\"}]";
-        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
         Mockito.when(httpSinkConfig.getJsonTypecastMapping()).thenReturn(property);
         Mockito.when(messageSerializer.serialize(Mockito.any())).thenReturn(payload);
 
@@ -122,7 +122,7 @@ public class TypecastedJsonSerializerTest {
     @Test
     public void shouldHandleEmptyJsonPathConfiguration() {
         String parameters = "[]";
-        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
         Mockito.when(httpSinkConfig.getJsonTypecastMapping()).thenReturn(property);
 
         String result = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));
@@ -142,7 +142,7 @@ public class TypecastedJsonSerializerTest {
     @Test
     public void shouldHandleNonMatchingJsonPathConfiguration() {
         String parameters = "[{\"jsonPath\": \"$..nonExistentField\", \"type\": \"INTEGER\"}]";
-        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
         Mockito.when(httpSinkConfig.getJsonTypecastMapping()).thenReturn(property);
 
         String result = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));
@@ -153,7 +153,7 @@ public class TypecastedJsonSerializerTest {
     @Test
     public void shouldHandleNestedJsonPathConfiguration() {
         String parameters = "[{\"jsonPath\": \"$..nested.int\", \"type\": \"INTEGER\"}]";
-        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
         Mockito.when(httpSinkConfig.getJsonTypecastMapping()).thenReturn(property);
 
         String result = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));
@@ -166,7 +166,7 @@ public class TypecastedJsonSerializerTest {
     @Test
     public void shouldHandleMultipleJsonPathConfigurations() {
         String parameters = "[{\"jsonPath\": \"$..int\", \"type\": \"INTEGER\"}, {\"jsonPath\": \"$..double\", \"type\": \"DOUBLE\"}]";
-        Map<String, Function<String, Object>> property = serializerConfigConverter.convert(null, parameters);
+        Map<String, Function<String, Object>> property = httpSinkSerializerJsonTypecastConfigConverter.convert(null, parameters);
         Mockito.when(httpSinkConfig.getJsonTypecastMapping()).thenReturn(property);
 
         String result = typecastedJsonSerializer.serialize(buildMessage("key", DEFAULT_JSON_MESSAGE));

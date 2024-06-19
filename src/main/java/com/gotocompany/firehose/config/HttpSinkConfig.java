@@ -1,6 +1,6 @@
 package com.gotocompany.firehose.config;
 
-import com.gotocompany.firehose.config.converter.SerializerConfigConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkSerializerJsonTypecastConfigConverter;
 import com.gotocompany.firehose.config.enums.HttpSinkDataFormatType;
 import com.gotocompany.firehose.config.enums.HttpSinkParameterPlacementType;
 import com.gotocompany.firehose.config.enums.HttpSinkParameterSourceType;
@@ -97,7 +97,7 @@ public interface HttpSinkConfig extends AppConfig {
     Boolean getSinkHttpSimpleDateFormatEnable();
 
     @Key("SINK_HTTP_SERIALIZER_JSON_TYPECAST")
-    @ConverterClass(SerializerConfigConverter.class)
+    @ConverterClass(HttpSinkSerializerJsonTypecastConfigConverter.class)
     @DefaultValue("[]")
     Map<String, Function<String, Object>> getJsonTypecastMapping();
 

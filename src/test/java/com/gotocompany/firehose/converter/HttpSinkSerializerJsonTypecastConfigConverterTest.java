@@ -1,22 +1,22 @@
 package com.gotocompany.firehose.converter;
 
-import com.gotocompany.firehose.config.converter.SerializerConfigConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkSerializerJsonTypecastConfigConverter;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.Map;
 import java.util.function.Function;
 
-public class SerializerConfigConverterTest {
+public class HttpSinkSerializerJsonTypecastConfigConverterTest {
 
-    private final SerializerConfigConverter serializerConfigConverter = new SerializerConfigConverter();
+    private final HttpSinkSerializerJsonTypecastConfigConverter httpSinkSerializerJsonTypecastConfigConverter = new HttpSinkSerializerJsonTypecastConfigConverter();
 
     @Test
     public void convertShouldConvertToPropertyMapWhenValidJsonConfig() {
         String configJson = "[{\"jsonPath\": \"$.root.field\", \"type\": \"LONG\"}]";
         String expectedPropertyMapKey = "$.root.field";
 
-        Map<String, Function<String, Object>> result = serializerConfigConverter.convert(null, configJson);
+        Map<String, Function<String, Object>> result = httpSinkSerializerJsonTypecastConfigConverter.convert(null, configJson);
         Function<String, Object> mapper = result.get(expectedPropertyMapKey);
         Object mapperResult = mapper.apply("4");
 
@@ -30,7 +30,7 @@ public class SerializerConfigConverterTest {
         String malformedConfigJson = "[{\"jsonPath\": \"$.root.field\" \"type\": \"LONG\"";
 
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> serializerConfigConverter.convert(null, malformedConfigJson));
+                () -> httpSinkSerializerJsonTypecastConfigConverter.convert(null, malformedConfigJson));
     }
 
     @Test
@@ -38,14 +38,14 @@ public class SerializerConfigConverterTest {
         String malformedConfigJson = "[{\"jsonPath\": \"$.root.field\", \"type\": \"BIG_INTEGER\"}]";
 
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> serializerConfigConverter.convert(null, malformedConfigJson));
+                () -> httpSinkSerializerJsonTypecastConfigConverter.convert(null, malformedConfigJson));
     }
 
     @Test
     public void convertShouldHandleEmptyJsonConfig() {
         String emptyConfigJson = "[]";
 
-        Map<String, Function<String, Object>> result = serializerConfigConverter.convert(null, emptyConfigJson);
+        Map<String, Function<String, Object>> result = httpSinkSerializerJsonTypecastConfigConverter.convert(null, emptyConfigJson);
 
         Assertions.assertTrue(result.isEmpty());
     }
@@ -54,7 +54,7 @@ public class SerializerConfigConverterTest {
     public void convertShouldHandleNullJsonConfig() {
         String nullConfigJson = null;
 
-        Map<String, Function<String, Object>> result = serializerConfigConverter.convert(null, nullConfigJson);
+        Map<String, Function<String, Object>> result = httpSinkSerializerJsonTypecastConfigConverter.convert(null, nullConfigJson);
 
         Assertions.assertTrue(result.isEmpty());
     }
@@ -64,14 +64,14 @@ public class SerializerConfigConverterTest {
         String unsupportedTypeConfigJson = "[{\"jsonPath\": \"$.root.field\", \"type\": \"UNSUPPORTED_TYPE\"}]";
 
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> serializerConfigConverter.convert(null, unsupportedTypeConfigJson));
+                () -> httpSinkSerializerJsonTypecastConfigConverter.convert(null, unsupportedTypeConfigJson));
     }
 
     @Test
     public void convertShouldHandleMultipleValidConfigs() {
         String multipleConfigJson = "[{\"jsonPath\": \"$.root.field1\", \"type\": \"LONG\"}, {\"jsonPath\": \"$.root.field2\", \"type\": \"STRING\"}]";
 
-        Map<String, Function<String, Object>> result = serializerConfigConverter.convert(null, multipleConfigJson);
+        Map<String, Function<String, Object>> result = httpSinkSerializerJsonTypecastConfigConverter.convert(null, multipleConfigJson);
         Function<String, Object> mapper1 = result.get("$.root.field1");
         Function<String, Object> mapper2 = result.get("$.root.field2");
 
@@ -86,6 +86,6 @@ public class SerializerConfigConverterTest {
         String missingFieldsConfigJson = "[{\"jsonPath\": \"$.root.field\"}]";
 
         Assertions.assertThrows(IllegalArgumentException.class,
-                () -> serializerConfigConverter.convert(null, missingFieldsConfigJson));
+                () -> httpSinkSerializerJsonTypecastConfigConverter.convert(null, missingFieldsConfigJson));
     }
 }
