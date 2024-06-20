@@ -1,6 +1,7 @@
 package com.gotocompany.firehose.message;
 
 
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.exception.DefaultException;
 import com.gotocompany.depot.error.ErrorInfo;
 import com.gotocompany.depot.error.ErrorType;
@@ -29,6 +30,8 @@ public class Message {
     private long consumeTimestamp;
     @Setter
     private ErrorInfo errorInfo;
+    @Setter
+    private InputSchemaType inputSchemaType;
 
     public void setDefaultErrorIfNotPresent() {
         if (errorInfo == null) {
@@ -54,7 +57,7 @@ public class Message {
     }
 
     /**
-     * Instantiates a new Message without providing errorType.
+     * Instantiates a new Message without providing errorType and inputSchemaType.
      *
      * @param logKey
      * @param logMessage
@@ -66,7 +69,7 @@ public class Message {
      * @param consumeTimestamp
      */
     public Message(byte[] logKey, byte[] logMessage, String topic, int partition, long offset, Headers headers, long timestamp, long consumeTimestamp) {
-        this(logKey, logMessage, topic, partition, offset, headers, timestamp, consumeTimestamp, null);
+        this(logKey, logMessage, topic, partition, offset, headers, timestamp, consumeTimestamp, null, InputSchemaType.PROTOBUF);
     }
 
     public Message(Message message, ErrorInfo errorInfo) {
@@ -78,7 +81,23 @@ public class Message {
                 message.getHeaders(),
                 message.getTimestamp(),
                 message.getConsumeTimestamp(),
-                errorInfo);
+                errorInfo,
+                message.getInputSchemaType()
+        );
+    }
+
+    public Message(Message message, ErrorInfo errorInfo, InputSchemaType inputSchemaType) {
+        this(message.getLogKey(),
+                message.getLogMessage(),
+                message.getTopic(),
+                message.getPartition(),
+                message.getOffset(),
+                message.getHeaders(),
+                message.getTimestamp(),
+                message.getConsumeTimestamp(),
+                errorInfo,
+                inputSchemaType
+        );
     }
 
     /**
