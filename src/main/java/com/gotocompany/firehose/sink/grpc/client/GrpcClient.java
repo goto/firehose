@@ -24,6 +24,7 @@ import org.apache.kafka.common.header.Headers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 
@@ -52,6 +53,7 @@ public class GrpcClient {
                 .build();
         this.emptyResponse = DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
         this.grpcStaticMetadata = grpcSinkConfig.getSinkGrpcMetadata();
+        System.out.printf("grpc config - %s", grpcSinkConfig);
     }
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
@@ -60,12 +62,18 @@ public class GrpcClient {
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
                      MetadataUtils.newAttachHeadersInterceptor(metadata));
             firehoseInstrumentation.logDebug("Calling gRPC with metadata: {}", metadata.toString());
+            System.out.println("hgrwhguewhrhvjuwhvrh");
+            System.out.println("hgrwhguewhrhvjuwhvrh");
+            System.out.println("hgrwhguewhrhvjuwhvrh");
+            System.out.println(metadata);
             byte[] response = ClientCalls.blockingUnaryCall(
                     decoratedChannel,
                     methodDescriptor,
                     decoratedDefaultCallOptions(),
                     logMessage);
 
+
+            System.out.println(Arrays.toString(response));
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
 
         } catch (StatusRuntimeException sre) {
