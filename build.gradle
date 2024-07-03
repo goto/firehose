@@ -119,11 +119,11 @@ dependencies {
 protobuf {
     generatedFilesBaseDir = "$projectDir/src/generated"
     protoc {
-        artifact = "com.google.protobuf:protoc:3.17.3:osx-x86_64"
+        artifact = "com.google.protobuf:protoc:3.1.0"
     }
     plugins {
         grpc {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.53.0:osx-x86_64"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.0.3"
         }
     }
     generateProtoTasks {
