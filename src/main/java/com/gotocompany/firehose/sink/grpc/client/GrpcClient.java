@@ -62,10 +62,6 @@ public class GrpcClient {
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
                      MetadataUtils.newAttachHeadersInterceptor(metadata));
             firehoseInstrumentation.logDebug("Calling gRPC with metadata: {}", metadata.toString());
-            System.out.println("hgrwhguewhrhvjuwhvrh");
-            System.out.println("hgrwhguewhrhvjuwhvrh");
-            System.out.println("hgrwhguewhrhvjuwhvrh");
-            System.out.println(metadata);
             byte[] response = ClientCalls.blockingUnaryCall(
                     decoratedChannel,
                     methodDescriptor,

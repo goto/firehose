@@ -9,10 +9,10 @@ import com.gotocompany.firehose.sink.grpc.client.GrpcClient;
 import com.gotocompany.stencil.client.StencilClient;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
+//import io.grpc.netty.GrpcSslContexts;
+//import io.grpc.netty.NettyChannelBuilder;
+//import io.netty.handler.ssl.SslContext;
+//import io.netty.handler.ssl.SslContextBuilder;
 import org.aeonbits.owner.ConfigFactory;
 
 import java.io.File;
@@ -32,25 +32,30 @@ import java.util.concurrent.TimeUnit;
  */
 public class GrpcSinkFactory {
 
-    private static File createTempFileFromBase64(String base64Cert) throws IOException {
+    private static final String CERT_DIRECTORY = "/usr/local/share/ca-certificates";
+
+    private static void createTempFileFromBase64(String base64Cert) throws IOException {
         byte[] decodedBytes = Base64.getDecoder().decode(base64Cert);
-        File tempFile = Files.createTempFile("grpc-cert", ".crt").toFile();
+        File certDirectory = new File(CERT_DIRECTORY);
+        if (!certDirectory.exists()) {
+            certDirectory.mkdirs();
+        }
+        File tempFile = Files.createTempFile(certDirectory.toPath(), "goto-root-ca", ".crt").toFile();
         try (FileOutputStream fos = new FileOutputStream(tempFile)) {
             fos.write(decodedBytes);
         }
-        return tempFile;
     }
 
-    private static SslContext buildClientSslContext(String base64Cert) {
-        try {
-            File certFile = createTempFileFromBase64(base64Cert);
-            return GrpcSslContexts
-                    .configure(SslContextBuilder.forClient().trustManager(certFile))
-                    .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+//    private static SslContext buildClientSslContext(String base64Cert) {
+//        try {
+//            File certFile = createTempFileFromBase64(base64Cert);
+//            return GrpcSslContexts
+//                    .configure(SslContextBuilder.forClient().trustManager(certFile))
+//                    .build();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     public static AbstractSink create(Map<String, String> configuration, StatsDReporter statsDReporter, StencilClient stencilClient) {
         GrpcSinkConfig grpcConfig = ConfigFactory.create(GrpcSinkConfig.class, configuration);
@@ -62,16 +67,24 @@ public class GrpcSinkFactory {
 
         ManagedChannel managedChannel;
         if (isTlsEnable) {
+            try {
                 System.out.println("hello, with TLS");
                 String base64Cert = grpcConfig.getSinkGrpcRootCA();
-
-                SslContext sslContext = buildClientSslContext(base64Cert);
-                System.out.println("SSL Context created successfully.");
-                managedChannel = NettyChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
+                createTempFileFromBase64(base64Cert);
+//            SslContext sslContext = buildClientSslContext(base64Cert);
+//            System.out.println("SSL Context created successfully.");
+//            managedChannel = NettyChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
+//                    .keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS)
+//                    .keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS)
+//                    .sslContext(sslContext)
+//                    .build();
+                managedChannel = ManagedChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
                         .keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS)
                         .keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS)
-                        .sslContext(sslContext)
                         .build();
+            } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         } else {
             System.out.println("hello, no TLS");
             managedChannel = ManagedChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
