@@ -14,11 +14,11 @@ import dev.cel.runtime.CelRuntime;
 import dev.cel.runtime.CelRuntimeFactory;
 import io.grpc.Metadata;
 import org.aeonbits.owner.util.Collections;
-import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 public class ProtoToMetadataMapper {
 
     private static final Pattern CEL_EXPRESSION_MARKER = Pattern.compile("^\\$(.+)");
+    private static final int CEL_EXPRESSION_GROUP_INDEX = 1;
     private final Descriptors.Descriptor descriptor;
     private final CelRuntime celRuntime;
     private final CelCompiler celCompiler;
@@ -88,15 +89,14 @@ public class ProtoToMetadataMapper {
                 .stream()
                 .filter(entry -> entry.getValue() instanceof String)
                 .flatMap(e -> Stream.of(e.getKey(), e.getValue().toString()))
-                .filter(keyword -> CEL_EXPRESSION_MARKER.matcher(keyword).matches())
                 .map(keyword -> {
                     Matcher matcher = CEL_EXPRESSION_MARKER.matcher(keyword);
-                    if (matcher.matches()) {
-                        return matcher.group(1);
+                    if (matcher.find()) {
+                        return matcher.group(CEL_EXPRESSION_GROUP_INDEX);
                     }
-                    return StringUtils.EMPTY;
+                    return null;
                 })
-                .filter(StringUtils::isNotBlank)
+                .filter(Objects::nonNull)
                 .map(celExpression -> new AbstractMap.SimpleEntry<>(celExpression, initializeCelProgram(celExpression)))
                 .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
     }
