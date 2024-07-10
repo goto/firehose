@@ -3,6 +3,7 @@ package com.gotocompany.firehose.proto;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.gotocompany.firehose.exception.OperationNotSupportedException;
+import com.gotocompany.firehose.utils.CelUtils;
 import dev.cel.common.CelAbstractSyntaxTree;
 import dev.cel.common.CelValidationException;
 import dev.cel.common.types.StructTypeReference;
@@ -13,13 +14,12 @@ import dev.cel.runtime.CelEvaluationException;
 import dev.cel.runtime.CelRuntime;
 import dev.cel.runtime.CelRuntimeFactory;
 import io.grpc.Metadata;
-import org.aeonbits.owner.util.Collections;
 
 import java.io.IOException;
-import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,18 +29,13 @@ public class ProtoToMetadataMapper {
 
     private static final Pattern CEL_EXPRESSION_MARKER = Pattern.compile("^\\$(.+)");
     private static final int CEL_EXPRESSION_GROUP_INDEX = 1;
-    private final Descriptors.Descriptor descriptor;
-    private final CelRuntime celRuntime;
-    private final CelCompiler celCompiler;
+
     private final Map<String, CelRuntime.Program> celExpressionToProgramMapper;
     private final Map<String, Object> metadataTemplate;
 
     public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, Object> metadataTemplate) {
-        this.descriptor = descriptor;
-        this.celRuntime = CelRuntimeFactory.standardCelRuntimeBuilder().build();
-        this.celCompiler = initializeCelCompiler();
         this.metadataTemplate = metadataTemplate;
-        this.celExpressionToProgramMapper = initializeCelPrograms(metadataTemplate);
+        this.celExpressionToProgramMapper = initializeCelPrograms(metadataTemplate, descriptor);
     }
 
     public Metadata buildGrpcMetadata(Message message) throws IOException {
@@ -60,15 +55,11 @@ public class ProtoToMetadataMapper {
         }
         return Optional.ofNullable(celExpressionToProgramMapper.get(matcher.group(1)))
                 .map(program -> {
-                    try {
-                        Object val = program.eval(Collections.map(message.getDescriptorForType().getFullName(), message));
-                        if (isComplexType(val)) {
-                            throw new OperationNotSupportedException("Complex type not supported");
-                        }
-                        return val;
-                    } catch (CelEvaluationException e) {
-                        throw new IllegalArgumentException("Could not evaluate " + key + ": " + e.getMessage());
+                    Object val = CelUtils.evaluate(program, message);
+                    if (isComplexType(val)) {
+                        throw new OperationNotSupportedException("Complex type is not supported");
                     }
+                    return val;
                 }).orElse(key);
     }
 
@@ -76,15 +67,17 @@ public class ProtoToMetadataMapper {
         return !(object instanceof String || object instanceof Number || object instanceof Boolean);
     }
 
-    private CelCompiler initializeCelCompiler() {
+    private CelCompiler initializeCelCompiler(Descriptors.Descriptor descriptor) {
         return CelCompilerFactory.standardCelCompilerBuilder()
                 .setStandardMacros(CelStandardMacro.values())
-                .addVar(this.descriptor.getFullName(), StructTypeReference.create(this.descriptor.getFullName()))
-                .addMessageTypes(this.descriptor)
+                .addVar(descriptor.getFullName(), StructTypeReference.create(descriptor.getFullName()))
+                .addMessageTypes(descriptor)
                 .build();
     }
 
-    private Map<String, CelRuntime.Program> initializeCelPrograms(Map<String, Object> metadataTemplate) {
+    private Map<String, CelRuntime.Program> initializeCelPrograms(Map<String, Object> metadataTemplate, Descriptors.Descriptor descriptor) {
+        CelRuntime celRuntime = CelRuntimeFactory.standardCelRuntimeBuilder().build();
+        CelCompiler celCompiler = initializeCelCompiler(descriptor);
         return metadataTemplate.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue() instanceof String)
@@ -97,11 +90,10 @@ public class ProtoToMetadataMapper {
                     return null;
                 })
                 .filter(Objects::nonNull)
-                .map(celExpression -> new AbstractMap.SimpleEntry<>(celExpression, initializeCelProgram(celExpression)))
-                .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
+                .collect(Collectors.toMap(Function.identity(), celExpression -> initializeCelProgram(celExpression, celRuntime, celCompiler)));
     }
 
-    private CelRuntime.Program initializeCelProgram(String celExpression) {
+    private CelRuntime.Program initializeCelProgram(String celExpression, CelRuntime celRuntime, CelCompiler celCompiler) {
         try {
             CelAbstractSyntaxTree celAbstractSyntaxTree = celCompiler.compile(celExpression)
                     .getAst();
