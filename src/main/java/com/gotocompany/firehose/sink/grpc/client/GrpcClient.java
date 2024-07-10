@@ -25,7 +25,6 @@ import org.apache.kafka.common.header.Headers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 
@@ -54,7 +53,6 @@ public class GrpcClient {
                 .build();
         this.emptyResponse = DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
         this.grpcStaticMetadata = grpcSinkConfig.getSinkGrpcMetadata();
-        System.out.printf("grpc config - %s", grpcSinkConfig);
     }
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
@@ -68,11 +66,7 @@ public class GrpcClient {
                     methodDescriptor,
                     decoratedDefaultCallOptions(),
                     logMessage);
-
-
-            System.out.println(Arrays.toString(response));
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
-
         } catch (StatusRuntimeException sre) {
             if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
                 firehoseInstrumentation.logError("Configurations are incorrect: {}", sre.getMessage());
@@ -110,7 +104,6 @@ public class GrpcClient {
             public InputStream stream(byte[] value) {
                 return new ByteArrayInputStream(value);
             }
-
 
             @Override
             public byte[] parse(InputStream stream) {
