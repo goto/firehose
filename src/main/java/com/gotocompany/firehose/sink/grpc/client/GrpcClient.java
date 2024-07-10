@@ -16,6 +16,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.MethodDescriptor;
 import io.grpc.stub.ClientCalls;
 import io.grpc.stub.MetadataUtils;
+import io.grpc.Status;
 import com.gotocompany.stencil.client.StencilClient;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.common.header.Header;
@@ -60,7 +61,7 @@ public class GrpcClient {
         Metadata metadata = buildMetadata(headers);
         try {
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
-                     MetadataUtils.newAttachHeadersInterceptor(metadata));
+                    MetadataUtils.newAttachHeadersInterceptor(metadata));
             firehoseInstrumentation.logDebug("Calling gRPC with metadata: {}", metadata.toString());
             byte[] response = ClientCalls.blockingUnaryCall(
                     decoratedChannel,
@@ -73,7 +74,11 @@ public class GrpcClient {
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
 
         } catch (StatusRuntimeException sre) {
-            firehoseInstrumentation.logError("gRPC call failed with error message: {}", sre.getMessage());
+            if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+                firehoseInstrumentation.logError("Configurations are incorrect: {}", sre.getMessage());
+            } else {
+                firehoseInstrumentation.logError("gRPC call failed with error message: {}", sre.getMessage());
+            }
             firehoseInstrumentation.incrementCounter(Metrics.SINK_GRPC_ERROR_TOTAL,  "status=" + sre.getStatus().getCode());
         } catch (Exception e) {
             firehoseInstrumentation.logError("gRPC call failed with error message: {}", e.getMessage());
@@ -105,6 +110,7 @@ public class GrpcClient {
             public InputStream stream(byte[] value) {
                 return new ByteArrayInputStream(value);
             }
+
 
             @Override
             public byte[] parse(InputStream stream) {
