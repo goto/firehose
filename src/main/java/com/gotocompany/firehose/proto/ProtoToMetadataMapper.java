@@ -41,17 +41,17 @@ public class ProtoToMetadataMapper {
     public Metadata buildGrpcMetadata(Message message) throws IOException {
         Metadata metadata = new Metadata();
         for (Map.Entry<String, Object> entry : metadataTemplate.entrySet()) {
-            String updatedKey = evaluateValue(entry.getKey(), message).toString();
-            Object updatedValue = entry.getValue() instanceof String ? evaluateValue(entry.getValue().toString(), message) : entry.getValue();
+            String updatedKey = evaluateExpression(entry.getKey(), message).toString();
+            Object updatedValue = entry.getValue() instanceof String ? evaluateExpression(entry.getValue().toString(), message) : entry.getValue();
             metadata.put(Metadata.Key.of(updatedKey.trim(), Metadata.ASCII_STRING_MARSHALLER), updatedValue.toString());
         }
         return metadata;
     }
 
-    private Object evaluateValue(String key, Message message) {
-        Matcher matcher = CEL_EXPRESSION_MARKER.matcher(key);
+    private Object evaluateExpression(String expression, Message message) {
+        Matcher matcher = CEL_EXPRESSION_MARKER.matcher(expression);
         if (!matcher.find()) {
-            return key;
+            return expression;
         }
         return Optional.ofNullable(celExpressionToProgramMapper.get(matcher.group(1)))
                 .map(program -> {
@@ -60,7 +60,7 @@ public class ProtoToMetadataMapper {
                         throw new OperationNotSupportedException("Complex type is not supported");
                     }
                     return val;
-                }).orElse(key);
+                }).orElse(expression);
     }
 
     private boolean isComplexType(Object object) {
