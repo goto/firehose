@@ -17,6 +17,7 @@ public class ProtoToMetadataMapperTest {
         template.put("$GenericResponse.detail", "$GenericResponse.success");
         template.put("staticKey", "$(GenericResponse.errors[0].cause + GenericResponse.errors[0].code)");
         template.put("shouldBeBoolean", true);
+        template.put("staticInt", 12345);
         ProtoToMetadataMapper protoToMetadataMapper = new ProtoToMetadataMapper(
                 GenericResponse.getDescriptor(),
                 template

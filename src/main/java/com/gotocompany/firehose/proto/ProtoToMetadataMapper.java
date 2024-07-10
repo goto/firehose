@@ -43,7 +43,7 @@ public class ProtoToMetadataMapper {
         for (Map.Entry<String, Object> entry : metadataTemplate.entrySet()) {
             String updatedKey = evaluateValue(entry.getKey(), message).toString();
             Object updatedValue = entry.getValue() instanceof String ? evaluateValue(entry.getValue().toString(), message) : entry.getValue();
-            metadata.put(Metadata.Key.of(updatedKey, Metadata.BINARY_BYTE_MARSHALLER), (byte[]) updatedValue);
+            metadata.put(Metadata.Key.of(updatedKey.trim(), Metadata.ASCII_STRING_MARSHALLER), updatedValue.toString());
         }
         return metadata;
     }
