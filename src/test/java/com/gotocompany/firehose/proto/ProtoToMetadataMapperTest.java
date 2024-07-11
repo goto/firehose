@@ -21,6 +21,7 @@ public class ProtoToMetadataMapperTest {
         template.put("$GenericResponse.detail", "$GenericResponse.success");
         template.put("someField", "someValue");
         template.put("staticKey", "$(GenericResponse.errors[0].cause + '-' + GenericResponse.errors[0].code + '-' + string(GenericResponse.code))");
+        template.put("entity", "$GenericResponse.errors[0].entity");
         this.protoToMetadataMapper = new ProtoToMetadataMapper(
                 GenericResponse.getDescriptor(),
                 template
@@ -36,7 +37,6 @@ public class ProtoToMetadataMapperTest {
                 .addErrors(GenericError.newBuilder()
                         .setCode("404")
                         .setCause("not_found")
-                        .setEntity("GTF")
                         .build())
                 .build();
 
@@ -48,6 +48,8 @@ public class ProtoToMetadataMapperTest {
         Assertions.assertEquals("not_found-404-100", metadata.get(Metadata.Key.of("statickey", Metadata.ASCII_STRING_MARSHALLER)));
         Assertions.assertTrue(metadata.containsKey(Metadata.Key.of("somefield", Metadata.ASCII_STRING_MARSHALLER)));
         Assertions.assertEquals("someValue", metadata.get(Metadata.Key.of("somefield", Metadata.ASCII_STRING_MARSHALLER)));
+        Assertions.assertTrue(metadata.containsKey(Metadata.Key.of("entity", Metadata.ASCII_STRING_MARSHALLER)));
+        Assertions.assertEquals("", metadata.get(Metadata.Key.of("entity", Metadata.ASCII_STRING_MARSHALLER)));
     }
 
     @Test
