@@ -14,7 +14,7 @@ public class GrpcDynamicMetadataConverter implements Converter<Map<String, Objec
     public Map<String, Object> convert(Method method, String s) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(s, new TypeReference<Map<String, Object>>() {});
+            return objectMapper.readValue(s, new TypeReference<Map<String, Object>>() { });
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Invalid JSON string: " + s, e);
         }

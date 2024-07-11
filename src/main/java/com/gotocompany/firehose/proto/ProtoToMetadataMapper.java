@@ -40,7 +40,7 @@ public class ProtoToMetadataMapper {
     public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, Object> metadataTemplate) {
         this.metadataTemplate = metadataTemplate;
         this.descriptor = descriptor;
-        this.celExpressionToProgramMapper = initializeCelPrograms(metadataTemplate, descriptor);
+        this.celExpressionToProgramMapper = initializeCelPrograms();
     }
 
     public Metadata buildGrpcMetadata(byte[] message) {
@@ -83,18 +83,18 @@ public class ProtoToMetadataMapper {
         return !(object instanceof String || object instanceof Number || object instanceof Boolean);
     }
 
-    private CelCompiler initializeCelCompiler(Descriptors.Descriptor descriptor) {
+    private CelCompiler initializeCelCompiler() {
         return CelCompilerFactory.standardCelCompilerBuilder()
                 .setStandardMacros(CelStandardMacro.values())
-                .addVar(descriptor.getFullName(), StructTypeReference.create(descriptor.getFullName()))
-                .addMessageTypes(descriptor)
+                .addVar(this.descriptor.getFullName(), StructTypeReference.create(this.descriptor.getFullName()))
+                .addMessageTypes(this.descriptor)
                 .build();
     }
 
-    private Map<String, CelRuntime.Program> initializeCelPrograms(Map<String, Object> metadataTemplate, Descriptors.Descriptor descriptor) {
+    private Map<String, CelRuntime.Program> initializeCelPrograms() {
         CelRuntime celRuntime = CelRuntimeFactory.standardCelRuntimeBuilder().build();
-        CelCompiler celCompiler = initializeCelCompiler(descriptor);
-        return metadataTemplate.entrySet()
+        CelCompiler celCompiler = initializeCelCompiler();
+        return this.metadataTemplate.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue() instanceof String)
                 .flatMap(e -> Stream.of(e.getKey(), e.getValue().toString()))
