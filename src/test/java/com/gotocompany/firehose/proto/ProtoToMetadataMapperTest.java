@@ -2,6 +2,7 @@ package com.gotocompany.firehose.proto;
 
 import com.gotocompany.firehose.consumer.GenericError;
 import com.gotocompany.firehose.consumer.GenericResponse;
+import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import io.grpc.Metadata;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +47,28 @@ public class ProtoToMetadataMapperTest {
     }
 
     @Test
+    public void shouldThrowOperationNotSupportedExceptionWhenMappedHeaderValueIsComplexType() {
+        Map<String, Object> template = new HashMap<>();
+        template.put("$GenericResponse.detail", "$GenericResponse.success");
+        template.put("staticKey", "$GenericResponse.errors");
+        this.protoToMetadataMapper = new ProtoToMetadataMapper(
+                GenericResponse.getDescriptor(),
+                template
+        );
+        GenericResponse payload = GenericResponse.newBuilder()
+                .setSuccess(false)
+                .setDetail("detail_of_error")
+                .addErrors(GenericError.newBuilder()
+                        .setCode("404")
+                        .setCause("not_found")
+                        .setEntity("GTF")
+                        .build())
+                .build();
+
+        Assertions.assertThrows(OperationNotSupportedException.class, () -> protoToMetadataMapper.buildGrpcMetadata(payload.toByteArray()));
+    }
+
+    @Test
     public void shouldBuildEmptyMetadataWhenConfigurationIsEmpty() {
         this.protoToMetadataMapper = new ProtoToMetadataMapper(
                 GenericResponse.getDescriptor(),
@@ -55,5 +78,16 @@ public class ProtoToMetadataMapperTest {
         Metadata metadata = protoToMetadataMapper.buildGrpcMetadata(new byte[0]);
 
         Assertions.assertTrue(metadata.keys().isEmpty());
+    }
+
+    @Test
+    public void shouldThrowIllegalArgumentExceptionWhenConfigurationContainsUnregisteredExpression() {
+        Map<String, Object> template = new HashMap<>();
+        template.put("$UnregisteredPayload.detail", "$GenericResponse.success");
+        template.put("staticKey", "$(GenericResponse.errors[0].cause + GenericResponse.errors[0].code)");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new ProtoToMetadataMapper(
+                GenericResponse.getDescriptor(),
+                template
+        ));
     }
 }
