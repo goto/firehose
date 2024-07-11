@@ -19,6 +19,8 @@ public class GrpcDynamicMetadataConverterTest {
 
     @Test
     public void shouldThrowIllegalArgumentExceptionWhenInputIsMalformed() {
+        String input = "\"$SomeClass.someField\":\"someValue\"";
 
+        Assertions.assertThrows(IllegalArgumentException.class, () -> new GrpcDynamicMetadataConverter().convert(null, input));
     }
 }
