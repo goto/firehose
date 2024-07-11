@@ -63,12 +63,13 @@ public class GrpcClientTest {
         config.put("SINK_GRPC_SERVICE_PORT", "5000");
         config.put("SINK_GRPC_METHOD_URL", "com.gotocompany.firehose.consumer.TestServer/TestRpcMethod");
         config.put("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS", "com.gotocompany.firehose.consumer.TestGrpcResponse");
-
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
         StencilClient stencilClient = StencilClientFactory.getClient();
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();
         Metadata metadata = new Metadata();
         metadata.put(Metadata.Key.of("custom_dynamic_metadata_key", Metadata.ASCII_STRING_MARSHALLER), "custom_dynamic_metadata_value");
+        metadata.put(Metadata.Key.of("dlq", Metadata.ASCII_STRING_MARSHALLER), "true");
+        metadata.put(Metadata.Key.of("token", Metadata.ASCII_STRING_MARSHALLER), "123");
         when(protoToMetadataMapper.buildGrpcMetadata(any())).thenReturn(metadata);
         grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient, protoToMetadataMapper);
         headers = new RecordHeaders();
@@ -146,7 +147,6 @@ public class GrpcClientTest {
         config.put("SINK_GRPC_SERVICE_PORT", "5000");
         config.put("SINK_GRPC_METHOD_URL", "com.gotocompany.firehose.consumer.TestServer/TestRpcMethod");
         config.put("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS", "com.gotocompany.firehose.consumer.TestGrpcResponse");
-        config.put("SINK_GRPC_METADATA", " ,token: 123, dlq:true,");
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
         StencilClient stencilClient = StencilClientFactory.getClient();
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();

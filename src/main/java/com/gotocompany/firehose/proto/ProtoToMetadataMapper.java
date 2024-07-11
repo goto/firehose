@@ -34,10 +34,10 @@ public class ProtoToMetadataMapper {
     private static final int CEL_EXPRESSION_GROUP_INDEX = 1;
 
     private final Map<String, CelRuntime.Program> celExpressionToProgramMapper;
-    private final Map<String, Object> metadataTemplate;
+    private final Map<String, String> metadataTemplate;
     private final Descriptors.Descriptor descriptor;
 
-    public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, Object> metadataTemplate) {
+    public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, String> metadataTemplate) {
         this.metadataTemplate = metadataTemplate;
         this.descriptor = descriptor;
         this.celExpressionToProgramMapper = initializeCelPrograms();
@@ -56,9 +56,9 @@ public class ProtoToMetadataMapper {
 
     private Metadata buildGrpcMetadata(Message message) {
         Metadata metadata = new Metadata();
-        for (Map.Entry<String, Object> entry : metadataTemplate.entrySet()) {
+        for (Map.Entry<String, String> entry : metadataTemplate.entrySet()) {
             String updatedKey = evaluateExpression(entry.getKey(), message).toString();
-            Object updatedValue = entry.getValue() instanceof String ? evaluateExpression(entry.getValue().toString(), message) : entry.getValue();
+            Object updatedValue = evaluateExpression(entry.getValue(), message);
             metadata.put(Metadata.Key.of(updatedKey.trim(), Metadata.ASCII_STRING_MARSHALLER), updatedValue.toString());
         }
         return metadata;
@@ -97,7 +97,7 @@ public class ProtoToMetadataMapper {
         return this.metadataTemplate.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue() instanceof String)
-                .flatMap(e -> Stream.of(e.getKey(), e.getValue().toString()))
+                .flatMap(entry -> Stream.of(entry.getKey(), entry.getValue().toString()))
                 .map(keyword -> {
                     Matcher matcher = CEL_EXPRESSION_MARKER.matcher(keyword);
                     if (matcher.find()) {

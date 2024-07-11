@@ -39,7 +39,6 @@ public class GrpcClient {
     private ManagedChannel managedChannel;
     private final MethodDescriptor<byte[], byte[]> methodDescriptor;
     private final DynamicMessage emptyResponse;
-    private final Metadata grpcStaticMetadata;
     private final ProtoToMetadataMapper protoToMetadataMapper;
 
     public GrpcClient(FirehoseInstrumentation firehoseInstrumentation,
@@ -58,7 +57,6 @@ public class GrpcClient {
                 .setFullMethodName(grpcSinkConfig.getSinkGrpcMethodUrl())
                 .build();
         this.emptyResponse = DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
-        this.grpcStaticMetadata = grpcSinkConfig.getSinkGrpcMetadata();
     }
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
@@ -86,23 +84,13 @@ public class GrpcClient {
     }
 
     protected Metadata buildMetadata(Headers headers, byte[] logMessage) {
-        Metadata metadata = buildMetadata(headers);
-        Metadata dynamicMetadata = buildDynamicMetadata(logMessage);
-        metadata.merge(dynamicMetadata);
-        return metadata;
-    }
-
-    private Metadata buildMetadata(Headers headers) {
         Metadata metadata = new Metadata();
         for (Header header : headers) {
             metadata.put(Metadata.Key.of(header.key(), Metadata.ASCII_STRING_MARSHALLER), new String(header.value()));
         }
-        metadata.merge(grpcStaticMetadata);
+        Metadata externalizedMetadata = protoToMetadataMapper.buildGrpcMetadata(logMessage);
+        metadata.merge(externalizedMetadata);
         return metadata;
-    }
-
-    protected Metadata buildDynamicMetadata(byte[] message) {
-        return protoToMetadataMapper.buildGrpcMetadata(message);
     }
 
     protected CallOptions decoratedDefaultCallOptions() {

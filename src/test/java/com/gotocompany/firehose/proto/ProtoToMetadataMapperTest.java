@@ -17,9 +17,10 @@ public class ProtoToMetadataMapperTest {
 
     @Before
     public void setup() {
-        Map<String, Object> template = new HashMap<>();
+        Map<String, String> template = new HashMap<>();
         template.put("$GenericResponse.detail", "$GenericResponse.success");
-        template.put("staticKey", "$(GenericResponse.errors[0].cause + GenericResponse.errors[0].code)");
+        template.put("someField", "someValue");
+        template.put("staticKey", "$(GenericResponse.errors[0].cause + '-' + GenericResponse.errors[0].code + '-' + string(GenericResponse.code))");
         this.protoToMetadataMapper = new ProtoToMetadataMapper(
                 GenericResponse.getDescriptor(),
                 template
@@ -31,6 +32,7 @@ public class ProtoToMetadataMapperTest {
         GenericResponse payload = GenericResponse.newBuilder()
                 .setSuccess(false)
                 .setDetail("detail_of_error")
+                .setCode(100)
                 .addErrors(GenericError.newBuilder()
                         .setCode("404")
                         .setCause("not_found")
@@ -43,12 +45,14 @@ public class ProtoToMetadataMapperTest {
         Assertions.assertTrue(metadata.containsKey(Metadata.Key.of("detail_of_error", Metadata.ASCII_STRING_MARSHALLER)));
         Assertions.assertEquals("false", metadata.get(Metadata.Key.of("detail_of_error", Metadata.ASCII_STRING_MARSHALLER)));
         Assertions.assertTrue(metadata.containsKey(Metadata.Key.of("statickey", Metadata.ASCII_STRING_MARSHALLER)));
-        Assertions.assertEquals("not_found404", metadata.get(Metadata.Key.of("statickey", Metadata.ASCII_STRING_MARSHALLER)));
+        Assertions.assertEquals("not_found-404-100", metadata.get(Metadata.Key.of("statickey", Metadata.ASCII_STRING_MARSHALLER)));
+        Assertions.assertTrue(metadata.containsKey(Metadata.Key.of("somefield", Metadata.ASCII_STRING_MARSHALLER)));
+        Assertions.assertEquals("someValue", metadata.get(Metadata.Key.of("somefield", Metadata.ASCII_STRING_MARSHALLER)));
     }
 
     @Test
     public void shouldThrowOperationNotSupportedExceptionWhenMappedHeaderValueIsComplexType() {
-        Map<String, Object> template = new HashMap<>();
+        Map<String, String> template = new HashMap<>();
         template.put("$GenericResponse.detail", "$GenericResponse.success");
         template.put("staticKey", "$GenericResponse.errors");
         this.protoToMetadataMapper = new ProtoToMetadataMapper(
@@ -82,7 +86,7 @@ public class ProtoToMetadataMapperTest {
 
     @Test
     public void shouldThrowIllegalArgumentExceptionWhenConfigurationContainsUnregisteredExpression() {
-        Map<String, Object> template = new HashMap<>();
+        Map<String, String> template = new HashMap<>();
         template.put("$UnregisteredPayload.detail", "$GenericResponse.success");
         template.put("staticKey", "$(GenericResponse.errors[0].cause + GenericResponse.errors[0].code)");
         Assertions.assertThrows(IllegalArgumentException.class, () -> new ProtoToMetadataMapper(
