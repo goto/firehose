@@ -9,6 +9,7 @@ import com.gotocompany.firehose.consumer.TestGrpcResponse;
 import com.gotocompany.firehose.consumer.TestServerGrpc;
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.DynamicMessage;
+import com.gotocompany.firehose.proto.ProtoToMetadataMapper;
 import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 import com.gotocompany.stencil.StencilClientFactory;
@@ -42,10 +43,14 @@ public class GrpcClientTest {
     @Mock
     private FirehoseInstrumentation firehoseInstrumentation;
 
+    @Mock
+    private ProtoToMetadataMapper protoToMetadataMapper;
+
     @Before
     public void setup() throws IOException {
         firehoseInstrumentation = Mockito.mock(FirehoseInstrumentation.class);
         testGrpcService = Mockito.mock(TestServerGrpc.TestServerImplBase.class, CALLS_REAL_METHODS);
+        protoToMetadataMapper = Mockito.mock(ProtoToMetadataMapper.class);
         headerTestInterceptor = new HeaderTestInterceptor();
         headerTestInterceptor.setHeaderKeys(HEADER_KEYS);
         ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(testGrpcService.bindService(), Arrays.asList(headerTestInterceptor));
@@ -62,7 +67,10 @@ public class GrpcClientTest {
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
         StencilClient stencilClient = StencilClientFactory.getClient();
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();
-        grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient);
+        Metadata metadata = new Metadata();
+        metadata.put(Metadata.Key.of("custom_dynamic_metadata_key", Metadata.ASCII_STRING_MARSHALLER), "custom_dynamic_metadata_value");
+        when(protoToMetadataMapper.buildGrpcMetadata(any())).thenReturn(metadata);
+        grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient, protoToMetadataMapper);
         headers = new RecordHeaders();
     }
 
@@ -142,20 +150,20 @@ public class GrpcClientTest {
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
         StencilClient stencilClient = StencilClientFactory.getClient();
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();
-        grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient);
+        grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient, protoToMetadataMapper);
         String headerValue1 = "test-value-1";
         String headerValue2 = "test-value-2";
         headers.add(new RecordHeader(HEADER_KEYS.get(0), headerValue1.getBytes()));
         headers.add(new RecordHeader(HEADER_KEYS.get(1), headerValue2.getBytes()));
 
-        Metadata resultMetadata = grpcClient.buildMetadata(headers);
+        Metadata resultMetadata = grpcClient.buildMetadata(headers, new byte[]{});
 
-        assertEquals(Arrays.asList("dlq", "test-header-key-1", "test-header-key-2", "token").stream().collect(Collectors.toSet()), resultMetadata.keys());
-
+        assertEquals(Arrays.asList("dlq", "test-header-key-1", "test-header-key-2", "token", "custom_dynamic_metadata_key").stream().collect(Collectors.toSet()), resultMetadata.keys());
         assertEquals("true", resultMetadata.get(Metadata.Key.of("dlq", Metadata.ASCII_STRING_MARSHALLER)));
         assertEquals("test-value-1", resultMetadata.get(Metadata.Key.of("test-header-key-1", Metadata.ASCII_STRING_MARSHALLER)));
         assertEquals("test-value-2", resultMetadata.get(Metadata.Key.of("test-header-key-2", Metadata.ASCII_STRING_MARSHALLER)));
         assertEquals("123", resultMetadata.get(Metadata.Key.of("token", Metadata.ASCII_STRING_MARSHALLER)));
+        assertEquals("custom_dynamic_metadata_value", resultMetadata.get(Metadata.Key.of("custom_dynamic_metadata_key", Metadata.ASCII_STRING_MARSHALLER)));
     }
 
     @Test
@@ -197,7 +205,7 @@ public class GrpcClientTest {
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
         StencilClient stencilClient = StencilClientFactory.getClient();
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcSinkConfig.getSinkGrpcServiceHost(), grpcSinkConfig.getSinkGrpcServicePort()).usePlaintext().build();
-        grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient);
+        grpcClient = new GrpcClient(firehoseInstrumentation, grpcSinkConfig, managedChannel, stencilClient, protoToMetadataMapper);
 
         CallOptions decoratedCallOptions = grpcClient.decoratedDefaultCallOptions();
         assertNotNull(decoratedCallOptions.getDeadline());

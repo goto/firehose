@@ -1,7 +1,10 @@
 package com.gotocompany.firehose.proto;
 
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import com.gotocompany.firehose.utils.CelUtils;
 import dev.cel.common.CelAbstractSyntaxTree;
@@ -14,8 +17,8 @@ import dev.cel.runtime.CelEvaluationException;
 import dev.cel.runtime.CelRuntime;
 import dev.cel.runtime.CelRuntimeFactory;
 import io.grpc.Metadata;
+import org.apache.commons.collections.MapUtils;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,13 +35,26 @@ public class ProtoToMetadataMapper {
 
     private final Map<String, CelRuntime.Program> celExpressionToProgramMapper;
     private final Map<String, Object> metadataTemplate;
+    private final Descriptors.Descriptor descriptor;
 
     public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, Object> metadataTemplate) {
         this.metadataTemplate = metadataTemplate;
+        this.descriptor = descriptor;
         this.celExpressionToProgramMapper = initializeCelPrograms(metadataTemplate, descriptor);
     }
 
-    public Metadata buildGrpcMetadata(Message message) throws IOException {
+    public Metadata buildGrpcMetadata(byte[] message) {
+        try {
+            if (MapUtils.isEmpty(metadataTemplate)) {
+                return new Metadata();
+            }
+            return buildGrpcMetadata(DynamicMessage.parseFrom(descriptor, message));
+        } catch (InvalidProtocolBufferException e) {
+            throw new DeserializerException("Failed to parse protobuf message", e);
+        }
+    }
+
+    private Metadata buildGrpcMetadata(Message message) {
         Metadata metadata = new Metadata();
         for (Map.Entry<String, Object> entry : metadataTemplate.entrySet()) {
             String updatedKey = evaluateExpression(entry.getKey(), message).toString();

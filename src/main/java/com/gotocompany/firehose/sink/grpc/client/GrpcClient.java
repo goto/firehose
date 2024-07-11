@@ -7,6 +7,7 @@ import com.google.protobuf.DynamicMessage;
 
 import com.gotocompany.firehose.metrics.Metrics;
 
+import com.gotocompany.firehose.proto.ProtoToMetadataMapper;
 import io.grpc.CallOptions;
 import io.grpc.Metadata;
 import io.grpc.Channel;
@@ -39,12 +40,18 @@ public class GrpcClient {
     private final MethodDescriptor<byte[], byte[]> methodDescriptor;
     private final DynamicMessage emptyResponse;
     private final Metadata grpcStaticMetadata;
+    private final ProtoToMetadataMapper protoToMetadataMapper;
 
-    public GrpcClient(FirehoseInstrumentation firehoseInstrumentation, GrpcSinkConfig grpcSinkConfig, ManagedChannel managedChannel, StencilClient stencilClient) {
+    public GrpcClient(FirehoseInstrumentation firehoseInstrumentation,
+                      GrpcSinkConfig grpcSinkConfig,
+                      ManagedChannel managedChannel,
+                      StencilClient stencilClient,
+                      ProtoToMetadataMapper protoToMetadataMapper) {
         this.firehoseInstrumentation = firehoseInstrumentation;
         this.grpcSinkConfig = grpcSinkConfig;
         this.stencilClient = stencilClient;
         this.managedChannel = managedChannel;
+        this.protoToMetadataMapper = protoToMetadataMapper;
         MethodDescriptor.Marshaller<byte[]> marshaller = getMarshaller();
         this.methodDescriptor = MethodDescriptor.newBuilder(marshaller, marshaller)
                 .setType(MethodDescriptor.MethodType.UNARY)
@@ -55,7 +62,7 @@ public class GrpcClient {
     }
 
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
-        Metadata metadata = buildMetadata(headers);
+        Metadata metadata = buildMetadata(headers, logMessage);
         try {
             Channel decoratedChannel = ClientInterceptors.intercept(managedChannel,
                      MetadataUtils.newAttachHeadersInterceptor(metadata));
@@ -78,13 +85,24 @@ public class GrpcClient {
         return emptyResponse;
     }
 
-    protected Metadata buildMetadata(Headers headers) {
+    protected Metadata buildMetadata(Headers headers, byte[] logMessage) {
+        Metadata metadata = buildMetadata(headers);
+        Metadata dynamicMetadata = buildDynamicMetadata(logMessage);
+        metadata.merge(dynamicMetadata);
+        return metadata;
+    }
+
+    private Metadata buildMetadata(Headers headers) {
         Metadata metadata = new Metadata();
         for (Header header : headers) {
             metadata.put(Metadata.Key.of(header.key(), Metadata.ASCII_STRING_MARSHALLER), new String(header.value()));
         }
         metadata.merge(grpcStaticMetadata);
         return metadata;
+    }
+
+    protected Metadata buildDynamicMetadata(byte[] message) {
+        return protoToMetadataMapper.buildGrpcMetadata(message);
     }
 
     protected CallOptions decoratedDefaultCallOptions() {
