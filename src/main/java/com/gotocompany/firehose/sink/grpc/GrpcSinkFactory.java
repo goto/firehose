@@ -42,10 +42,8 @@ public class GrpcSinkFactory {
         if (!certDirectory.exists()) {
             certDirectory.mkdirs();
         }
-        File certFile = Files.createTempFile(certDirectory.toPath(), "goto-root-ca", ".crt").toFile();
-        log.info(
-                "Created temporary file at {} to {}", certFile.getAbsolutePath(), certFile.toPath()
-        );
+        File certFile = Files.createTempFile(certDirectory.toPath(), "client-cert", ".crt").toFile();
+        log.info("Created certificate file at {}", certFile.getAbsolutePath());
         try (FileOutputStream fos = new FileOutputStream(certFile)) {
             fos.write(decodedBytes);
         }
@@ -55,8 +53,9 @@ public class GrpcSinkFactory {
     private static SslContext buildClientSslContext(String base64Cert) {
         try {
             File certFile = createCertFileFromBase64(base64Cert);
+            SslContextBuilder sslContextBuilder = SslContextBuilder.forClient().trustManager(certFile);
             return GrpcSslContexts
-                    .configure(SslContextBuilder.forClient().trustManager(certFile))
+                    .configure(sslContextBuilder)
                     .build();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -69,9 +68,9 @@ public class GrpcSinkFactory {
         String grpcSinkConfig = String.format("\n\tService host: %s\n\tService port: %s\n\tMethod url: %s\n\tResponse proto schema: %s",
                 grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort(), grpcConfig.getSinkGrpcMethodUrl(), grpcConfig.getSinkGrpcResponseSchemaProtoClass());
         firehoseInstrumentation.logDebug(grpcSinkConfig);
-        boolean isTlsEnable = grpcConfig.getSinkGrpcTlsEnable();
+        boolean isTlsEnabled = grpcConfig.getSinkGrpcTlsEnable();
         GrpcClient grpcClient;
-        if (isTlsEnable) {
+        if (isTlsEnabled) {
             String base64Cert = grpcConfig.getSinkGrpcRootCA();
             SslContext sslContext = buildClientSslContext(base64Cert);
             firehoseInstrumentation.logInfo("SSL Context created successfully.");
