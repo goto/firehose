@@ -1,6 +1,7 @@
 package com.gotocompany.firehose.config.converter;
 
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Map;
 
@@ -17,6 +18,11 @@ public class GrpcMetadataConverterTest {
         assertEquals("$Generic.Value", actualMetadata.get("$Generic.Field"));
     }
 
+    @Test
+    public void shouldConvertToEmptyMapGivenEmptyStringConfig() {
+        Map<String, String> result = new GrpcMetadataConverter().convert(null, "");
+        Assertions.assertTrue(result.isEmpty());
+    }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowOnIncompleteMetadataValue() {
