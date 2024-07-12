@@ -28,6 +28,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Class responsible for mapping Protobuf messages to gRPC metadata using CEL expressions.
+ */
 public class ProtoToMetadataMapper {
 
     private static final Pattern CEL_EXPRESSION_MARKER = Pattern.compile("^\\$(.+)");
@@ -37,12 +40,25 @@ public class ProtoToMetadataMapper {
     private final Map<String, String> metadataTemplate;
     private final Descriptors.Descriptor descriptor;
 
+    /**
+     * Constructor for ProtoToMetadataMapper.
+     *
+     * @param descriptor      the Protobuf descriptor of the message type
+     * @param metadataTemplate a map of metadata keys and values that may contain CEL expressions
+     */
     public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, String> metadataTemplate) {
         this.metadataTemplate = metadataTemplate;
         this.descriptor = descriptor;
         this.celExpressionToProgramMapper = initializeCelPrograms();
     }
 
+    /**
+     * Builds gRPC metadata from a Protobuf message in byte array format.
+     *
+     * @param message the Protobuf message as a byte array
+     * @return gRPC metadata
+     * @throws DeserializerException if the Protobuf message cannot be parsed
+     */
     public Metadata buildGrpcMetadata(byte[] message) {
         try {
             if (MapUtils.isEmpty(metadataTemplate)) {
@@ -54,6 +70,12 @@ public class ProtoToMetadataMapper {
         }
     }
 
+    /**
+     * Builds gRPC metadata from a Protobuf message.
+     *
+     * @param message the Protobuf message
+     * @return gRPC metadata
+     */
     private Metadata buildGrpcMetadata(Message message) {
         Metadata metadata = new Metadata();
         for (Map.Entry<String, String> entry : metadataTemplate.entrySet()) {
@@ -64,6 +86,14 @@ public class ProtoToMetadataMapper {
         return metadata;
     }
 
+    /**
+     * Evaluates a CEL expression or returns the input string if it's not a CEL expression.
+     *
+     * @param expression the expression to evaluate
+     * @param message    the Protobuf message used for evaluation
+     * @return the evaluated result or the original expression if not a CEL expression
+     * @throws OperationNotSupportedException if the evaluation result is a complex type
+     */
     private Object evaluateExpression(String expression, Message message) {
         Matcher matcher = CEL_EXPRESSION_MARKER.matcher(expression);
         if (!matcher.find()) {
@@ -80,10 +110,21 @@ public class ProtoToMetadataMapper {
                 }).orElse(expression);
     }
 
+    /**
+     * Checks if the object is a complex type (i.e., not a String, Number, or Boolean).
+     *
+     * @param object the object to check
+     * @return true if the object is a complex type, false otherwise
+     */
     private boolean isComplexType(Object object) {
         return !(object instanceof String || object instanceof Number || object instanceof Boolean);
     }
 
+    /**
+     * Initializes the CEL compiler with standard macros and message types.
+     *
+     * @return the initialized CEL compiler
+     */
     private CelCompiler initializeCelCompiler() {
         return CelCompilerFactory.standardCelCompilerBuilder()
                 .setStandardMacros(CelStandardMacro.values())
@@ -92,6 +133,11 @@ public class ProtoToMetadataMapper {
                 .build();
     }
 
+    /**
+     * Initializes CEL programs for the metadata template.
+     *
+     * @return a map of CEL expressions to their corresponding programs
+     */
     private Map<String, CelRuntime.Program> initializeCelPrograms() {
         CelRuntime celRuntime = CelRuntimeFactory.standardCelRuntimeBuilder().build();
         CelCompiler celCompiler = initializeCelCompiler();
@@ -110,6 +156,15 @@ public class ProtoToMetadataMapper {
                 .collect(Collectors.toMap(Function.identity(), celExpression -> initializeCelProgram(celExpression, celRuntime, celCompiler)));
     }
 
+    /**
+     * Initializes a CEL program for a given expression.
+     *
+     * @param celExpression the CEL expression to compile
+     * @param celRuntime    the CEL runtime environment
+     * @param celCompiler   the CEL compiler
+     * @return the compiled CEL program
+     * @throws IllegalArgumentException if the CEL program cannot be created
+     */
     private CelRuntime.Program initializeCelProgram(String celExpression, CelRuntime celRuntime, CelCompiler celCompiler) {
         try {
             CelAbstractSyntaxTree celAbstractSyntaxTree = celCompiler.compile(celExpression)
