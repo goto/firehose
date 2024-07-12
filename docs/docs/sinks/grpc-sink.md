@@ -28,11 +28,10 @@ Defines the URL of the GRPC method that needs to be called.
 ### `SINK_GRPC_METADATA`
 
 Defines the GRPC additional static and dynamic Metadata that allows clients to provide information to server that is associated with an RPC.
-Dynamic metadata is populated by using CEL expression on the input payload. CEL expression should be flagged by '$' and use fully qualified package name.
-Config format is CSV key-value(separated by ':') pair, please refer to the use example below. String, numeric, boolean are the dynamic values supported.
-Refer to official CEL documentation https://github.com/google/cel-spec
+Dynamic metadata is populated by using CEL expression applied to the input payload. CEL expression should be flagged by '$' and use fully qualified package name.
+Config format is CSV key-value pair, separated by colon. String, numeric, boolean are the dynamic values supported. Refer to official CEL documentation https://github.com/google/cel-spec.
 
-Note - final metadata will be generated with merging static metadata and the kafka record header. 
+Note - final metadata will be generated with merging metadata and the kafka record header. 
 
 - Example value: `authorization:token,dlq:true,$com.goto.company.GenericPayload.field:staticvalue,$com.goto.company.GenericPayload.field_two:$(com.goto.company.GenericPayload.id + '' + com.goto.company.GenericPayload.code)`
 - Type: `optional`
