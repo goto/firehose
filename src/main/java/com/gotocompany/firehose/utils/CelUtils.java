@@ -13,7 +13,7 @@ import dev.cel.runtime.CelRuntime;
 import org.aeonbits.owner.util.Collections;
 
 /**
- * Utility class to instantiate CEL(Common Expression Language) related functionality
+ * Utility class to instantiate CEL(Common Expression Language) related functionality.
  * <a href="https://github.com/google/cel-spec">Official Documentation of CEL</a>
  */
 public class CelUtils {
@@ -43,7 +43,6 @@ public class CelUtils {
                 .addMessageTypes(descriptor)
                 .build();
     }
-
 
     /**
      * Initializes a CEL program for a given expression.
