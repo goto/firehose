@@ -20,6 +20,7 @@ public class ProtoToMetadataMapperTest {
         Map<String, String> template = new HashMap<>();
         template.put("$GenericResponse.detail", "$GenericResponse.success");
         template.put("someField", "someValue");
+        template.put("$GenericResponse.success", "staticValue");
         template.put("staticKey", "$(GenericResponse.errors[0].cause + '-' + GenericResponse.errors[0].code + '-' + string(GenericResponse.code))");
         template.put("entity", "$GenericResponse.errors[0].entity");
         this.protoToMetadataMapper = new ProtoToMetadataMapper(
@@ -50,6 +51,8 @@ public class ProtoToMetadataMapperTest {
         Assertions.assertEquals("someValue", metadata.get(Metadata.Key.of("somefield", Metadata.ASCII_STRING_MARSHALLER)));
         Assertions.assertTrue(metadata.containsKey(Metadata.Key.of("entity", Metadata.ASCII_STRING_MARSHALLER)));
         Assertions.assertEquals("", metadata.get(Metadata.Key.of("entity", Metadata.ASCII_STRING_MARSHALLER)));
+        Assertions.assertTrue(metadata.containsKey(Metadata.Key.of("false", Metadata.ASCII_STRING_MARSHALLER)));
+        Assertions.assertEquals("staticValue", metadata.get(Metadata.Key.of("false", Metadata.ASCII_STRING_MARSHALLER)));
     }
 
     @Test
@@ -57,21 +60,11 @@ public class ProtoToMetadataMapperTest {
         Map<String, String> template = new HashMap<>();
         template.put("$GenericResponse.detail", "$GenericResponse.success");
         template.put("staticKey", "$GenericResponse.errors");
-        this.protoToMetadataMapper = new ProtoToMetadataMapper(
+
+        Assertions.assertThrows(OperationNotSupportedException.class, () -> new ProtoToMetadataMapper(
                 GenericResponse.getDescriptor(),
                 template
-        );
-        GenericResponse payload = GenericResponse.newBuilder()
-                .setSuccess(false)
-                .setDetail("detail_of_error")
-                .addErrors(GenericError.newBuilder()
-                        .setCode("404")
-                        .setCause("not_found")
-                        .setEntity("GTF")
-                        .build())
-                .build();
-
-        Assertions.assertThrows(OperationNotSupportedException.class, () -> protoToMetadataMapper.buildGrpcMetadata(payload.toByteArray()));
+        ));
     }
 
     @Test

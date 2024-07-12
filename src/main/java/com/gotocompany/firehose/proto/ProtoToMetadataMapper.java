@@ -83,8 +83,8 @@ public class ProtoToMetadataMapper {
     /**
      * Evaluates a CEL expression or returns the input string if it's not a CEL expression.
      *
-     * @param input the expression to evaluate
-     * @param message    the Protobuf message used for evaluation
+     * @param input   the expression to evaluate
+     * @param message the Protobuf message used for evaluation
      * @return the evaluated result or the original expression if not a CEL expression
      * @throws OperationNotSupportedException if the evaluation result is a complex type
      */
@@ -95,23 +95,7 @@ public class ProtoToMetadataMapper {
         }
         String celExpression = matcher.group(EXACT_CEL_EXPRESSION_GROUP_INDEX);
         return Optional.ofNullable(celExpressionToProgramMap.get(celExpression))
-                .map(program -> {
-                    Object val = CelUtils.evaluate(program, message);
-                    if (isComplexType(val)) {
-                        throw new OperationNotSupportedException("Complex type is not supported");
-                    }
-                    return val;
-                }).orElse(input);
-    }
-
-    /**
-     * Checks if the object is a complex type (i.e., not a String, Number, or Boolean).
-     *
-     * @param object the object to check
-     * @return true if the object is a complex type, false otherwise
-     */
-    private boolean isComplexType(Object object) {
-        return !(object instanceof String || object instanceof Number || object instanceof Boolean);
+                .map(program -> CelUtils.evaluate(program, message)).orElse(input);
     }
 
     /**
@@ -134,7 +118,10 @@ public class ProtoToMetadataMapper {
                     return null;
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Function.identity(), celExpression -> CelUtils.initializeCelProgram(celExpression, celRuntime, celCompiler)));
+                .distinct()
+                .collect(Collectors.toMap(Function.identity(), celExpression ->
+                        CelUtils.initializeCelProgram(celExpression, celRuntime, celCompiler, celType -> celType.kind()
+                                .isPrimitive())));
     }
 
 }
