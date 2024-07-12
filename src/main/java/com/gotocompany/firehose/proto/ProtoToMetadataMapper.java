@@ -7,13 +7,7 @@ import com.google.protobuf.Message;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import com.gotocompany.firehose.utils.CelUtils;
-import dev.cel.common.CelAbstractSyntaxTree;
-import dev.cel.common.CelValidationException;
-import dev.cel.common.types.StructTypeReference;
 import dev.cel.compiler.CelCompiler;
-import dev.cel.compiler.CelCompilerFactory;
-import dev.cel.parser.CelStandardMacro;
-import dev.cel.runtime.CelEvaluationException;
 import dev.cel.runtime.CelRuntime;
 import dev.cel.runtime.CelRuntimeFactory;
 import io.grpc.Metadata;
@@ -43,7 +37,7 @@ public class ProtoToMetadataMapper {
     /**
      * Constructor for ProtoToMetadataMapper.
      *
-     * @param descriptor      the Protobuf descriptor of the message type
+     * @param descriptor       the Protobuf descriptor of the message type
      * @param metadataTemplate a map of metadata keys and values that may contain CEL expressions
      */
     public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, String> metadataTemplate) {
@@ -121,26 +115,13 @@ public class ProtoToMetadataMapper {
     }
 
     /**
-     * Initializes the CEL compiler with standard macros and message types.
-     *
-     * @return the initialized CEL compiler
-     */
-    private CelCompiler initializeCelCompiler() {
-        return CelCompilerFactory.standardCelCompilerBuilder()
-                .setStandardMacros(CelStandardMacro.values())
-                .addVar(this.descriptor.getFullName(), StructTypeReference.create(this.descriptor.getFullName()))
-                .addMessageTypes(this.descriptor)
-                .build();
-    }
-
-    /**
      * Initializes CEL programs for the metadata template.
      *
      * @return a map of CEL expressions to their corresponding programs
      */
     private Map<String, CelRuntime.Program> initializeCelPrograms() {
         CelRuntime celRuntime = CelRuntimeFactory.standardCelRuntimeBuilder().build();
-        CelCompiler celCompiler = initializeCelCompiler();
+        CelCompiler celCompiler = CelUtils.initializeCelCompiler(this.descriptor);
         return this.metadataTemplate.entrySet()
                 .stream()
                 .filter(entry -> Objects.nonNull(entry.getValue()))
@@ -153,26 +134,7 @@ public class ProtoToMetadataMapper {
                     return null;
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Function.identity(), celExpression -> initializeCelProgram(celExpression, celRuntime, celCompiler)));
-    }
-
-    /**
-     * Initializes a CEL program for a given expression.
-     *
-     * @param celExpression the CEL expression to compile
-     * @param celRuntime    the CEL runtime environment
-     * @param celCompiler   the CEL compiler
-     * @return the compiled CEL program
-     * @throws IllegalArgumentException if the CEL program cannot be created
-     */
-    private CelRuntime.Program initializeCelProgram(String celExpression, CelRuntime celRuntime, CelCompiler celCompiler) {
-        try {
-            CelAbstractSyntaxTree celAbstractSyntaxTree = celCompiler.compile(celExpression)
-                    .getAst();
-            return celRuntime.createProgram(celAbstractSyntaxTree);
-        } catch (CelValidationException | CelEvaluationException e) {
-            throw new IllegalArgumentException("Failed to create CEL program with expression : " + celExpression, e);
-        }
+                .collect(Collectors.toMap(Function.identity(), celExpression -> CelUtils.initializeCelProgram(celExpression, celRuntime, celCompiler)));
     }
 
 }
