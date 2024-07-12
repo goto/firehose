@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 public class ProtoToMetadataMapper {
 
     private static final Pattern CEL_EXPRESSION_MARKER = Pattern.compile("^\\$(.+)");
-    private static final int CEL_EXPRESSION_GROUP_INDEX = 1;
+    private static final int EXACT_CEL_EXPRESSION_GROUP_INDEX = 1;
 
     private final Map<String, CelRuntime.Program> celExpressionToProgramMapper;
     private final Map<String, String> metadataTemplate;
@@ -69,7 +69,8 @@ public class ProtoToMetadataMapper {
         if (!matcher.find()) {
             return expression;
         }
-        return Optional.ofNullable(celExpressionToProgramMapper.get(matcher.group(1)))
+        String celExpression = matcher.group(EXACT_CEL_EXPRESSION_GROUP_INDEX);
+        return Optional.ofNullable(celExpressionToProgramMapper.get(celExpression))
                 .map(program -> {
                     Object val = CelUtils.evaluate(program, message);
                     if (isComplexType(val)) {
@@ -96,12 +97,12 @@ public class ProtoToMetadataMapper {
         CelCompiler celCompiler = initializeCelCompiler();
         return this.metadataTemplate.entrySet()
                 .stream()
-                .filter(entry -> entry.getValue() instanceof String)
-                .flatMap(entry -> Stream.of(entry.getKey(), entry.getValue().toString()))
-                .map(keyword -> {
-                    Matcher matcher = CEL_EXPRESSION_MARKER.matcher(keyword);
+                .filter(entry -> Objects.nonNull(entry.getValue()))
+                .flatMap(entry -> Stream.of(entry.getKey(), entry.getValue()))
+                .map(string -> {
+                    Matcher matcher = CEL_EXPRESSION_MARKER.matcher(string);
                     if (matcher.find()) {
-                        return matcher.group(CEL_EXPRESSION_GROUP_INDEX);
+                        return matcher.group(EXACT_CEL_EXPRESSION_GROUP_INDEX);
                     }
                     return null;
                 })
