@@ -5,7 +5,6 @@ import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.gotocompany.firehose.exception.DeserializerException;
-import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import com.gotocompany.firehose.utils.CelUtils;
 import dev.cel.compiler.CelCompiler;
 import dev.cel.runtime.CelRuntime;
@@ -86,7 +85,6 @@ public class ProtoToMetadataMapper {
      * @param input   the expression to evaluate
      * @param message the Protobuf message used for evaluation
      * @return the evaluated result or the original expression if not a CEL expression
-     * @throws OperationNotSupportedException if the evaluation result is a complex type
      */
     private Object evaluateExpression(String input, Message message) {
         Matcher matcher = CEL_EXPRESSION_MARKER.matcher(input);
