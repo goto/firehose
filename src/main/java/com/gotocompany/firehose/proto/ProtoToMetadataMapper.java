@@ -30,7 +30,7 @@ public class ProtoToMetadataMapper {
     private static final Pattern CEL_EXPRESSION_MARKER = Pattern.compile("^\\$(.+)");
     private static final int EXACT_CEL_EXPRESSION_GROUP_INDEX = 1;
 
-    private final Map<String, CelRuntime.Program> celExpressionToProgramMapper;
+    private final Map<String, CelRuntime.Program> celExpressionToProgramMap;
     private final Map<String, String> metadataTemplate;
     private final Descriptors.Descriptor descriptor;
 
@@ -43,7 +43,7 @@ public class ProtoToMetadataMapper {
     public ProtoToMetadataMapper(Descriptors.Descriptor descriptor, Map<String, String> metadataTemplate) {
         this.metadataTemplate = metadataTemplate;
         this.descriptor = descriptor;
-        this.celExpressionToProgramMapper = initializeCelPrograms();
+        this.celExpressionToProgramMap = initializeCelPrograms();
     }
 
     /**
@@ -83,25 +83,25 @@ public class ProtoToMetadataMapper {
     /**
      * Evaluates a CEL expression or returns the input string if it's not a CEL expression.
      *
-     * @param expression the expression to evaluate
+     * @param input the expression to evaluate
      * @param message    the Protobuf message used for evaluation
      * @return the evaluated result or the original expression if not a CEL expression
      * @throws OperationNotSupportedException if the evaluation result is a complex type
      */
-    private Object evaluateExpression(String expression, Message message) {
-        Matcher matcher = CEL_EXPRESSION_MARKER.matcher(expression);
+    private Object evaluateExpression(String input, Message message) {
+        Matcher matcher = CEL_EXPRESSION_MARKER.matcher(input);
         if (!matcher.find()) {
-            return expression;
+            return input;
         }
         String celExpression = matcher.group(EXACT_CEL_EXPRESSION_GROUP_INDEX);
-        return Optional.ofNullable(celExpressionToProgramMapper.get(celExpression))
+        return Optional.ofNullable(celExpressionToProgramMap.get(celExpression))
                 .map(program -> {
                     Object val = CelUtils.evaluate(program, message);
                     if (isComplexType(val)) {
                         throw new OperationNotSupportedException("Complex type is not supported");
                     }
                     return val;
-                }).orElse(expression);
+                }).orElse(input);
     }
 
     /**
