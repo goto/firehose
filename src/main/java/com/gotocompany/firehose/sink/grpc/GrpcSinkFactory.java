@@ -32,11 +32,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class GrpcSinkFactory {
 
-    private static final String CERT_DIRECTORY = "/usr/local/share/ca-certificates";
+    private static final String PERSIST_CERT_DIRECTORY_PATH = "/usr/local/share/ca-certificates";
 
     private static File createCertFileFromBase64(String base64Cert) throws IOException {
         byte[] decodedBytes = Base64.getDecoder().decode(base64Cert);
-        File certDirectory = new File(CERT_DIRECTORY);
+        File certDirectory = new File(PERSIST_CERT_DIRECTORY_PATH);
         if (!certDirectory.exists()) {
             certDirectory.mkdirs();
         }
@@ -56,7 +56,7 @@ public class GrpcSinkFactory {
                     .configure(sslContextBuilder)
                     .build();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to build SSL context due to an IO error while creating the certificate file.", e);
         }
     }
 
@@ -79,6 +79,7 @@ public class GrpcSinkFactory {
             managedChannelBuilder.usePlaintext();
         }
         GrpcClient grpcClient = new GrpcClient(new FirehoseInstrumentation(statsDReporter, GrpcClient.class), grpcConfig, managedChannelBuilder.build(), stencilClient);
+        firehoseInstrumentation.logInfo("Client created successfully.");
         return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient);
     }
 }
