@@ -3,6 +3,7 @@ package com.gotocompany.firehose.evaluator;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.gotocompany.firehose.utils.CelUtils;
+import dev.cel.common.types.CelKind;
 import dev.cel.compiler.CelCompiler;
 import dev.cel.runtime.CelRuntime;
 import dev.cel.runtime.CelRuntimeFactory;
@@ -20,7 +21,7 @@ public class GrpcResponseCelPayloadEvaluator implements PayloadEvaluator<Message
     /**
      * Constructs a GrpcResponseCelPayloadEvaluator with the specified descriptor and CEL expression.
      *
-     * @param descriptor the descriptor of the gRPC message
+     * @param descriptor    the descriptor of the gRPC message
      * @param celExpression the CEL expression to evaluate against the message
      */
     public GrpcResponseCelPayloadEvaluator(Descriptors.Descriptor descriptor, String celExpression) {
@@ -52,7 +53,8 @@ public class GrpcResponseCelPayloadEvaluator implements PayloadEvaluator<Message
         CelCompiler celCompiler = CelUtils.initializeCelCompiler(this.descriptor);
         CelRuntime celRuntime = CelRuntimeFactory.standardCelRuntimeBuilder()
                 .build();
-        this.celProgram = CelUtils.initializeCelProgram(celExpression, celRuntime, celCompiler);
+        this.celProgram = CelUtils.initializeCelProgram(celExpression, celRuntime, celCompiler,
+                celType -> celType.kind().equals(CelKind.BOOL));
     }
 
 }

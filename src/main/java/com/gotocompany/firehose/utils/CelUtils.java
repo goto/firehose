@@ -2,8 +2,10 @@ package com.gotocompany.firehose.utils;
 
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
+import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import dev.cel.common.CelAbstractSyntaxTree;
 import dev.cel.common.CelValidationException;
+import dev.cel.common.types.CelType;
 import dev.cel.common.types.StructTypeReference;
 import dev.cel.compiler.CelCompiler;
 import dev.cel.compiler.CelCompilerFactory;
@@ -11,6 +13,8 @@ import dev.cel.parser.CelStandardMacro;
 import dev.cel.runtime.CelEvaluationException;
 import dev.cel.runtime.CelRuntime;
 import org.aeonbits.owner.util.Collections;
+
+import java.util.function.Predicate;
 
 /**
  * Utility class to instantiate CEL(Common Expression Language) related functionality.
@@ -47,16 +51,24 @@ public class CelUtils {
     /**
      * Initializes a CEL program for a given expression.
      *
-     * @param celExpression the CEL expression to compile
-     * @param celRuntime    the CEL runtime environment
-     * @param celCompiler   the CEL compiler
+     * @param celExpression     the CEL expression to compile
+     * @param celRuntime        the CEL runtime environment
+     * @param celCompiler       the CEL compiler
+     * @param resultTypeChecker the predicate to evaluate whether return type is supported or not
      * @return the compiled CEL program
      * @throws IllegalArgumentException if the CEL program cannot be created
+     * @throws OperationNotSupportedException if the return type is not supported
      */
-    public static CelRuntime.Program initializeCelProgram(String celExpression, CelRuntime celRuntime, CelCompiler celCompiler) {
+    public static CelRuntime.Program initializeCelProgram(String celExpression,
+                                                          CelRuntime celRuntime,
+                                                          CelCompiler celCompiler,
+                                                          Predicate<CelType> resultTypeChecker) {
         try {
             CelAbstractSyntaxTree celAbstractSyntaxTree = celCompiler.compile(celExpression)
                     .getAst();
+            if (!resultTypeChecker.test(celAbstractSyntaxTree.getResultType())) {
+                throw new OperationNotSupportedException("Return type not supported for " + celExpression);
+            }
             return celRuntime.createProgram(celAbstractSyntaxTree);
         } catch (CelValidationException | CelEvaluationException e) {
             throw new IllegalArgumentException("Failed to create CEL program with expression : " + celExpression, e);
