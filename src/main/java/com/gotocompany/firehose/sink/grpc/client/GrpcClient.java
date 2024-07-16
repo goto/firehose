@@ -69,7 +69,7 @@ public class GrpcClient {
             return stencilClient.parse(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass(), response);
         } catch (StatusRuntimeException sre) {
             if (sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-                firehoseInstrumentation.logError("Configurations are incorrect: {}", sre.getMessage());
+                firehoseInstrumentation.logError("gRPC configurations are incorrect: {}", sre.getMessage());
             } else {
                 firehoseInstrumentation.logError("gRPC call failed with error message: {}", sre.getMessage());
             }

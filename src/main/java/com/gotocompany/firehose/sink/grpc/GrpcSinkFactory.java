@@ -67,7 +67,8 @@ public class GrpcSinkFactory {
                 grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort(), grpcConfig.getSinkGrpcMethodUrl(), grpcConfig.getSinkGrpcResponseSchemaProtoClass());
         firehoseInstrumentation.logDebug(grpcSinkConfig);
         boolean isTlsEnabled = grpcConfig.getSinkGrpcTlsEnable();
-        NettyChannelBuilder managedChannelBuilder = NettyChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
+        NettyChannelBuilder managedChannelBuilder = NettyChannelBuilder
+                .forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
                 .keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS)
                 .keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS);
         if (isTlsEnabled) {
@@ -78,8 +79,12 @@ public class GrpcSinkFactory {
         } else {
             managedChannelBuilder.usePlaintext();
         }
-        GrpcClient grpcClient = new GrpcClient(new FirehoseInstrumentation(statsDReporter, GrpcClient.class), grpcConfig, managedChannelBuilder.build(), stencilClient);
-        firehoseInstrumentation.logInfo("Client created successfully.");
+        GrpcClient grpcClient = new GrpcClient(
+                new FirehoseInstrumentation(statsDReporter, GrpcClient.class),
+                grpcConfig,
+                managedChannelBuilder.build(),
+                stencilClient);
+        firehoseInstrumentation.logInfo("gRPC Client created successfully.");
         return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient);
     }
 }
