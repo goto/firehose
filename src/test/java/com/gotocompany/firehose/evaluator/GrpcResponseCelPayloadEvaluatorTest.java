@@ -4,7 +4,6 @@ import com.google.protobuf.Message;
 import com.gotocompany.firehose.consumer.GenericError;
 import com.gotocompany.firehose.consumer.GenericResponse;
 import com.gotocompany.firehose.consumer.TestMessage;
-import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
@@ -121,7 +120,7 @@ public class GrpcResponseCelPayloadEvaluatorTest {
 
     @Test
     public void shouldThrowOperationNotSupportedExceptionWhenCelExpressionResultIsNotBoolean() {
-        Assertions.assertThrows(OperationNotSupportedException.class,
+        Assertions.assertThrows(UnsupportedOperationException.class,
                 () -> new GrpcResponseCelPayloadEvaluator(GenericResponse.getDescriptor(), "GenericResponse.errors"));
     }
 
