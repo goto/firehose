@@ -2,7 +2,6 @@ package com.gotocompany.firehose.utils;
 
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
-import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import dev.cel.common.CelAbstractSyntaxTree;
 import dev.cel.common.CelValidationException;
 import dev.cel.common.types.CelType;
@@ -57,7 +56,7 @@ public class CelUtils {
      * @param resultTypeChecker the predicate to evaluate whether return type is supported or not
      * @return the compiled CEL program
      * @throws IllegalArgumentException if the CEL program cannot be created
-     * @throws OperationNotSupportedException if the return type is not supported
+     * @throws UnsupportedOperationException if the return type is not supported
      */
     public static CelRuntime.Program initializeCelProgram(String celExpression,
                                                           CelRuntime celRuntime,
@@ -67,7 +66,7 @@ public class CelUtils {
             CelAbstractSyntaxTree celAbstractSyntaxTree = celCompiler.compile(celExpression)
                     .getAst();
             if (!resultTypeChecker.test(celAbstractSyntaxTree.getResultType())) {
-                throw new OperationNotSupportedException("Return type not supported for " + celExpression);
+                throw new UnsupportedOperationException("Return type not supported for " + celExpression);
             }
             return celRuntime.createProgram(celAbstractSyntaxTree);
         } catch (CelValidationException | CelEvaluationException e) {

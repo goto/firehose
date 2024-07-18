@@ -2,7 +2,6 @@ package com.gotocompany.firehose.proto;
 
 import com.gotocompany.firehose.consumer.GenericError;
 import com.gotocompany.firehose.consumer.GenericResponse;
-import com.gotocompany.firehose.exception.OperationNotSupportedException;
 import io.grpc.Metadata;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +60,7 @@ public class ProtoToMetadataMapperTest {
         template.put("$GenericResponse.detail", "$GenericResponse.success");
         template.put("staticKey", "$GenericResponse.errors");
 
-        Assertions.assertThrows(OperationNotSupportedException.class, () -> new ProtoToMetadataMapper(
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> new ProtoToMetadataMapper(
                 GenericResponse.getDescriptor(),
                 template
         ));
