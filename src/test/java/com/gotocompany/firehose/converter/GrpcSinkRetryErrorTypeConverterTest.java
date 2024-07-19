@@ -25,4 +25,10 @@ public class GrpcSinkRetryErrorTypeConverterTest {
                     Assertions.assertEquals(expectedValue, actualValue);
                 });
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowExceptionForInvalidValue() {
+        GrpcSinkRetryErrorTypeConverter grpcSinkRetryErrorTypeConverter = new GrpcSinkRetryErrorTypeConverter();
+        grpcSinkRetryErrorTypeConverter.convert(null, "ErrorType.UNREGISTERED");
+    }
 }
