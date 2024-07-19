@@ -53,10 +53,10 @@ public class ProtoToMetadataMapper {
      * @throws DeserializerException if the Protobuf message cannot be parsed
      */
     public Metadata buildGrpcMetadata(byte[] message) {
+        if (MapUtils.isEmpty(metadataTemplate)) {
+            return new Metadata();
+        }
         try {
-            if (MapUtils.isEmpty(metadataTemplate)) {
-                return new Metadata();
-            }
             return buildGrpcMetadata(DynamicMessage.parseFrom(descriptor, message));
         } catch (InvalidProtocolBufferException e) {
             throw new DeserializerException("Failed to parse protobuf message", e);

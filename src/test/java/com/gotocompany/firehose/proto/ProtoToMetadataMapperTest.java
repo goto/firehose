@@ -55,18 +55,6 @@ public class ProtoToMetadataMapperTest {
     }
 
     @Test
-    public void shouldThrowOperationNotSupportedExceptionWhenMappedHeaderValueIsComplexType() {
-        Map<String, String> template = new HashMap<>();
-        template.put("$GenericResponse.detail", "$GenericResponse.success");
-        template.put("staticKey", "$GenericResponse.errors");
-
-        Assertions.assertThrows(UnsupportedOperationException.class, () -> new ProtoToMetadataMapper(
-                GenericResponse.getDescriptor(),
-                template
-        ));
-    }
-
-    @Test
     public void shouldBuildEmptyMetadataWhenConfigurationIsEmpty() {
         this.protoToMetadataMapper = new ProtoToMetadataMapper(
                 GenericResponse.getDescriptor(),
@@ -78,14 +66,22 @@ public class ProtoToMetadataMapperTest {
         Assertions.assertTrue(metadata.keys().isEmpty());
     }
 
-    @Test
+    @Test(expected = UnsupportedOperationException.class)
+    public void shouldThrowOperationNotSupportedExceptionWhenMappedHeaderValueIsComplexType() {
+        Map<String, String> template = new HashMap<>();
+        template.put("$GenericResponse.detail", "$GenericResponse.success");
+        template.put("staticKey", "$GenericResponse.errors");
+
+        new ProtoToMetadataMapper(GenericResponse.getDescriptor(), template);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void shouldThrowIllegalArgumentExceptionWhenConfigurationContainsUnregisteredExpression() {
         Map<String, String> template = new HashMap<>();
         template.put("$UnregisteredPayload.detail", "$GenericResponse.success");
         template.put("staticKey", "$(GenericResponse.errors[0].cause + GenericResponse.errors[0].code)");
-        Assertions.assertThrows(IllegalArgumentException.class, () -> new ProtoToMetadataMapper(
-                GenericResponse.getDescriptor(),
-                template
-        ));
+
+        new ProtoToMetadataMapper(GenericResponse.getDescriptor(), template);
     }
+
 }
