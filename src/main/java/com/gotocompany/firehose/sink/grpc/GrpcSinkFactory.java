@@ -42,11 +42,11 @@ public class GrpcSinkFactory {
 
         GrpcClient grpcClient = new GrpcClient(new FirehoseInstrumentation(statsDReporter, GrpcClient.class), grpcConfig, managedChannel, stencilClient);
         firehoseInstrumentation.logInfo("GRPC connection established");
-        PayloadEvaluator<Message> grpcResponseRetryEvaluator = instantiateRetryEvaluator(grpcConfig, stencilClient);
+        PayloadEvaluator<Message> grpcResponseRetryEvaluator = instantiatePayloadEvaluator(grpcConfig, stencilClient);
         return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient, grpcResponseRetryEvaluator);
     }
 
-    private static PayloadEvaluator<Message> instantiateRetryEvaluator(GrpcSinkConfig grpcSinkConfig, StencilClient stencilClient) {
+    private static PayloadEvaluator<Message> instantiatePayloadEvaluator(GrpcSinkConfig grpcSinkConfig, StencilClient stencilClient) {
         if (StringUtils.isNotBlank(grpcSinkConfig.getSinkGrpcResponseRetryCELExpression())) {
             return new GrpcResponseCelPayloadEvaluator(
                     stencilClient.get(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass()),

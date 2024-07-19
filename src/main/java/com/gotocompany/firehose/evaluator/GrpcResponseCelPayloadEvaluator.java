@@ -38,7 +38,8 @@ public class GrpcResponseCelPayloadEvaluator implements PayloadEvaluator<Message
     @Override
     public boolean evaluate(Message payload) {
         if (!descriptor.getFullName().equals(payload.getDescriptorForType().getFullName())) {
-            throw new IllegalArgumentException("Payload does not match descriptor");
+            throw new IllegalArgumentException(String.format("Payload %s does not match descriptor %s",
+                    payload.getDescriptorForType().getFullName(), descriptor.getFullName()));
         }
         return (boolean) CelUtils.evaluate(this.celProgram, payload);
     }
