@@ -3,6 +3,7 @@ package com.gotocompany.firehose.sink.grpc;
 
 import com.gotocompany.depot.error.ErrorInfo;
 import com.gotocompany.depot.error.ErrorType;
+import com.gotocompany.firehose.config.GrpcSinkConfig;
 import com.gotocompany.firehose.evaluator.PayloadEvaluator;
 import com.gotocompany.firehose.exception.DefaultException;
 import com.gotocompany.firehose.exception.DeserializerException;
@@ -25,16 +26,19 @@ public class GrpcSink extends AbstractSink {
 
     private final GrpcClient grpcClient;
     private final StencilClient stencilClient;
+    private final GrpcSinkConfig grpcSinkConfig;
     private List<Message> messages;
     private PayloadEvaluator<com.google.protobuf.Message> retryEvaluator;
 
     public GrpcSink(FirehoseInstrumentation firehoseInstrumentation,
                     GrpcClient grpcClient,
                     StencilClient stencilClient,
+                    GrpcSinkConfig grpcSinkConfig,
                     PayloadEvaluator<com.google.protobuf.Message> retryEvaluator) {
         super(firehoseInstrumentation, "grpc");
         this.grpcClient = grpcClient;
         this.stencilClient = stencilClient;
+        this.grpcSinkConfig = grpcSinkConfig;
         this.retryEvaluator = retryEvaluator;
     }
 
@@ -74,7 +78,7 @@ public class GrpcSink extends AbstractSink {
         boolean eligibleToRetry = retryEvaluator.evaluate(dynamicMessage);
         if (eligibleToRetry) {
             getFirehoseInstrumentation().logDebug("Retrying grpc service");
-            message.setErrorInfo(new ErrorInfo(new DefaultException("Retryable gRPC Error"), ErrorType.SINK_RETRYABLE_ERROR));
+            message.setErrorInfo(new ErrorInfo(new DefaultException("Retryable gRPC Error"), grpcSinkConfig.getSinkGrpcRetryErrorType()));
             return;
         }
         message.setErrorInfo(new ErrorInfo(new DefaultException("Non Retryable gRPC Error"), ErrorType.SINK_NON_RETRYABLE_ERROR));
