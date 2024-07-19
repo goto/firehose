@@ -37,7 +37,7 @@ public interface GrpcSinkConfig extends AppConfig {
     String getSinkGrpcResponseRetryCELExpression();
 
     @Config.Key("SINK_GRPC_RESPONSE_RETRY_ERROR_TYPE")
-    @DefaultValue("ErrorType.DEFAULT_ERROR")
+    @DefaultValue("DEFAULT_ERROR")
     @ConverterClass(GrpcSinkRetryErrorTypeConverter.class)
     ErrorType getSinkGrpcRetryErrorType();
 

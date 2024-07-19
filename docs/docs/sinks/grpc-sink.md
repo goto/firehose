@@ -96,3 +96,12 @@ For more information about CEL please refer to this documentation : https://gith
   - Retry on specific error code : `com.gotocompany.generic.GenericResponse.errors.exists(e, e.code == "400")`
   - Retry on specific error code range : `com.gotocompany.generic.GenericResponse.errors.exists(e, int(e.code) >= 400 && int(e.code) <= 500)`
   - Retry on error codes outside from specific error codes : `com.gotocompany.generic.GenericResponse.errors.exists(e, !(int(e.code) in [400, 500, 600]))`
+
+### `SINK_GRPC_RESPONSE_RETRY_ERROR_TYPE`
+
+Defines the ErrorType to assign for a retryable error. This is used in conjunction with `SINK_GRPC_RESPONSE_RETRY_CEL_EXPRESSION` and `ERROR_TYPES_FOR_RETRY`.
+Value must be defined in com.gotocompany.depot.error.ErrorType
+
+- Example value: `SINK_RETRYABLE_ERROR`
+- Type: `optional`
+- Default Value: `DEFAULT_ERROR`
