@@ -3,8 +3,9 @@ package com.gotocompany.firehose.config;
 import com.gotocompany.depot.error.ErrorType;
 import com.gotocompany.firehose.config.converter.GrpcMetadataConverter;
 import com.gotocompany.firehose.config.converter.GrpcSinkRetryErrorTypeConverter;
-import io.grpc.Metadata;
 import org.aeonbits.owner.Config;
+
+import java.util.Map;
 
 
 public interface GrpcSinkConfig extends AppConfig {
@@ -44,5 +45,6 @@ public interface GrpcSinkConfig extends AppConfig {
     @Key("SINK_GRPC_METADATA")
     @DefaultValue("")
     @ConverterClass(GrpcMetadataConverter.class)
-    Metadata getSinkGrpcMetadata();
+    Map<String, String> getSinkGrpcMetadata();
+
 }

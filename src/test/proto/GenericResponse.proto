@@ -8,6 +8,7 @@ message GenericResponse {
   bool success = 1;
   repeated GenericError errors = 2;
   string detail = 3;
+  int32 code = 4;
 }
 
 message GenericError {
