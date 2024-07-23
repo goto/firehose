@@ -86,6 +86,7 @@ Defines the amount of time (in milliseconds) gRPC clients are willing to wait fo
 ### `SINK_GRPC_RESPONSE_RETRY_CEL_EXPRESSION`
 
 Defines the CEL(Common Expression Language) expression used to evaluate whether gRPC sink call should be retried or not based on the gRPC response.
+The given CEL expression should evaluate to a boolean value. If the expression evaluates to true, the unsuccessful gRPC sink call will be retried, otherwise it won't.
 Currently, we support all standard CEL macro including: has, all, exists, exists_one, map, map_filter, filter
 For more information about CEL please refer to this documentation : https://github.com/google/cel-spec/blob/master/doc/langdef.md
 
@@ -113,6 +114,8 @@ For more information about CEL please refer to this documentation : https://gith
   - Retry on specific error code : `com.gotocompany.generic.GenericResponse.errors.exists(e, e.code == "400")`
   - Retry on specific error code range : `com.gotocompany.generic.GenericResponse.errors.exists(e, int(e.code) >= 400 && int(e.code) <= 500)`
   - Retry on error codes outside from specific error codes : `com.gotocompany.generic.GenericResponse.errors.exists(e, !(int(e.code) in [400, 500, 600]))`
+  - Disable retry on all cases : `false`
+  - Retry on all error codes : `true`
 
 ### `SINK_GRPC_RESPONSE_RETRY_ERROR_TYPE`
 

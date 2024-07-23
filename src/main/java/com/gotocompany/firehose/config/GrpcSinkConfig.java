@@ -34,7 +34,7 @@ public interface GrpcSinkConfig extends AppConfig {
     Long getSinkGrpcArgDeadlineMS();
 
     @Config.Key("SINK_GRPC_RESPONSE_RETRY_CEL_EXPRESSION")
-    @DefaultValue("")
+    @DefaultValue("true")
     String getSinkGrpcResponseRetryCELExpression();
 
     @Config.Key("SINK_GRPC_RESPONSE_RETRY_ERROR_TYPE")

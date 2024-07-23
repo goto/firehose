@@ -4,7 +4,6 @@ package com.gotocompany.firehose.sink.grpc;
 import com.google.protobuf.Message;
 import com.gotocompany.firehose.config.AppConfig;
 import com.gotocompany.firehose.config.GrpcSinkConfig;
-import com.gotocompany.firehose.evaluator.DefaultGrpcResponsePayloadEvaluator;
 import com.gotocompany.firehose.evaluator.GrpcResponseCelPayloadEvaluator;
 import com.gotocompany.firehose.evaluator.PayloadEvaluator;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
@@ -16,7 +15,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import com.gotocompany.stencil.client.StencilClient;
 import org.aeonbits.owner.ConfigFactory;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -37,9 +35,9 @@ public class GrpcSinkFactory {
                 grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort(), grpcConfig.getSinkGrpcMethodUrl(), grpcConfig.getSinkGrpcResponseSchemaProtoClass());
         firehoseInstrumentation.logDebug(grpcSinkConfig);
         ManagedChannel managedChannel = ManagedChannelBuilder.forAddress(grpcConfig.getSinkGrpcServiceHost(), grpcConfig.getSinkGrpcServicePort())
-                        .keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS)
-                        .keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS)
-                        .usePlaintext().build();
+                .keepAliveTime(grpcConfig.getSinkGrpcArgKeepaliveTimeMS(), TimeUnit.MILLISECONDS)
+                .keepAliveTimeout(grpcConfig.getSinkGrpcArgKeepaliveTimeoutMS(), TimeUnit.MILLISECONDS)
+                .usePlaintext().build();
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, configuration);
         ProtoToMetadataMapper protoToMetadataMapper = new ProtoToMetadataMapper(stencilClient.get(appConfig.getInputSchemaProtoClass()), grpcConfig.getSinkGrpcMetadata());
         GrpcClient grpcClient = new GrpcClient(new FirehoseInstrumentation(statsDReporter, GrpcClient.class), grpcConfig, managedChannel, stencilClient, protoToMetadataMapper);
@@ -49,12 +47,9 @@ public class GrpcSinkFactory {
     }
 
     private static PayloadEvaluator<Message> instantiatePayloadEvaluator(GrpcSinkConfig grpcSinkConfig, StencilClient stencilClient) {
-        if (StringUtils.isNotBlank(grpcSinkConfig.getSinkGrpcResponseRetryCELExpression())) {
-            return new GrpcResponseCelPayloadEvaluator(
-                    stencilClient.get(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass()),
-                    grpcSinkConfig.getSinkGrpcResponseRetryCELExpression());
-        }
-        return new DefaultGrpcResponsePayloadEvaluator();
+        return new GrpcResponseCelPayloadEvaluator(
+                stencilClient.get(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass()),
+                grpcSinkConfig.getSinkGrpcResponseRetryCELExpression());
     }
 
 }
