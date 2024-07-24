@@ -1,11 +1,20 @@
 package com.gotocompany.firehose.sink.grpc;
 
 
+
 import com.gotocompany.depot.metrics.StatsDReporter;
+
+import com.google.protobuf.Message;
+import com.gotocompany.firehose.config.AppConfig;
+
 import com.gotocompany.firehose.config.GrpcSinkConfig;
+import com.gotocompany.firehose.evaluator.GrpcResponseCelPayloadEvaluator;
+import com.gotocompany.firehose.evaluator.PayloadEvaluator;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
-import com.gotocompany.firehose.sink.AbstractSink;
+
+import com.gotocompany.firehose.proto.ProtoToMetadataMapper;
 import com.gotocompany.firehose.sink.grpc.client.GrpcClient;
+import com.gotocompany.firehose.sink.AbstractSink;
 import com.gotocompany.stencil.client.StencilClient;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
@@ -79,12 +88,22 @@ public class GrpcSinkFactory {
         } else {
             managedChannelBuilder.usePlaintext();
         }
+        AppConfig appConfig = ConfigFactory.create(AppConfig.class, configuration);
+        ProtoToMetadataMapper protoToMetadataMapper = new ProtoToMetadataMapper(stencilClient.get(appConfig.getInputSchemaProtoClass()), grpcConfig.getSinkGrpcMetadata());
         GrpcClient grpcClient = new GrpcClient(
                 new FirehoseInstrumentation(statsDReporter, GrpcClient.class),
                 grpcConfig,
                 managedChannelBuilder.build(),
-                stencilClient);
+                stencilClient, protoToMetadataMapper);
         firehoseInstrumentation.logInfo("gRPC Client created successfully.");
-        return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient);
+        PayloadEvaluator<Message> grpcResponseRetryEvaluator = instantiatePayloadEvaluator(grpcConfig, stencilClient);
+        return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient, grpcConfig, grpcResponseRetryEvaluator);
+    }
+
+    private static PayloadEvaluator<Message> instantiatePayloadEvaluator(GrpcSinkConfig grpcSinkConfig, StencilClient stencilClient) {
+        return new GrpcResponseCelPayloadEvaluator(
+                stencilClient.get(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass()),
+                grpcSinkConfig.getSinkGrpcResponseRetryCELExpression());
+
     }
 }
