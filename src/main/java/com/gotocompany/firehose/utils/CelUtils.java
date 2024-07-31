@@ -52,7 +52,7 @@ public class CelUtils {
     }
 
     /**
-     * Initializes the CEL runtime with standard libraries.
+     * Initializes the CEL runtime with extended libraries.
      *
      * @return the initialized CEL runtime
      */
