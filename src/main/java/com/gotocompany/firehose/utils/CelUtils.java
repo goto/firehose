@@ -46,7 +46,7 @@ public class CelUtils {
         return CelCompilerFactory.standardCelCompilerBuilder()
                 .setStandardMacros(CelStandardMacro.values())
                 .addVar(descriptor.getFullName(), StructTypeReference.create(descriptor.getFullName()))
-                .addLibraries(CelExtensions.strings(), CelExtensions.bindings(), CelExtensions.math(CelOptions.DEFAULT), CelExtensions.protos())
+                .addLibraries(CelExtensions.strings(), CelExtensions.bindings(), CelExtensions.math(CelOptions.DEFAULT))
                 .addMessageTypes(descriptor)
                 .build();
     }
