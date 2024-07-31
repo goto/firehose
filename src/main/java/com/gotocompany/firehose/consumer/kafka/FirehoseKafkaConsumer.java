@@ -57,9 +57,12 @@ public class FirehoseKafkaConsumer implements AutoCloseable {
         List<Message> messages = new ArrayList<>();
 
         for (ConsumerRecord<byte[], byte[]> record : records) {
-            messages.add(new Message(record.key(), record.value(), record.topic(), record.partition(), record.offset(), record.headers(), record.timestamp(), System.currentTimeMillis()));
+            Message msg = new Message(record.key(), record.value(), record.topic(), record.partition(), record.offset(), record.headers(), record.timestamp(), System.currentTimeMillis());
+            msg.setInputSchemaType(consumerConfig.getInputSchemaType());
+            messages.add(msg);
             firehoseInstrumentation.logDebug("Pulled record: {}", record);
         }
+
         return messages;
     }
 
