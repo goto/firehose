@@ -42,14 +42,23 @@ Note - final metadata will be generated with merging metadata and the kafka reco
   
     message GenericPayload {
       string field = "field_name";
-      string field_two = "field_two";
+      string field_two = "FIELD_two";
       string id = "123";
       int code = 400;
     }
   ```
-  Example config : `$com.goto.company.GenericPayload.field: $(com.goto.company.GenericPayload.field_two + '_' + string(com.goto.company.GenericPayload.code))`
+  Example config : `$com.goto.company.GenericPayload.field: $(com.goto.company.GenericPayload.field_two.lowerAscii() + '_' + string(com.goto.company.GenericPayload.code))`
   This would result in : `field_name:field_two_400`
-  
+- CEL Extended Libraries : 
+  - String operations (https://github.com/google/cel-java/blob/main/extensions/src/main/java/dev/cel/extensions/README.md#strings)
+    - Add the capabilities of performing typical string operations such as up/lower casting, trimming, replacement, etc.
+    - Example : `com.goto.company.GenericPayload.field_two.lowerAscii()`, `com.goto.company.GenericPayload.field_two.upperAscii()`
+  - Math Operations (https://github.com/google/cel-java/blob/main/extensions/src/main/java/dev/cel/extensions/README.md#math)
+    - Currently only support finding greatest and least of numerical inputs
+    - Example : `math.greatest(com.goto.company.GenericPayload.code, 999), math.least(com.goto.company.GenericPayload.code, 999)`
+  - Binding Operations (https://github.com/google/cel-java/blob/main/extensions/src/main/java/dev/cel/extensions/README.md#celbind)
+    - Add the capabilities of binding a CEL Expression into variables and reusing them in the subsequent expression
+    - Example : `cel.bind(stringifiedCode, string(com.goto.company.GenericPayload.code), stringifiedCode + '_' + com.goto.company.GenericPayload.id)`
 
 ### `SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS`
 
