@@ -1,5 +1,6 @@
 package com.gotocompany.firehose.launch;
 
+import com.gotocompany.firehose.config.enums.KafkaConsumerMode;
 import com.gotocompany.firehose.consumer.FirehoseConsumer;
 import com.gotocompany.firehose.consumer.FirehoseConsumerFactory;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
@@ -42,7 +43,6 @@ public class Main {
                 kafkaConsumerConfig.getApplicationThreadCleanupDelay(),
                 new FirehoseInstrumentation(statsDReporter, Task.class),
                 taskFinished -> {
-
                     FirehoseConsumer firehoseConsumer = null;
                     try {
                         firehoseConsumer = new FirehoseConsumerFactory(kafkaConsumerConfig, statsDReporter).buildConsumer();
@@ -52,6 +52,10 @@ public class Main {
                                 break;
                             }
                             firehoseConsumer.process();
+                            if (KafkaConsumerMode.DLQ.equals(kafkaConsumerConfig.getSourceKafkaConsumerMode())) {
+                                firehoseInstrumentation.logInfo("DLQ mode is enabled, exiting the loop!");
+                                break;
+                            }
                         }
                     } catch (Exception | Error e) {
                         ensureThreadInterruptStateIsClearedAndClose(firehoseConsumer, firehoseInstrumentation);

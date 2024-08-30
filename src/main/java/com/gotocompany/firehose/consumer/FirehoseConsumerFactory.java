@@ -1,8 +1,11 @@
 package com.gotocompany.firehose.consumer;
 
+import com.gotocompany.firehose.config.GcsBlobConsumerConfig;
 import com.gotocompany.firehose.consumer.kafka.ConsumerAndOffsetManager;
 import com.gotocompany.firehose.consumer.kafka.FirehoseKafkaConsumer;
 import com.gotocompany.firehose.consumer.kafka.OffsetManager;
+import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageFactory;
+import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageType;
 import io.jaegertracing.Configuration;
 import com.gotocompany.depot.metrics.StatsDReporter;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
@@ -40,6 +43,7 @@ import com.gotocompany.stencil.client.StencilClient;
 import io.opentracing.Tracer;
 import io.opentracing.noop.NoopTracerFactory;
 import org.aeonbits.owner.ConfigFactory;
+import org.apache.hadoop.fs.viewfs.ConfigUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -126,6 +130,13 @@ public class FirehoseConsumerFactory {
                 kafkaConsumerConfig.isTraceJaegarEnable());
         SinkFactory sinkFactory = new SinkFactory(kafkaConsumerConfig, statsDReporter, stencilClient, offsetManager);
         sinkFactory.init();
+        if (kafkaConsumerConfig.getSourceKafkaConsumerMode().equals(KafkaConsumerMode.DLQ)) {
+            Sink sink = createSink(tracer, sinkFactory);
+            return new GcsBlobStorageFirehoseConsumer(BlobStorageFactory.createObjectStorage(BlobStorageType.GCS, config),
+                    sink,
+                    firehoseTracer,
+                    ConfigFactory.create(GcsBlobConsumerConfig.class, config));
+        }
         if (kafkaConsumerConfig.getSourceKafkaConsumerMode().equals(KafkaConsumerMode.SYNC)) {
             Sink sink = createSink(tracer, sinkFactory);
             ConsumerAndOffsetManager consumerAndOffsetManager = new ConsumerAndOffsetManager(Collections.singletonList(sink), offsetManager, firehoseKafkaConsumer, kafkaConsumerConfig, new FirehoseInstrumentation(statsDReporter, ConsumerAndOffsetManager.class));
