@@ -6,7 +6,6 @@ import com.gotocompany.firehose.utils.CelUtils;
 import dev.cel.common.types.CelKind;
 import dev.cel.compiler.CelCompiler;
 import dev.cel.runtime.CelRuntime;
-import dev.cel.runtime.CelRuntimeFactory;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,8 +51,7 @@ public class GrpcResponseCelPayloadEvaluator implements PayloadEvaluator<Message
      */
     private void buildCelEnvironment(String celExpression) {
         CelCompiler celCompiler = CelUtils.initializeCelCompiler(this.descriptor);
-        CelRuntime celRuntime = CelRuntimeFactory.standardCelRuntimeBuilder()
-                .build();
+        CelRuntime celRuntime = CelUtils.initializeCelRuntime();
         this.celProgram = CelUtils.initializeCelProgram(celExpression, celRuntime, celCompiler,
                 celType -> celType.kind().equals(CelKind.BOOL));
     }
