@@ -1,7 +1,9 @@
 package com.gotocompany.firehose.sink.common.blobstorage;
 
+import com.gotocompany.firehose.config.COSConfig;
 import com.gotocompany.firehose.config.GCSConfig;
 import com.gotocompany.firehose.config.S3Config;
+import com.gotocompany.firehose.sink.common.blobstorage.cos.TencentCloudStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.gcs.GoogleCloudStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.s3.S3;
 import org.aeonbits.owner.ConfigFactory;
@@ -26,6 +28,13 @@ public class BlobStorageFactory {
                     return new S3(s3Config);
                  } catch (Exception e) {
                     throw new IllegalArgumentException("Exception while creating S3 Storage", e);
+                }
+            case COS:
+                try {
+                    COSConfig cosConfig = ConfigFactory.create(COSConfig.class, config);
+                    return new TencentCloudStorage(cosConfig);
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Exception while creating COS Storage", e);
                 }
 
             default:
