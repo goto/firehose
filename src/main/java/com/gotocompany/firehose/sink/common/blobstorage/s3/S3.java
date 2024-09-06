@@ -15,14 +15,17 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
+import javax.naming.OperationNotSupportedException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
 
 public class S3 implements BlobStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3.class);
@@ -96,6 +99,16 @@ public class S3 implements BlobStorage {
             LOGGER.error("Failed to create object in S3 {}", objectName);
             throw new BlobStorageException(ase.getMessage(), ase.getMessage(), ase);
         }
+    }
+
+    @Override
+    public byte[] get(String filePath) {
+        throw new IllegalArgumentException("Not implemented");
+    }
+
+    @Override
+    public List<String> list(String prefix) {
+        return null;
     }
 
     private String createPath(String objectName) {

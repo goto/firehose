@@ -1,7 +1,9 @@
 package com.gotocompany.firehose.sink.common.blobstorage.gcs;
 
+import com.google.api.gax.paging.Page;
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Bucket;
@@ -20,6 +22,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import java.util.stream.StreamSupport;
 
 public class GoogleCloudStorage implements BlobStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleCloudStorage.class);
@@ -108,5 +114,19 @@ public class GoogleCloudStorage implements BlobStorage {
             String gcsErrorType = GCSErrorType.valueOfCode(e.getCode()).name();
             throw new BlobStorageException(gcsErrorType, "GCS Upload failed", e);
         }
+    }
+
+    @Override
+    public byte[] get(String filePath) {
+        return storage.readAllBytes(BlobId.of(gcsConfig.getGCSBucketName(), filePath));
+    }
+
+    @Override
+    public List<String> list(String prefix) {
+        Page<Blob> blobs = storage.list(gcsConfig.getGCSBucketName(), Storage.BlobListOption.prefix(prefix));
+
+        return StreamSupport.stream(blobs.iterateAll().spliterator(), false)
+                .map(BlobInfo::getName)
+                .collect(Collectors.toList());
     }
 }
