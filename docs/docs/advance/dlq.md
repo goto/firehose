@@ -154,6 +154,13 @@ If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Curre
 * Type: `optional`
 * Default value: `firehose-retry-topic`
 
+## `DLQ_KAFKA_(.*)`
+
+* Example property: `DLQ_KAFKA_SASL_JAAS_CONFIG`
+* Type: `optional`
+* Default value: `any string`
+* Description: Any property starting with `DLQ_KAFKA_` will be passed to the kafka producer. This one is useful for setting any kafka producer property that is not available in the configuration.
+
 ## `DLQ_S3_REGION"`
 
 Amazon S3 creates buckets in a Region that you specify.
