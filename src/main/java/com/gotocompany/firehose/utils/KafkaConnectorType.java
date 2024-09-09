@@ -1,9 +1,12 @@
 package com.gotocompany.firehose.utils;
 
+import lombok.Getter;
+
+@Getter
 public enum KafkaConnectorType {
     DLQ("DLQ_KAFKA");
 
-    public final String configurationPrefix;
+    private final String configurationPrefix;
 
     KafkaConnectorType(String dlqKafka) {
         this.configurationPrefix = dlqKafka;

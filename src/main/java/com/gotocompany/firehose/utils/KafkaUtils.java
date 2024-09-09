@@ -114,7 +114,7 @@ public class KafkaUtils {
     }
 
     private static Properties getAdditionalKafkaConfiguration(KafkaConnectorType kafkaConnectorType, Map<String, String> configurations) {
-        Pattern pattern = Pattern.compile(String.format("^%s_(.*)", kafkaConnectorType.configurationPrefix));
+        Pattern pattern = Pattern.compile(String.format("^%s_(.*)", kafkaConnectorType.getConfigurationPrefix()));
         Properties additionalProperties = new Properties();
         configurations.forEach((key, value) -> {
             Matcher matcher = pattern.matcher(key);
