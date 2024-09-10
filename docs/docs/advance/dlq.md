@@ -156,9 +156,9 @@ If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Curre
 
 ## `DLQ_KAFKA_(.*)`
 
-* Example property: `DLQ_KAFKA_SASL_JAAS_CONFIG`
+* Example property: `DLQ_KAFKA_SASL_JAAS_CONFIG`, `DLQ_KAFKA_SECURITY_PROTOCOL`, `DLQ_KAFKA_SSL_TRUSTSTORE_PASSWORD`, `DLQ_KAFKA_SASL_MECHANISM`
 * Type: `optional`
-* Default value: `any string`
+* Default value: `null`
 * Description: Any property starting with `DLQ_KAFKA_` will be passed to the kafka producer. This one is useful for setting any kafka producer property that is not available in the configuration.
 
 ## `DLQ_S3_REGION"`
