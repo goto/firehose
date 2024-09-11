@@ -1,10 +1,7 @@
 package com.gotocompany.firehose.utils;
 
-import lombok.Getter;
-
 import java.util.regex.Pattern;
 
-@Getter
 public enum KafkaProducerTypesMetadata {
     DLQ("DLQ_KAFKA_");
 
