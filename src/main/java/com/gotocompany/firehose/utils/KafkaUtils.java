@@ -92,12 +92,12 @@ public class KafkaUtils {
     /**
      * Gets kafka producer.
      *
-     * @param kafkaConnectorType the connector type, current supported value is DLQ and SOURCE
+     * @param kafkaProducerTypesMetadata the connector type, current supported value is DLQ and SOURCE
      * @param dlqKafkaProducerConfig the dlqKafkaProducerConfig
      * @param configurations the configurations which dynamically set by the user
      * @return the kafka producer
      */
-    public static KafkaProducer<byte[], byte[]> getKafkaProducer(KafkaConnectorType kafkaConnectorType,
+    public static KafkaProducer<byte[], byte[]> getKafkaProducer(KafkaProducerTypesMetadata kafkaProducerTypesMetadata,
                                                                  DlqKafkaProducerConfig dlqKafkaProducerConfig,
                                                                  Map<String, String> configurations) {
         Properties props = new Properties();
@@ -109,15 +109,14 @@ public class KafkaUtils {
         props.put("buffer.memory", dlqKafkaProducerConfig.getDlqKafkaBufferMemory());
         props.put("key.serializer", dlqKafkaProducerConfig.getDlqKafkaKeySerializer());
         props.put("value.serializer", dlqKafkaProducerConfig.getDlqKafkaValueSerializer());
-        props.putAll(getAdditionalKafkaConfiguration(kafkaConnectorType, configurations));
+        props.putAll(getAdditionalKafkaConfiguration(kafkaProducerTypesMetadata, configurations));
         return new KafkaProducer<>(props);
     }
 
-    private static Properties getAdditionalKafkaConfiguration(KafkaConnectorType kafkaConnectorType, Map<String, String> configurations) {
-        Pattern pattern = Pattern.compile(String.format("^%s_(.*)", kafkaConnectorType.getConfigurationPrefix()));
+    private static Properties getAdditionalKafkaConfiguration(KafkaProducerTypesMetadata kafkaProducerTypesMetadata, Map<String, String> configurations) {
         Properties additionalProperties = new Properties();
         configurations.forEach((key, value) -> {
-            Matcher matcher = pattern.matcher(key);
+            Matcher matcher = kafkaProducerTypesMetadata.getConfigurationPattern().matcher(key);
             if (matcher.find()) {
                 additionalProperties.put(matcher.group(1).replaceAll("_", ".").toLowerCase(), value);
             }
