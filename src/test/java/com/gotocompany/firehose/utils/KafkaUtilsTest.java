@@ -27,7 +27,7 @@ public class KafkaUtilsTest {
     private static final String DLQ_KAFKA_VALUE_SERIALIZER = "DLQ_KAFKA_VALUE_SERIALIZER";
     private static final String DLQ_KAFKA_BROKERS = "DLQ_KAFKA_BROKERS";
     private static final String DLQ_KAFKA_TOPIC = "DLQ_KAFKA_TOPIC";
-    private static final String DLQ_KAFKA_SECURITY_PROTOCOL = "dlQ_KaFKa_SeCuRITY_proTOCOL";
+    private static final String DLQ_KAFKA_SECURITY_PROTOCOL = "dlQ_KaFKa___SeCuRITY____proTOCOL";
     private static final String DLQ_KAFKA_SSL_TRUSTSTORE_PASSWORD_CONFIG = "DLQ_KAFKA_SSL_TRUSTSTORE_PASSWORD";
     private static final String DLQ_KAFKA_SASL_MECHANISM = "DLQ_KAFKA_SASL_MECHANISM";
     private static final String DLQ_KAFKA_SASL_JAAS_CONFIG = "DLQ_KAFKA_SASL_JAAS_CONFIG";

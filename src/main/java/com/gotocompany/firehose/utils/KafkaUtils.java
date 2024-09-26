@@ -118,7 +118,7 @@ public class KafkaUtils {
         configurations.forEach((key, value) -> {
             Matcher matcher = kafkaProducerTypesMetadata.getConfigurationPattern().matcher(key);
             if (matcher.find()) {
-                additionalProperties.put(matcher.group(1).replaceAll("_", ".").toLowerCase(), value);
+                additionalProperties.put(matcher.group(1).replaceAll("_+", ".").toLowerCase(), value);
             }
         });
         return additionalProperties;
