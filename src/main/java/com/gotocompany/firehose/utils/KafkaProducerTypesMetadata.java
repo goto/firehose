@@ -3,7 +3,7 @@ package com.gotocompany.firehose.utils;
 import java.util.regex.Pattern;
 
 public enum KafkaProducerTypesMetadata {
-    DLQ("DLQ_KAFKA_+");
+    DLQ("DLQ_KAFKA_");
 
     private final String configurationPrefix;
 
