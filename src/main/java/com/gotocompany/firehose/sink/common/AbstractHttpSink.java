@@ -170,8 +170,4 @@ public abstract class AbstractHttpSink extends AbstractSink {
     public Map<Integer, Boolean> getRequestLogStatusCodeRanges() {
         return requestLogStatusCodeRanges;
     }
-
-    private void addFailedMessages() {
-
-    }
 }
