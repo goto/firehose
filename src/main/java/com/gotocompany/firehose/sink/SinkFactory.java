@@ -146,7 +146,7 @@ public class SinkFactory {
             case HTTPV2:
                 return new GenericSink(new FirehoseInstrumentation(statsDReporter, HttpSink.class), sinkType.name(), httpv2SinkFactory.create());
             case MAXCOMPUTE:
-                return new GenericSink(new FirehoseInstrumentation(statsDReporter, BigTableSink.class), sinkType.name(), maxComputeSinkFactory.create());
+                return new GenericSink(new FirehoseInstrumentation(statsDReporter, MaxComputeSinkFactory.class), sinkType.name(), maxComputeSinkFactory.create());
             default:
                 throw new ConfigurationException("Invalid Firehose SINK_TYPE");
         }
