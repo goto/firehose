@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.http.factory;
 
 import com.gotocompany.firehose.config.HttpSinkConfig;
 import com.gotocompany.firehose.config.enums.HttpSinkDataFormatType;
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.serializer.JsonWrappedProtoByte;
 import com.gotocompany.firehose.serializer.MessageSerializer;
@@ -25,12 +26,16 @@ public class SerializerFactory {
 
     public MessageSerializer build() {
         FirehoseInstrumentation firehoseInstrumentation = new FirehoseInstrumentation(statsDReporter, SerializerFactory.class);
-        if (isProtoSchemaEmpty() || httpSinkConfig.getSinkHttpDataFormat() == HttpSinkDataFormatType.PROTO) {
+        if ( (httpSinkConfig.getInputSchemaType() == InputSchemaType.PROTOBUF && isProtoSchemaEmpty()) || httpSinkConfig.getSinkHttpDataFormat() == HttpSinkDataFormatType.PROTO) {
             firehoseInstrumentation.logDebug("Serializer type: JsonWrappedProtoByte");
             // Fallback to json wrapped proto byte
+
+            // todo(sushmith):
+            //  here output is proto, but input expected is also proto.
+            //  need to have json as input and proto as output.
+            //  this is currently not possible because of the way we are using the parser.
             return new JsonWrappedProtoByte();
         }
-
         if (httpSinkConfig.getSinkHttpDataFormat() == HttpSinkDataFormatType.JSON) {
             Parser protoParser = stencilClient.getParser(httpSinkConfig.getInputSchemaProtoClass());
             if (httpSinkConfig.getSinkHttpJsonBodyTemplate().isEmpty()) {

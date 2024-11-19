@@ -1,8 +1,7 @@
 package com.gotocompany.firehose.serializer;
 
 
-
-
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.exception.ConfigurationException;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.message.Message;
@@ -41,12 +40,23 @@ public class MessageToTemplatizedJsonTest {
 
     private String logMessage;
     private String logKey;
+    private String logMessageJSONString;
+    private String logKeyJSONString;
 
     @Before
     public void setup() {
         initMocks(this);
         logMessage = "CgYIyOm+xgUSBgiE6r7GBRgNIICAgIDA9/y0LigCMAM\u003d";
         logKey = "CgYIyOm+xgUSBgiE6r7GBRgNIICAgIDA9/y0LigC";
+        logMessageJSONString = "{\n"
+                + "    \"uniqueDrivers\": \"3\",\n"
+                + "    \"windowStartTime\": \"Mar 20, 2017 10:54:00 AM\",\n"
+                + "    \"windowEndTime\": \"Mar 20, 2017 10:55:00 AM\",\n"
+                + "    \"s2IdLevel\": 13,\n"
+                + "    \"vehicleType\": \"BIKE\",\n"
+                + "    \"s2Id\": \"3344472187078705152\"\n"
+                + "  }";
+        logKeyJSONString = "sample-key1";
     }
 
     @Test
@@ -61,6 +71,23 @@ public class MessageToTemplatizedJsonTest {
 
         String serializedMessage = messageToTemplatizedJson.serialize(message);
         String expectedMessage = "{\"test\":\"BIKE\"}";
+        Assert.assertEquals(expectedMessage, serializedMessage);
+    }
+
+    @Test
+    public void shouldProperlySerializeJsonInputMessageToTemplateWithSingleKnownField() throws DeserializerException {
+        String template = "{\"test\":\"$.vehicleType\"}";
+        StencilClient stencilClient = StencilClientFactory.getClient();
+        protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                .create(firehoseInstrumentation, template, protoParser);
+        Message message = new Message(logKeyJSONString.getBytes(), logMessageJSONString.getBytes(), "sample-topic", 0, 100);
+        message.setInputSchemaType(InputSchemaType.JSON);
+
+        String expectedMessage = "{\"test\":\"BIKE\"}";
+
+        String serializedMessage = messageToTemplatizedJson.serialize(message);
+
         Assert.assertEquals(expectedMessage, serializedMessage);
     }
 
@@ -87,6 +114,26 @@ public class MessageToTemplatizedJsonTest {
     }
 
     @Test
+    public void shouldProperlySerializeJsonInputMessageToTemplateAsItIs() throws DeserializerException {
+        String template = "\"$._all_\"";
+        StencilClient stencilClient = StencilClientFactory.getClient();
+        protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                .create(firehoseInstrumentation, template, protoParser);
+        Message message = new Message(logKeyJSONString.getBytes(), logMessageJSONString.getBytes(), "sample-topic", 0, 100);
+        message.setInputSchemaType(InputSchemaType.JSON);
+
+        String expectedMessage = "{\"uniqueDrivers\":\"3\","
+                + "\"windowStartTime\":\"Mar 20, 2017 10:54:00 AM\","
+                + "\"windowEndTime\":\"Mar 20, 2017 10:55:00 AM\",\"s2IdLevel\":13,"
+                + "\"vehicleType\":\"BIKE\",\"s2Id\":\"3344472187078705152\"}";
+
+        String serializedMessage = messageToTemplatizedJson.serialize(message);
+
+        Assert.assertEquals(expectedMessage, serializedMessage);
+    }
+
+    @Test
     public void shouldThrowIfNoPathsFoundInTheProto() {
         expectedException.expect(DeserializerException.class);
         expectedException.expectMessage("No results for path: $['invalidPath']");
@@ -98,6 +145,22 @@ public class MessageToTemplatizedJsonTest {
                 .create(firehoseInstrumentation, template, protoParser);
         Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                 Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+        messageToTemplatizedJson.serialize(message);
+    }
+
+    @Test
+    public void shouldThrowIfNoPathsFoundInTheJSON() {
+        expectedException.expect(DeserializerException.class);
+        expectedException.expectMessage("No results for path: $['invalidPath']");
+
+        String template = "{\"test\":\"$.invalidPath\"}";
+        StencilClient stencilClient = StencilClientFactory.getClient();
+        protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                .create(firehoseInstrumentation, template, protoParser);
+        Message message = new Message(logKeyJSONString.getBytes(), logMessageJSONString.getBytes(), "sample-topic", 0, 100);
+        message.setInputSchemaType(InputSchemaType.JSON);
 
         messageToTemplatizedJson.serialize(message);
     }
