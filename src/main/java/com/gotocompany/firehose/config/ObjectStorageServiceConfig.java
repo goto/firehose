@@ -15,7 +15,7 @@ public interface ObjectStorageServiceConfig extends Config {
 
     @Key("${OSS_TYPE}_OSS_ACCESS_KEY")
     String getOssAccessKey();
-    
+
     @Key("${OSS_TYPE}_OSS_BUCKET_NAME")
     String getOssBucketName();
 
