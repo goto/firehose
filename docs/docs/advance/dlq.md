@@ -264,3 +264,51 @@ The prefix of the directory in the oss bucket. For more information, please refe
 
 * Example value: `oss_prefix`
 * Type: `optional`
+
+## `DLQ_OSS_SOCKET_TIMEOUT_MS`
+
+The socket timeout in milliseconds.
+
+* Example value: `10000`
+* Type: `optional`
+* Default value : `50000`
+
+## `DLQ_OSS_CONNECTION_TIMEOUT_MS`
+
+The connection timeout in milliseconds.
+
+* Example value: `50000`
+* Type: `optional`
+* Default value : `50000`
+
+## `DLQ_OSS_CONNECTION_REQUEST_TIMEOUT_MS`
+
+The connection request timeout in milliseconds. Negative value indicates no timeout.
+
+* Example value: `100`
+* Type: `optional`
+* Default value : `-1`
+
+## `DLQ_OSS_REQUEST_TIMEOUT_MS`
+
+The request timeout in milliseconds.
+
+* Example value: `50000`
+* Type: `optional`
+* Default value : `300000`
+
+## `DLQ_OSS_RETRY_ENABLED`
+
+The flag to enable retry mechanism.
+
+* Example value: `true`
+* Type: `optional`
+* Default value : `true`
+
+## `DLQ_OSS_MAX_RETRY_ATTEMPTS`
+
+The maximum number of retry attempts.
+
+* Example value: `3`
+* Type: `optional`
+* Default value : `3`

@@ -6,6 +6,7 @@ import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
 import com.aliyun.oss.common.auth.DefaultCredentialProvider;
+import com.aliyun.oss.common.comm.NoRetryStrategy;
 import com.aliyun.oss.common.comm.SignVersion;
 import com.aliyun.oss.model.BucketList;
 import com.aliyun.oss.model.ListBucketsRequest;
@@ -38,6 +39,15 @@ public class ObjectStorageService implements BlobStorage {
     private static OSS initializeOss(ObjectStorageServiceConfig objectStorageServiceConfig) {
         ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
         clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
+        clientBuilderConfiguration.setSocketTimeout(objectStorageServiceConfig.getOssSocketTimeoutMs());
+        clientBuilderConfiguration.setConnectionTimeout(objectStorageServiceConfig.getOssConnectionTimeoutMs());
+        clientBuilderConfiguration.setConnectionRequestTimeout(objectStorageServiceConfig.getOssConnectionRequestTimeoutMs());
+        clientBuilderConfiguration.setRequestTimeout(objectStorageServiceConfig.getOssRequestTimeoutMs());
+        if (objectStorageServiceConfig.isRetryEnabled()) {
+            clientBuilderConfiguration.setMaxErrorRetry(objectStorageServiceConfig.getOssMaxRetryAttempts());
+        } else {
+            clientBuilderConfiguration.setRetryStrategy(new NoRetryStrategy());
+        }
         return OSSClientBuilder.create()
                 .endpoint(objectStorageServiceConfig.getOssEndpoint())
                 .region(objectStorageServiceConfig.getOssRegion())
