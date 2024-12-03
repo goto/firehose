@@ -228,3 +228,87 @@ The amount of time to allow the client to complete the execution of an API call.
 * Example value: `40000`
 * Type: `optional`
 * Default value : `40000`
+
+## `DLQ_OSS_ENDPOINT`
+
+The endpoint of the oss service. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/user-guide/regions-and-endpoints?spm=a2c63.p38356.0.0.65ad7fdf6qkcoQ).
+
+* Example value: `oss-cn-hangzhou.aliyuncs.com`
+* Type: `optional`
+* Default value : `null
+
+## `DLQ_OSS_ACCESS_KEY_ID`
+
+The access key id of the oss service. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/developer-reference/oss-java-configure-access-credentials#dd657ea839xv1).
+
+* Example value: `youraccessid`
+* Type: `optional`
+
+## `DLQ_OSS_ACCESS_KEY_SECRET`
+
+The access key secret of the oss service. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/developer-reference/oss-java-configure-access-credentials#dd657ea839xv1).
+
+* Example value: `youraccesskey`
+* Type: `optional`
+
+## `DLQ_OSS_BUCKET_NAME`
+
+The name of the oss bucket. Must adhere to the naming rules of oss. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/user-guide/bucket-naming-conventions?spm=a2c63.p38356.0.0.4cdb3962K5f3io).
+
+* Example value: `oss_bucket`
+* Type: `optional`
+
+## `DLQ_OSS_DIRECTORY_PREFIX`
+
+The prefix of the directory in the oss bucket. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/user-guide/object-naming-conventions).
+
+* Example value: `oss_prefix`
+* Type: `optional`
+
+## `DLQ_OSS_SOCKET_TIMEOUT_MS`
+
+The socket timeout in milliseconds.
+
+* Example value: `10000`
+* Type: `required`
+* Default value : `50000`
+
+## `DLQ_OSS_CONNECTION_TIMEOUT_MS`
+
+The connection timeout in milliseconds.
+
+* Example value: `50000`
+* Type: `required`
+* Default value : `50000`
+
+## `DLQ_OSS_CONNECTION_REQUEST_TIMEOUT_MS`
+
+The connection request timeout in milliseconds. Negative value indicates no timeout.
+
+* Example value: `100`
+* Type: `required`
+* Default value : `-1`
+
+## `DLQ_OSS_REQUEST_TIMEOUT_MS`
+
+The request timeout in milliseconds.
+
+* Example value: `50000`
+* Type: `required`
+* Default value : `300000`
+
+## `DLQ_OSS_RETRY_ENABLED`
+
+The flag to enable retry mechanism.
+
+* Example value: `true`
+* Type: `required`
+* Default value : `true`
+
+## `DLQ_OSS_MAX_RETRY_ATTEMPTS`
+
+The maximum number of retry attempts.
+
+* Example value: `3`
+* Type: `required`
+* Default value : `3`
