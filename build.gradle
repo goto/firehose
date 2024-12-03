@@ -58,6 +58,7 @@ private Properties loadEnv() {
 def mainClassName = "com.gotocompany.firehose.launch.Main"
 
 dependencies {
+    implementation 'com.aliyun.oss:aliyun-sdk-oss:3.15.1'
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.1.0'
     implementation group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.1.0'
     implementation group: 'com.datadoghq', name: 'java-dogstatsd-client', version: '2.13.0'
