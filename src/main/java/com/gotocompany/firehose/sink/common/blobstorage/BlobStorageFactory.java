@@ -1,8 +1,10 @@
 package com.gotocompany.firehose.sink.common.blobstorage;
 
 import com.gotocompany.firehose.config.GCSConfig;
+import com.gotocompany.firehose.config.OSSConfig;
 import com.gotocompany.firehose.config.S3Config;
 import com.gotocompany.firehose.sink.common.blobstorage.gcs.GoogleCloudStorage;
+import com.gotocompany.firehose.sink.common.blobstorage.oss.OSS;
 import com.gotocompany.firehose.sink.common.blobstorage.s3.S3;
 import org.aeonbits.owner.ConfigFactory;
 
@@ -24,10 +26,16 @@ public class BlobStorageFactory {
                 try {
                     S3Config s3Config = ConfigFactory.create(S3Config.class, config);
                     return new S3(s3Config);
-                 } catch (Exception e) {
+                } catch (Exception e) {
                     throw new IllegalArgumentException("Exception while creating S3 Storage", e);
                 }
-
+            case OSS:
+                try {
+                    OSSConfig ossConfig = ConfigFactory.create(OSSConfig.class, config);
+                    return new OSS(ossConfig);
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Exception while creating OSS Storage", e);
+                }
             default:
                 throw new IllegalArgumentException("Blob Storage Type " + storageType + " is not supported");
         }
