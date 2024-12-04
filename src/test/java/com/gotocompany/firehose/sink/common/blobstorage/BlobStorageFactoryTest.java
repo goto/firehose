@@ -63,7 +63,6 @@ public class BlobStorageFactoryTest {
 
         Map<String, String> config = new HashMap<String, String>() {{
             put("GCS_TYPE", "SINK_BLOB");
-            // Missing required configs
         }};
 
         BlobStorageFactory.createObjectStorage(BlobStorageType.GCS, config);
@@ -76,7 +75,6 @@ public class BlobStorageFactoryTest {
 
         Map<String, String> config = new HashMap<String, String>() {{
             put("S3_TYPE", "SINK_BLOB");
-            // Missing required configs
         }};
 
         BlobStorageFactory.createObjectStorage(BlobStorageType.S3, config);
@@ -89,7 +87,6 @@ public class BlobStorageFactoryTest {
 
         Map<String, String> config = new HashMap<String, String>() {{
             put("OSS_TYPE", "SINK_BLOB");
-            // Missing required configs
         }};
 
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, config);
