@@ -262,3 +262,47 @@ The amount of time to allow the client to complete the execution of an API call.
 - Example value: `40000`
 - Type: `optional`
 - Default value : `40000`
+
+### `SINK_BLOB_OSS_ENDPOINT`
+
+The endpoint of your OSS bucket region.
+
+- Example value: `oss-cn-hangzhou.aliyuncs.com`
+- Type: `required`
+
+### `SINK_BLOB_OSS_BUCKET_NAME`
+
+The name of your OSS bucket.
+
+- Example value: `my-bucket`
+- Type: `required`
+
+### `SINK_BLOB_OSS_ACCESS_KEY_ID`
+
+The access key ID for OSS authentication.
+
+- Example value: `LTAI4FwvfjSycd1APE1****`
+- Type: `required`
+
+### `SINK_BLOB_OSS_ACCESS_KEY_SECRET`
+
+The access key secret for OSS authentication.
+
+- Example value: `V0ZA1FfMBKayOKjCEfh****`
+- Type: `required`
+
+### `SINK_BLOB_OSS_RETRY_MAX_ATTEMPTS`
+
+Number of retry attempts for OSS operations.
+
+- Example value: `10`
+- Type: `optional`
+- Default value: `10`
+
+### `SINK_BLOB_OSS_RETRY_TOTAL_TIMEOUT_MS`
+
+Total timeout for OSS operations in milliseconds.
+
+- Example value: `120000`
+- Type: `optional`
+- Default value: `120000`
