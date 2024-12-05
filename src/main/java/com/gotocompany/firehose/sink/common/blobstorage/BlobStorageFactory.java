@@ -32,7 +32,7 @@ public class BlobStorageFactory {
             case OSS:
                 try {
                     OSSConfig ossConfig = ConfigFactory.create(OSSConfig.class, config);
-                    return new OSS(ossConfig);
+                    return new ObjectStorageService(ossConfig);
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Exception while creating OSS Storage", e);
                 }
