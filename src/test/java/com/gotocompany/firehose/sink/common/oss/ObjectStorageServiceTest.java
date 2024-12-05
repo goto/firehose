@@ -45,7 +45,13 @@ public class ObjectStorageServiceTest {
             put("SOME_TYPE_OSS_ACCESS_KEY_SECRET", "test-key-secret");
             put("SOME_TYPE_OSS_DIRECTORY_PREFIX", "test-prefix");
         }});
-        objectStorageService = new ObjectStorageService(config);
+
+        objectStorageService = new ObjectStorageService(config) {
+            @Override
+            protected OSS createOSSClient(String endpoint, String accessKeyId, String accessKeySecret) {
+                return ossClient;
+            }
+        };
     }
 
     @Test

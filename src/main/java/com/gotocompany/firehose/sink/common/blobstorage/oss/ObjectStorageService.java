@@ -18,13 +18,17 @@ public class ObjectStorageService implements BlobStorage {
     private final String directoryPrefix;
 
     public ObjectStorageService(OSSConfig config) {
-        this.ossClient = new OSSClientBuilder().build(
+        this.ossClient = createOSSClient(
                 config.getOSSEndpoint(),
                 config.getOSSAccessKeyId(),
                 config.getOSSAccessKeySecret()
         );
         this.bucketName = config.getOSSBucketName();
         this.directoryPrefix = config.getOSSDirectoryPrefix();
+    }
+
+    protected OSS createOSSClient(String endpoint, String accessKeyId, String accessKeySecret) {
+        return new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
     }
 
     @Override
