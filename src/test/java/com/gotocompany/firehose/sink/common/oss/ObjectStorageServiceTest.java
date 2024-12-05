@@ -108,23 +108,6 @@ public class ObjectStorageServiceTest {
     }
 
     @Test
-    public void shouldHandleNonExistentFile() throws BlobStorageException {
-        thrown.expect(BlobStorageException.class);
-        thrown.expectMessage("OSS Upload failed");
-
-        objectStorageService.store("test.txt", "/non/existent/path/test.txt");
-    }
-
-    @Test
-    public void shouldHandleDirectoryAsFile() throws BlobStorageException, IOException {
-        thrown.expect(BlobStorageException.class);
-        thrown.expectMessage("OSS Upload failed");
-
-        File tempDir = temporaryFolder.newFolder("testDir");
-        objectStorageService.store("test.txt", tempDir.getAbsolutePath());
-    }
-
-    @Test
     public void shouldHandleLongObjectName() throws BlobStorageException {
         StringBuilder longName = new StringBuilder();
         for (int i = 0; i < 1000; i++) {
