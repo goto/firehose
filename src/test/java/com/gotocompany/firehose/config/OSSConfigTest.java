@@ -1,51 +1,55 @@
 package com.gotocompany.firehose.config;
 
 import org.aeonbits.owner.ConfigFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
-
-import static org.junit.Assert.assertEquals;
+import java.util.Map;
 
 public class OSSConfigTest {
 
     @Test
-    public void shouldLoadOSSConfigWithPrefix() {
-        OSSConfig config = ConfigFactory.create(OSSConfig.class, new HashMap<String, String>() {{
-            put("OSS_TYPE", "SINK_BLOB");
+    public void shouldParseConfigForSink() {
+        Map<String, String> properties = new HashMap<String, String>() {{
             put("SINK_BLOB_OSS_ENDPOINT", "oss-cn-hangzhou.aliyuncs.com");
+            put("SINK_BLOB_OSS_ACCESS_KEY_ID", "test-key-id");
+            put("SINK_BLOB_OSS_ACCESS_KEY_SECRET", "test-key-secret");
             put("SINK_BLOB_OSS_BUCKET_NAME", "test-bucket");
-            put("SINK_BLOB_OSS_ACCESS_KEY_ID", "test-key");
-            put("SINK_BLOB_OSS_ACCESS_KEY_SECRET", "test-secret");
+            put("SINK_BLOB_OSS_REGION", "cn-hangzhou");
             put("SINK_BLOB_OSS_DIRECTORY_PREFIX", "test-prefix");
-            put("SINK_BLOB_OSS_RETRY_MAX_ATTEMPTS", "5");
-            put("SINK_BLOB_OSS_RETRY_INITIAL_DELAY_MS", "2000");
-            put("SINK_BLOB_OSS_RETRY_MAX_DELAY_MS", "60000");
-        }});
+            put("OSS_TYPE", "SINK_BLOB");
+        }};
 
-        assertEquals("oss-cn-hangzhou.aliyuncs.com", config.getOSSEndpoint());
-        assertEquals("test-bucket", config.getOSSBucketName());
-        assertEquals("test-key", config.getOSSAccessKeyId());
-        assertEquals("test-secret", config.getOSSAccessKeySecret());
-        assertEquals("test-prefix", config.getOSSDirectoryPrefix());
-        assertEquals(Long.valueOf(5), config.getOSSRetryMaxAttempts());
-        assertEquals(Long.valueOf(2000), config.getOSSRetryInitialDelayMS());
-        assertEquals(Long.valueOf(60000), config.getOSSRetryMaxDelayMS());
+        OSSConfig ossConfig = ConfigFactory.create(OSSConfig.class, properties);
+        Assert.assertEquals("oss-cn-hangzhou.aliyuncs.com", ossConfig.getOSSEndpoint());
+        Assert.assertEquals("test-key-id", ossConfig.getOSSAccessKeyId());
+        Assert.assertEquals("test-key-secret", ossConfig.getOSSAccessKeySecret());
+        Assert.assertEquals("test-bucket", ossConfig.getOSSBucketName());
+        Assert.assertEquals("cn-hangzhou", ossConfig.getOSSRegion());
+        Assert.assertEquals("test-prefix", ossConfig.getOSSDirectoryPrefix());
+        Assert.assertEquals(Integer.valueOf(1024), ossConfig.getOSSMaxConnections());
+        Assert.assertEquals(Integer.valueOf(50000), ossConfig.getOSSSocketTimeout());
+        Assert.assertEquals(Integer.valueOf(50000), ossConfig.getOSSConnectionTimeout());
+        Assert.assertEquals(Integer.valueOf(3), ossConfig.getOSSMaxErrorRetry());
     }
 
     @Test
-    public void shouldLoadDefaultValues() {
-        OSSConfig config = ConfigFactory.create(OSSConfig.class, new HashMap<String, String>() {{
-            put("OSS_TYPE", "SINK_BLOB");
-            put("SINK_BLOB_OSS_ENDPOINT", "oss-cn-hangzhou.aliyuncs.com");
-            put("SINK_BLOB_OSS_BUCKET_NAME", "test-bucket");
-            put("SINK_BLOB_OSS_ACCESS_KEY_ID", "test-key");
-            put("SINK_BLOB_OSS_ACCESS_KEY_SECRET", "test-secret");
-        }});
+    public void shouldParseConfigForDLQ() {
+        Map<String, String> properties = new HashMap<String, String>() {{
+            put("DLQ_BLOB_STORAGE_OSS_ENDPOINT", "oss-cn-hangzhou.aliyuncs.com");
+            put("DLQ_BLOB_STORAGE_OSS_ACCESS_KEY_ID", "test-key-id");
+            put("DLQ_BLOB_STORAGE_OSS_ACCESS_KEY_SECRET", "test-key-secret");
+            put("DLQ_BLOB_STORAGE_OSS_BUCKET_NAME", "test-bucket");
+            put("DLQ_BLOB_STORAGE_OSS_REGION", "cn-hangzhou");
+            put("OSS_TYPE", "DLQ_BLOB_STORAGE");
+        }};
 
-        assertEquals("", config.getOSSDirectoryPrefix());
-        assertEquals(Long.valueOf(10), config.getOSSRetryMaxAttempts());
-        assertEquals(Long.valueOf(1000), config.getOSSRetryInitialDelayMS());
-        assertEquals(Long.valueOf(30000), config.getOSSRetryMaxDelayMS());
+        OSSConfig ossConfig = ConfigFactory.create(OSSConfig.class, properties);
+        Assert.assertEquals("oss-cn-hangzhou.aliyuncs.com", ossConfig.getOSSEndpoint());
+        Assert.assertEquals("test-key-id", ossConfig.getOSSAccessKeyId());
+        Assert.assertEquals("test-key-secret", ossConfig.getOSSAccessKeySecret());
+        Assert.assertEquals("test-bucket", ossConfig.getOSSBucketName());
+        Assert.assertEquals("cn-hangzhou", ossConfig.getOSSRegion());
     }
 }
