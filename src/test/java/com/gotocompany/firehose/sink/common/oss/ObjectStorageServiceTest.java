@@ -39,7 +39,7 @@ public class ObjectStorageServiceTest {
         ossClient = mock(OSS.class);
         config = ConfigFactory.create(OSSConfig.class, new HashMap<Object, Object>() {{
             put("OSS_TYPE", "SOME_TYPE");
-            put("SOME_TYPE_OSS_BUCKET_NAME", "TestBucket");
+            put("SOME_TYPE_OSS_BUCKET_NAME", "testbucket");
             put("SOME_TYPE_OSS_ENDPOINT", "test-endpoint");
             put("SOME_TYPE_OSS_ACCESS_KEY_ID", "test-key-id");
             put("SOME_TYPE_OSS_ACCESS_KEY_SECRET", "test-key-secret");
@@ -54,7 +54,7 @@ public class ObjectStorageServiceTest {
         objectStorageService.store("test.txt", content);
 
         verify(ossClient).putObject(
-                eq("TestBucket"),
+                eq("testbucket"),
                 eq("test-prefix/test.txt"),
                 any(ByteArrayInputStream.class),
                 any(ObjectMetadata.class)
@@ -69,7 +69,7 @@ public class ObjectStorageServiceTest {
         objectStorageService.store("test.txt", tempFile.getAbsolutePath());
 
         verify(ossClient).putObject(
-                eq("TestBucket"),
+                eq("testbucket"),
                 eq("test-prefix/test.txt"),
                 eq(tempFile)
         );
@@ -81,7 +81,7 @@ public class ObjectStorageServiceTest {
         objectStorageService.store("empty.txt", emptyContent);
 
         verify(ossClient).putObject(
-                eq("TestBucket"),
+                eq("testbucket"),
                 eq("test-prefix/empty.txt"),
                 any(ByteArrayInputStream.class),
                 argThat(metadata -> metadata.getContentLength() == 0)
@@ -94,7 +94,7 @@ public class ObjectStorageServiceTest {
         objectStorageService.store("special/chars!@#$%^&*.txt", content);
 
         verify(ossClient).putObject(
-                eq("TestBucket"),
+                eq("testbucket"),
                 eq("test-prefix/special/chars!@#$%^&*.txt"),
                 any(ByteArrayInputStream.class),
                 any(ObjectMetadata.class)
@@ -130,7 +130,7 @@ public class ObjectStorageServiceTest {
         objectStorageService.store(longName.toString(), content);
 
         verify(ossClient).putObject(
-                eq("TestBucket"),
+                eq("testbucket"),
                 eq("test-prefix/" + longName),
                 any(ByteArrayInputStream.class),
                 any(ObjectMetadata.class)
@@ -145,7 +145,7 @@ public class ObjectStorageServiceTest {
         objectStorageService.store("test3.txt", content);
 
         verify(ossClient, times(3)).putObject(
-                eq("TestBucket"),
+                eq("testbucket"),
                 any(String.class),
                 any(ByteArrayInputStream.class),
                 any(ObjectMetadata.class)

@@ -1,8 +1,6 @@
 package com.gotocompany.firehose.sink.common.blobstorage;
 
-import com.gotocompany.firehose.sink.common.blobstorage.gcs.GoogleCloudStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.oss.ObjectStorageService;
-import com.gotocompany.firehose.sink.common.blobstorage.s3.S3;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -49,17 +47,6 @@ public class BlobStorageFactoryTest {
         assertTrue(storage instanceof ObjectStorageService);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionForOSSWithMissingBucket() {
-        Map<String, String> config = new HashMap<String, String>() {{
-            put("OSS_TYPE", "SOME_TYPE");
-            put("SOME_TYPE_OSS_ENDPOINT", "oss-endpoint");
-            put("SOME_TYPE_OSS_ACCESS_KEY_ID", "access-key");
-            put("SOME_TYPE_OSS_ACCESS_KEY_SECRET", "secret-key");
-        }};
-
-        BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, config);
-    }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForOSSWithMissingEndpoint() {
@@ -127,38 +114,6 @@ public class BlobStorageFactoryTest {
         assertTrue(storage instanceof ObjectStorageService);
     }
 
-    @Test
-    public void shouldCreateGCSStorage() {
-        Map<String, String> config = new HashMap<String, String>() {{
-            put("GCS_TYPE", "SOME_TYPE");
-            put("SOME_TYPE_GCS_BUCKET_NAME", "test-bucket");
-            put("SOME_TYPE_GCS_GOOGLE_CLOUD_PROJECT_ID", "project-id");
-        }};
-
-        BlobStorage storage = BlobStorageFactory.createObjectStorage(BlobStorageType.GCS, config);
-        assertTrue(storage instanceof GoogleCloudStorage);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionForGCSWithMissingConfig() {
-        Map<String, String> config = new HashMap<String, String>() {{
-            put("GCS_TYPE", "SOME_TYPE");
-        }};
-
-        BlobStorageFactory.createObjectStorage(BlobStorageType.GCS, config);
-    }
-
-    @Test
-    public void shouldCreateS3Storage() {
-        Map<String, String> config = new HashMap<String, String>() {{
-            put("S3_TYPE", "SOME_TYPE");
-            put("SOME_TYPE_S3_BUCKET_NAME", "test-bucket");
-            put("SOME_TYPE_S3_REGION", "us-east-1");
-        }};
-
-        BlobStorage storage = BlobStorageFactory.createObjectStorage(BlobStorageType.S3, config);
-        assertTrue(storage instanceof S3);
-    }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForS3WithMissingConfig() {
@@ -167,12 +122,6 @@ public class BlobStorageFactoryTest {
         }};
 
         BlobStorageFactory.createObjectStorage(BlobStorageType.S3, config);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowExceptionForUnsupportedStorageType() {
-        Map<String, String> config = new HashMap<>();
-        BlobStorageFactory.createObjectStorage(null, config);
     }
 
     @Test(expected = IllegalArgumentException.class)

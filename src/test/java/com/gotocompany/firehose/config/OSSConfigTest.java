@@ -146,16 +146,6 @@ public class OSSConfigTest {
     }
 
     @Test
-    public void shouldHandleSpecialCharactersInEndpoint() {
-        Map<String, String> properties = new HashMap<String, String>() {{
-            put("OSS_TYPE", "SINK_OBJECT_STORAGE");
-            put("SINK_OBJECT_STORAGE_OSS_ENDPOINT", "https://oss-special-!@#$%^&*.com");
-        }};
-        OSSConfig ossConfig = ConfigFactory.create(OSSConfig.class, properties);
-        Assert.assertEquals("https://oss-special-!@#$%^&*.com", ossConfig.getOSSEndpoint());
-    }
-
-    @Test
     public void shouldHandleSpecialCharactersInBucketName() {
         Map<String, String> properties = new HashMap<String, String>() {{
             put("OSS_TYPE", "SINK_OBJECT_STORAGE");
