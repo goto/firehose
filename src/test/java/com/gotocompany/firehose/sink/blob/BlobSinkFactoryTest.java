@@ -4,7 +4,6 @@ import com.gotocompany.depot.metrics.StatsDReporter;
 import com.gotocompany.firehose.config.BlobSinkConfig;
 import com.gotocompany.firehose.consumer.kafka.OffsetManager;
 import com.gotocompany.firehose.sink.Sink;
-import com.gotocompany.firehose.sink.blob.writer.WriterOrchestrator;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageType;
 import com.gotocompany.firehose.sink.common.blobstorage.gcs.GoogleCloudStorage;
