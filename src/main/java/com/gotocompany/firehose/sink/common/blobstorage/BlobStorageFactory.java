@@ -4,7 +4,7 @@ import com.gotocompany.firehose.config.GCSConfig;
 import com.gotocompany.firehose.config.OSSConfig;
 import com.gotocompany.firehose.config.S3Config;
 import com.gotocompany.firehose.sink.common.blobstorage.gcs.GoogleCloudStorage;
-import com.gotocompany.firehose.sink.common.blobstorage.oss.OSS;
+import com.gotocompany.firehose.sink.common.blobstorage.oss.ObjectStorageService;
 import com.gotocompany.firehose.sink.common.blobstorage.s3.S3;
 import org.aeonbits.owner.ConfigFactory;
 
