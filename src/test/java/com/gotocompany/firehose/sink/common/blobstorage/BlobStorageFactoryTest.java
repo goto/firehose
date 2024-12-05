@@ -175,7 +175,7 @@ public class BlobStorageFactoryTest {
         BlobStorageFactory.createObjectStorage(null, config);
     }
 
-    @Test(expected = IllegalArgumentException.class) 
+    @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForEmptyConfig() {
         Map<String, String> config = new HashMap<>();
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, config);
