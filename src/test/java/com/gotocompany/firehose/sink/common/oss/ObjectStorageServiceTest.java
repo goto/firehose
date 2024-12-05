@@ -6,6 +6,7 @@ import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.gotocompany.firehose.config.OSSConfig;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
+import com.gotocompany.firehose.sink.common.blobstorage.oss.ObjectStorageService;
 import org.aeonbits.owner.ConfigFactory;
 import org.junit.Before;
 import org.junit.Rule;
