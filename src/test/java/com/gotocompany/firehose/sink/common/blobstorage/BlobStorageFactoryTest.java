@@ -12,6 +12,14 @@ import static org.junit.Assert.*;
 
 public class BlobStorageFactoryTest {
 
+    private String repeat(String str, int times) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < times; i++) {
+            sb.append(str);
+        }
+        return sb.toString();
+    }
+
     @Test
     public void shouldCreateOSSStorageWithBasicConfig() {
         Map<String, String> config = new HashMap<String, String>() {{
@@ -257,11 +265,11 @@ public class BlobStorageFactoryTest {
     public void shouldCreateOSSStorageWithMaximalConfig() {
         Map<String, String> config = new HashMap<String, String>() {{
             put("OSS_TYPE", "SOME_TYPE");
-            put("SOME_TYPE_OSS_BUCKET_NAME", "test-bucket-" + "x".repeat(50));
-            put("SOME_TYPE_OSS_ENDPOINT", "https://" + "x".repeat(100) + ".com");
-            put("SOME_TYPE_OSS_ACCESS_KEY_ID", "x".repeat(100));
-            put("SOME_TYPE_OSS_ACCESS_KEY_SECRET", "x".repeat(100));
-            put("SOME_TYPE_OSS_DIRECTORY_PREFIX", "x".repeat(200));
+            put("SOME_TYPE_OSS_BUCKET_NAME", "test-bucket-" + repeat("x", 50));
+            put("SOME_TYPE_OSS_ENDPOINT", "https://" + repeat("x", 100) + ".com");
+            put("SOME_TYPE_OSS_ACCESS_KEY_ID", repeat("x", 100));
+            put("SOME_TYPE_OSS_ACCESS_KEY_SECRET", repeat("x", 100));
+            put("SOME_TYPE_OSS_DIRECTORY_PREFIX", repeat("x", 200));
         }};
 
         BlobStorage storage = BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, config);
