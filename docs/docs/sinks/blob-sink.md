@@ -262,3 +262,72 @@ The amount of time to allow the client to complete the execution of an API call.
 - Example value: `40000`
 - Type: `optional`
 - Default value : `40000`
+
+### OSS Configuration
+
+When using OSS as the blob storage type (`SINK_BLOB_STORAGE_TYPE=OSS`), the following configurations are required:
+
+### `SINK_BLOB_OSS_ENDPOINT`
+
+The endpoint of your OSS bucket.
+
+- Example value: `oss-cn-hangzhou.aliyuncs.com`
+- Type: `required`
+
+### `SINK_BLOB_OSS_ACCESS_KEY_ID`
+
+The access key ID for OSS authentication.
+
+- Type: `required`
+
+### `SINK_BLOB_OSS_ACCESS_KEY_SECRET`
+
+The access key secret for OSS authentication.
+
+- Type: `required`
+
+### `SINK_BLOB_OSS_BUCKET_NAME`
+
+The name of the OSS bucket.
+
+- Type: `required`
+
+### `SINK_BLOB_OSS_DIRECTORY_PREFIX`
+
+The directory prefix in the OSS bucket where files will be uploaded.
+
+- Example value: `data/raw`
+- Type: `optional`
+- Default value: ``
+
+### `SINK_BLOB_OSS_MAX_CONNECTIONS`
+
+Maximum number of concurrent connections to OSS.
+
+- Example value: `1024`
+- Type: `optional`
+- Default value: `1024`
+
+### `SINK_BLOB_OSS_SOCKET_TIMEOUT`
+
+Socket timeout in milliseconds.
+
+- Example value: `50000`
+- Type: `optional`
+- Default value: `50000`
+
+### `SINK_BLOB_OSS_CONNECTION_TIMEOUT`
+
+Connection timeout in milliseconds.
+
+- Example value: `50000`
+- Type: `optional`
+- Default value: `50000`
+
+### `SINK_BLOB_OSS_MAX_ERROR_RETRY`
+
+Maximum number of retry attempts for failed operations.
+
+- Example value: `3`
+- Type: `optional`
+- Default value: `3`
