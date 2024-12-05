@@ -8,8 +8,8 @@ import com.gotocompany.firehose.config.OSSConfig;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 
@@ -19,29 +19,22 @@ public class ObjectStorageService implements BlobStorage {
     private final String directoryPrefix;
 
     public ObjectStorageService(OSSConfig config) {
-        this.ossClient = new OSSClientBuilder()
-                .build(config.getOSSEndpoint(),
-                        config.getOSSAccessKeyId(),
-                        config.getOSSAccessKeySecret());
+        this.ossClient = new OSSClientBuilder().build(
+                config.getOSSEndpoint(),
+                config.getOSSAccessKeyId(),
+                config.getOSSAccessKeySecret()
+        );
         this.bucketName = config.getOSSBucketName();
         this.directoryPrefix = config.getOSSDirectoryPrefix();
     }
 
     @Override
-    public void store(String objectName, String localFilePath) throws BlobStorageException {
+    public void store(String objectName, String localPath) throws BlobStorageException {
         try {
             String fullPath = Paths.get(directoryPrefix, objectName).toString();
-            File file = new File(localFilePath);
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(file.length());
-            
-            try (FileInputStream input = new FileInputStream(file)) {
-                ossClient.putObject(bucketName, fullPath, input, metadata);
-            }
+            ossClient.putObject(bucketName, fullPath, new File(localPath));
         } catch (OSSException e) {
             throw new BlobStorageException(e.getErrorCode(), "OSS Upload failed", e);
-        } catch (IOException e) {
-            throw new BlobStorageException("IO_ERROR", "Failed to read local file", e);
         }
     }
 
@@ -51,16 +44,9 @@ public class ObjectStorageService implements BlobStorage {
             String fullPath = Paths.get(directoryPrefix, objectName).toString();
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(content.length);
-            ossClient.putObject(bucketName, fullPath, content);
+            ossClient.putObject(bucketName, fullPath, new ByteArrayInputStream(content), metadata);
         } catch (OSSException e) {
             throw new BlobStorageException(e.getErrorCode(), "OSS Upload failed", e);
-        }
-    }
-
-    @Override
-    public void close() {
-        if (ossClient != null) {
-            ossClient.shutdown();
         }
     }
 }
