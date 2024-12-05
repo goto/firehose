@@ -1,0 +1,56 @@
+package com.gotocompany.firehose.sink.common.blobstorage.oss;
+
+import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
+import com.aliyun.oss.OSSException;
+import com.aliyun.oss.model.PutObjectRequest;
+import com.gotocompany.firehose.config.OSSConfig;
+import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
+import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
+
+import java.io.File;
+import java.nio.file.Paths;
+
+public class ObjectStorageService implements BlobStorage {
+    private final OSS ossClient;
+    private final String bucketName;
+    private final String directoryPrefix;
+
+    public ObjectStorageService(OSSConfig config) {
+        this.ossClient = new OSSClientBuilder()
+                .build(config.getOSSEndpoint(),
+                        config.getOSSAccessKeyId(),
+                        config.getOSSAccessKeySecret());
+        
+        this.bucketName = config.getOSSBucketName();
+        this.directoryPrefix = config.getOSSDirectoryPrefix();
+    }
+
+    @Override
+    public void store(String objectName, String localPath) throws BlobStorageException {
+        try {
+            String fullObjectPath = Paths.get(directoryPrefix, objectName).toString();
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName, fullObjectPath, new File(localPath));
+            ossClient.putObject(putObjectRequest);
+        } catch (OSSException e) {
+            throw new BlobStorageException(e.getErrorCode(), "OSS Upload failed", e);
+        }
+    }
+
+    @Override
+    public void store(String objectName, byte[] content) throws BlobStorageException {
+        try {
+            String fullObjectPath = Paths.get(directoryPrefix, objectName).toString();
+            ossClient.putObject(bucketName, fullObjectPath, content);
+        } catch (OSSException e) {
+            throw new BlobStorageException(e.getErrorCode(), "OSS Upload failed", e);
+        }
+    }
+
+    @Override
+    public void close() {
+        if (ossClient != null) {
+            ossClient.shutdown();
+        }
+    }
+}
