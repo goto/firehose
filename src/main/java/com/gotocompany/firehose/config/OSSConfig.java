@@ -3,6 +3,7 @@ package com.gotocompany.firehose.config;
 import org.aeonbits.owner.Config;
 
 public interface OSSConfig extends Config {
+
     @Key("${OSS_TYPE}_OSS_ENDPOINT")
     String getOSSEndpoint();
 
@@ -17,9 +18,6 @@ public interface OSSConfig extends Config {
 
     @Key("${OSS_TYPE}_OSS_DIRECTORY_PREFIX")
     String getOSSDirectoryPrefix();
-
-    @Key("${OSS_TYPE}_OSS_REGION")
-    String getOSSRegion();
 
     @Key("${OSS_TYPE}_OSS_MAX_CONNECTIONS")
     @DefaultValue("1024")
