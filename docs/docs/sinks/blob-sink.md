@@ -263,14 +263,13 @@ The amount of time to allow the client to complete the execution of an API call.
 - Type: `optional`
 - Default value : `40000`
 
-
 ### OSS Configuration
 
-When using OSS as the storage type (`SINK_BLOB_STORAGE_TYPE=OSS`), the following configurations are required:
+When using OSS as the blob storage type (`SINK_BLOB_STORAGE_TYPE=OSS`), the following configurations are required:
 
 ### `SINK_BLOB_OSS_ENDPOINT`
 
-The OSS endpoint URL.
+The endpoint of your OSS bucket.
 
 - Example value: `oss-cn-hangzhou.aliyuncs.com`
 - Type: `required`
@@ -295,20 +294,15 @@ The name of the OSS bucket.
 
 ### `SINK_BLOB_OSS_DIRECTORY_PREFIX`
 
-The directory prefix for OSS objects.
+The directory prefix in the OSS bucket where files will be uploaded.
 
-- Type: `required`
-
-### `SINK_BLOB_OSS_REGION`
-
-The OSS region.
-
-- Example value: `cn-hangzhou`
-- Type: `required`
+- Example value: `data/raw`
+- Type: `optional`
+- Default value: ``
 
 ### `SINK_BLOB_OSS_MAX_CONNECTIONS`
 
-Maximum number of allowed open HTTP connections.
+Maximum number of concurrent connections to OSS.
 
 - Example value: `1024`
 - Type: `optional`
@@ -332,7 +326,7 @@ Connection timeout in milliseconds.
 
 ### `SINK_BLOB_OSS_MAX_ERROR_RETRY`
 
-Maximum number of retry attempts for failed requests.
+Maximum number of retry attempts for failed operations.
 
 - Example value: `3`
 - Type: `optional`
