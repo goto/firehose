@@ -55,9 +55,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ENDPOINT", "oss-test-endpoint");
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -70,9 +70,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("OSS_DIRECTORY_PREFIX", "test-prefix");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -84,9 +84,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ENDPOINT", "https://custom-oss-endpoint.com");
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -99,9 +99,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("OSS_REGION", "oss-test-region");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -111,9 +111,9 @@ public class BlobSinkFactoryTest {
         configuration.put("BLOB_STORAGE_TYPE", "GCS");
         configuration.put("GCS_BUCKET_NAME", "test-bucket");
         configuration.put("GCS_GOOGLE_CLOUD_PROJECT_ID", "test-project");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -123,9 +123,9 @@ public class BlobSinkFactoryTest {
         configuration.put("BLOB_STORAGE_TYPE", "S3");
         configuration.put("S3_BUCKET_NAME", "test-bucket");
         configuration.put("S3_REGION", "us-east-1");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -140,9 +140,9 @@ public class BlobSinkFactoryTest {
     public void shouldSetOSSTypeInConfiguration() {
         when(sinkConfig.getBlobStorageType()).thenReturn(BlobStorageType.OSS);
         Map<String, String> config = new HashMap<>();
-        
+
         BlobStorage storage = BlobSinkFactory.createSinkObjectStorage(sinkConfig, config);
-        
+
         assertTrue(storage instanceof ObjectStorageService);
         assertEquals("SINK_BLOB", config.get("OSS_TYPE"));
     }
@@ -151,9 +151,9 @@ public class BlobSinkFactoryTest {
     public void shouldSetGCSTypeInConfiguration() {
         when(sinkConfig.getBlobStorageType()).thenReturn(BlobStorageType.GCS);
         Map<String, String> config = new HashMap<>();
-        
+
         BlobStorage storage = BlobSinkFactory.createSinkObjectStorage(sinkConfig, config);
-        
+
         assertTrue(storage instanceof GoogleCloudStorage);
         assertEquals("SINK_BLOB", config.get("GCS_TYPE"));
     }
@@ -162,9 +162,9 @@ public class BlobSinkFactoryTest {
     public void shouldSetS3TypeInConfiguration() {
         when(sinkConfig.getBlobStorageType()).thenReturn(BlobStorageType.S3);
         Map<String, String> config = new HashMap<>();
-        
+
         BlobStorage storage = BlobSinkFactory.createSinkObjectStorage(sinkConfig, config);
-        
+
         assertTrue(storage instanceof S3);
         assertEquals("SINK_BLOB", config.get("S3_TYPE"));
     }
@@ -177,9 +177,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("OUTPUT_KAFKA_METADATA_COLUMN_NAME", "");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -192,9 +192,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("OUTPUT_KAFKA_METADATA_COLUMN_NAME", "custom_metadata");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -207,9 +207,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("LOCAL_FILE_ROTATION_MAX_SIZE_BYTES", "1048576");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -222,9 +222,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("LOCAL_FILE_ROTATION_DURATION_MS", "300000");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -238,9 +238,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("LOCAL_FILE_ROTATION_MAX_SIZE_BYTES", "1048576");
         configuration.put("LOCAL_FILE_ROTATION_DURATION_MS", "300000");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -253,9 +253,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_ID", "test-key");
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("LOCAL_FILE_WRITER_TYPE", "PARQUET");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -270,9 +270,9 @@ public class BlobSinkFactoryTest {
         configuration.put("LOCAL_FILE_WRITER_TYPE", "PARQUET");
         configuration.put("LOCAL_FILE_WRITER_PARQUET_BLOCK_SIZE", "268435456");
         configuration.put("LOCAL_FILE_WRITER_PARQUET_PAGE_SIZE", "1048576");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -286,9 +286,9 @@ public class BlobSinkFactoryTest {
         configuration.put("OSS_ACCESS_KEY_SECRET", "test-secret");
         configuration.put("FILE_PARTITION_TIME_GRANULARITY_TYPE", "HOUR");
         configuration.put("FILE_PARTITION_PROTO_TIMESTAMP_FIELD_NAME", "event_timestamp");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
@@ -303,9 +303,9 @@ public class BlobSinkFactoryTest {
         configuration.put("FILE_PARTITION_TIME_GRANULARITY_TYPE", "HOUR");
         configuration.put("FILE_PARTITION_TIME_DATE_PREFIX", "date=");
         configuration.put("FILE_PARTITION_TIME_HOUR_PREFIX", "hour=");
-        
+
         Sink sink = BlobSinkFactory.create(configuration, offsetManager, statsDReporter, stencilClient);
-        
+
         assertNotNull(sink);
         assertTrue(sink instanceof BlobSink);
     }
