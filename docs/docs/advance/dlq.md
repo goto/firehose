@@ -236,7 +236,7 @@ Mandatory if DLQ_BLOB_STORAGE_TYPE is OSS.
 
 * Example value: `oss-cn-hangzhou.aliyuncs.com`
 * Type: `Required if DLQ_BLOB_STORAGE_TYPE is OSS`
-* Default value : `null
+* Default value : `null`
 
 ## `DLQ_OSS_ACCESS_KEY_ID`
 
