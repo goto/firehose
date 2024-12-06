@@ -36,7 +36,7 @@ public class ObjectStorageService implements BlobStorage {
         checkBucket();
     }
 
-    private static OSS initializeOss(ObjectStorageServiceConfig objectStorageServiceConfig) {
+    protected static OSS initializeOss(ObjectStorageServiceConfig objectStorageServiceConfig) {
         ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
         clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
         clientBuilderConfiguration.setSocketTimeout(objectStorageServiceConfig.getOssSocketTimeoutMs());
