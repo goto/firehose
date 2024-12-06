@@ -32,7 +32,7 @@ Max attempts to retry for dlq.
 
 ## `DLQ_BLOB_STORAGE_TYPE`
 
-If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Currently, GCS and S3 is supported.
+If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Currently, GCS, S3 and OSS are supported.
 
 * Example value: `GCS`
 * Type: `optional`
@@ -232,9 +232,10 @@ The amount of time to allow the client to complete the execution of an API call.
 ## `DLQ_OSS_ENDPOINT`
 
 The endpoint of the oss service. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/user-guide/regions-and-endpoints?spm=a2c63.p38356.0.0.65ad7fdf6qkcoQ).
+Mandatory if DLQ_BLOB_STORAGE_TYPE is OSS.
 
 * Example value: `oss-cn-hangzhou.aliyuncs.com`
-* Type: `optional`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is OSS`
 * Default value : `null
 
 ## `DLQ_OSS_ACCESS_KEY_ID`
@@ -242,21 +243,21 @@ The endpoint of the oss service. For more information, please refer to the [oss 
 The access key id of the oss service. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/developer-reference/oss-java-configure-access-credentials#dd657ea839xv1).
 
 * Example value: `youraccessid`
-* Type: `optional`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is OSS`
 
 ## `DLQ_OSS_ACCESS_KEY_SECRET`
 
 The access key secret of the oss service. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/developer-reference/oss-java-configure-access-credentials#dd657ea839xv1).
 
 * Example value: `youraccesskey`
-* Type: `optional`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is OSS`
 
 ## `DLQ_OSS_BUCKET_NAME`
 
 The name of the oss bucket. Must adhere to the naming rules of oss. For more information, please refer to the [oss documentation](https://www.alibabacloud.com/help/en/oss/user-guide/bucket-naming-conventions?spm=a2c63.p38356.0.0.4cdb3962K5f3io).
 
 * Example value: `oss_bucket`
-* Type: `optional`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is OSS`
 
 ## `DLQ_OSS_DIRECTORY_PREFIX`
 
@@ -299,7 +300,7 @@ The request timeout in milliseconds.
 
 ## `DLQ_OSS_RETRY_ENABLED`
 
-The flag to enable retry mechanism.
+The flag to enable retry mechanism for OSS client when transient failure occurred.
 
 * Example value: `true`
 * Type: `required`
@@ -307,7 +308,7 @@ The flag to enable retry mechanism.
 
 ## `DLQ_OSS_MAX_RETRY_ATTEMPTS`
 
-The maximum number of retry attempts.
+The maximum number of retry attempts. To be used in conjunction when `DLQ_OSS_RETRY_ENABLED` is set to `true`.
 
 * Example value: `3`
 * Type: `required`
