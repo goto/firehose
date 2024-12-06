@@ -22,24 +22,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 public class ObjectStorageServiceTest {
 
     @Test
     public void shouldStoreObjectGivenFilePath() throws BlobStorageException {
         ObjectStorageServiceConfig objectStorageServiceConfig = Mockito.mock(ObjectStorageServiceConfig.class);
-        Mockito.when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
-        Mockito.when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
-        Mockito.when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
-        Mockito.when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
-        Mockito.when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
-        Mockito.when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
+        when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
+        when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
+        when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
+        when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
+        when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
+        when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
         OSS oss = Mockito.spy(OSS.class);
         ArgumentCaptor<PutObjectRequest> argumentCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
-        Mockito.when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenReturn(null);
+        when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenReturn(null);
         BucketList bucketList = new BucketList();
         bucketList.setBucketList(Collections.singletonList(Mockito.mock(Bucket.class)));
-        Mockito.when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
+        when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
         ObjectStorageService objectStorageService = new ObjectStorageService(objectStorageServiceConfig, oss);
 
         objectStorageService.store("objectName", "filePath");
@@ -54,17 +55,17 @@ public class ObjectStorageServiceTest {
     @Test
     public void shouldStoreObjectGivenFileContent() throws BlobStorageException, IOException {
         ObjectStorageServiceConfig objectStorageServiceConfig = Mockito.mock(ObjectStorageServiceConfig.class);
-        Mockito.when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
-        Mockito.when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
-        Mockito.when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
-        Mockito.when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
-        Mockito.when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
-        Mockito.when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
+        when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
+        when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
+        when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
+        when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
+        when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
+        when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
         OSS oss = Mockito.spy(OSS.class);
-        Mockito.when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenReturn(null);
+        when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenReturn(null);
         BucketList bucketList = new BucketList();
         bucketList.setBucketList(Collections.singletonList(Mockito.mock(Bucket.class)));
-        Mockito.when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
+        when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
         ObjectStorageService objectStorageService = new ObjectStorageService(objectStorageServiceConfig, oss);
 
         objectStorageService.store("objectName", "content".getBytes());
@@ -81,16 +82,16 @@ public class ObjectStorageServiceTest {
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowIllegalArgumentExceptionWhenGivenBucketIsNotExists() throws BlobStorageException {
         ObjectStorageServiceConfig objectStorageServiceConfig = Mockito.mock(ObjectStorageServiceConfig.class);
-        Mockito.when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
-        Mockito.when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
-        Mockito.when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
-        Mockito.when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
-        Mockito.when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
-        Mockito.when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
+        when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
+        when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
+        when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
+        when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
+        when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
+        when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
         OSS oss = Mockito.spy(OSS.class);
         BucketList bucketList = new BucketList();
         bucketList.setBucketList(new ArrayList<>());
-        Mockito.when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
+        when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
         ObjectStorageService objectStorageService = new ObjectStorageService(objectStorageServiceConfig, oss);
 
         objectStorageService.store("objectName", "content".getBytes());
@@ -99,17 +100,17 @@ public class ObjectStorageServiceTest {
     @Test(expected = BlobStorageException.class)
     public void shouldWrapToBlobStorageExceptionWhenClientExceptionIsThrown() throws BlobStorageException {
         ObjectStorageServiceConfig objectStorageServiceConfig = Mockito.mock(ObjectStorageServiceConfig.class);
-        Mockito.when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
-        Mockito.when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
-        Mockito.when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
-        Mockito.when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
-        Mockito.when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
-        Mockito.when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
+        when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
+        when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
+        when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
+        when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
+        when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
+        when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
         OSS oss = Mockito.spy(OSS.class);
-        Mockito.when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenThrow(new ClientException("client_error"));
+        when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenThrow(new ClientException("client_error"));
         BucketList bucketList = new BucketList();
         bucketList.setBucketList(Collections.singletonList(Mockito.mock(Bucket.class)));
-        Mockito.when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
+        when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
         ObjectStorageService objectStorageService = new ObjectStorageService(objectStorageServiceConfig, oss);
 
         objectStorageService.store("objectName", "content".getBytes());
@@ -118,17 +119,17 @@ public class ObjectStorageServiceTest {
     @Test(expected = BlobStorageException.class)
     public void shouldWrapToBlobStorageExceptionWhenOSSExceptionIsThrown() throws BlobStorageException {
         ObjectStorageServiceConfig objectStorageServiceConfig = Mockito.mock(ObjectStorageServiceConfig.class);
-        Mockito.when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
-        Mockito.when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
-        Mockito.when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
-        Mockito.when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
-        Mockito.when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
-        Mockito.when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
+        when(objectStorageServiceConfig.getOssEndpoint()).thenReturn("http://localhost:9000");
+        when(objectStorageServiceConfig.getOssRegion()).thenReturn("ap-southeast-5");
+        when(objectStorageServiceConfig.getOssAccessId()).thenReturn("accessId");
+        when(objectStorageServiceConfig.getOssAccessKey()).thenReturn("accessKey");
+        when(objectStorageServiceConfig.getOssBucketName()).thenReturn("bucket_name");
+        when(objectStorageServiceConfig.getOssDirectoryPrefix()).thenReturn("dir_prefix");
         OSS oss = Mockito.spy(OSS.class);
-        Mockito.when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenThrow(new OSSException("server is down"));
+        when(oss.putObject(Mockito.any(PutObjectRequest.class))).thenThrow(new OSSException("server is down"));
         BucketList bucketList = new BucketList();
         bucketList.setBucketList(Collections.singletonList(Mockito.mock(Bucket.class)));
-        Mockito.when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
+        when(oss.listBuckets(Mockito.any(ListBucketsRequest.class))).thenReturn(bucketList);
         ObjectStorageService objectStorageService = new ObjectStorageService(objectStorageServiceConfig, oss);
 
         objectStorageService.store("objectName", "content".getBytes());
