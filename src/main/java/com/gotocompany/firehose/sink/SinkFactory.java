@@ -11,6 +11,7 @@ import com.gotocompany.depot.config.RedisSinkConfig;
 import com.gotocompany.depot.http.HttpSink;
 import com.gotocompany.depot.log.LogSink;
 import com.gotocompany.depot.log.LogSinkFactory;
+import com.gotocompany.depot.maxcompute.MaxComputeSink;
 import com.gotocompany.depot.maxcompute.MaxComputeSinkFactory;
 import com.gotocompany.depot.metrics.StatsDReporter;
 import com.gotocompany.depot.redis.RedisSink;
@@ -146,7 +147,7 @@ public class SinkFactory {
             case HTTPV2:
                 return new GenericSink(new FirehoseInstrumentation(statsDReporter, HttpSink.class), sinkType.name(), httpv2SinkFactory.create());
             case MAXCOMPUTE:
-                return new GenericSink(new FirehoseInstrumentation(statsDReporter, MaxComputeSinkFactory.class), sinkType.name(), maxComputeSinkFactory.create());
+                return new GenericSink(new FirehoseInstrumentation(statsDReporter, MaxComputeSink.class), sinkType.name(), maxComputeSinkFactory.create());
             default:
                 throw new ConfigurationException("Invalid Firehose SINK_TYPE");
         }
