@@ -43,135 +43,132 @@ public class BlobStorageFactoryTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_NullConfig_ThrowsException() {
+    public void shouldThrowExceptionWhenConfigIsNull() {
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_EmptyConfig_ThrowsException() {
+    public void shouldThrowExceptionWhenConfigIsEmpty() {
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, new HashMap<>());
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_MissingEndpoint_ThrowsException() {
+    public void shouldThrowExceptionWhenEndpointIsMissing() {
         validOssConfig.remove("OSS_TYPE_OSS_ENDPOINT");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_MissingRegion_ThrowsException() {
+    public void shouldThrowExceptionWhenRegionIsMissing() {
         validOssConfig.remove("OSS_TYPE_OSS_REGION");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_MissingAccessId_ThrowsException() {
+    public void shouldThrowExceptionWhenAccessIdIsMissing() {
         validOssConfig.remove("OSS_TYPE_OSS_ACCESS_ID");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_MissingAccessKey_ThrowsException() {
+    public void shouldThrowExceptionWhenAccessKeyIsMissing() {
         validOssConfig.remove("OSS_TYPE_OSS_ACCESS_KEY");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_MissingBucketName_ThrowsException() {
+    public void shouldThrowExceptionWhenBucketNameIsMissing() {
         validOssConfig.remove("OSS_TYPE_OSS_BUCKET_NAME");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
-
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_InvalidEndpoint_ThrowsException() {
+    public void shouldThrowExceptionWhenEndpointIsInvalid() {
         validOssConfig.put("OSS_TYPE_OSS_ENDPOINT", "");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_EmptyAccessId_ThrowsException() {
+    public void shouldThrowExceptionWhenAccessIdIsEmpty() {
         validOssConfig.put("OSS_TYPE_OSS_ACCESS_ID", "");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_EmptyAccessKey_ThrowsException() {
+    public void shouldThrowExceptionWhenAccessKeyIsEmpty() {
         validOssConfig.put("OSS_TYPE_OSS_ACCESS_KEY", "");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_EmptyBucketName_ThrowsException() {
+    public void shouldThrowExceptionWhenBucketNameIsEmpty() {
         validOssConfig.put("OSS_TYPE_OSS_BUCKET_NAME", "");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_InvalidSocketTimeout_ThrowsException() {
+    public void shouldThrowExceptionWhenSocketTimeoutIsInvalid() {
         validOssConfig.put("OSS_TYPE_OSS_SOCKET_TIMEOUT_MS", "invalid");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_NegativeSocketTimeout_ThrowsException() {
+    public void shouldThrowExceptionWhenSocketTimeoutIsNegative() {
         validOssConfig.put("OSS_TYPE_OSS_SOCKET_TIMEOUT_MS", "-1000");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_InvalidConnectionTimeout_ThrowsException() {
+    public void shouldThrowExceptionWhenConnectionTimeoutIsInvalid() {
         validOssConfig.put("OSS_TYPE_OSS_CONNECTION_TIMEOUT_MS", "invalid");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_NegativeConnectionTimeout_ThrowsException() {
+    public void shouldThrowExceptionWhenConnectionTimeoutIsNegative() {
         validOssConfig.put("OSS_TYPE_OSS_CONNECTION_TIMEOUT_MS", "-1000");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_InvalidRequestTimeout_ThrowsException() {
+    public void shouldThrowExceptionWhenRequestTimeoutIsInvalid() {
         validOssConfig.put("OSS_TYPE_OSS_REQUEST_TIMEOUT_MS", "invalid");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_NegativeRequestTimeout_ThrowsException() {
+    public void shouldThrowExceptionWhenRequestTimeoutIsNegative() {
         validOssConfig.put("OSS_TYPE_OSS_REQUEST_TIMEOUT_MS", "-1000");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_InvalidRetryEnabled_ThrowsException() {
+    public void shouldThrowExceptionWhenRetryEnabledIsInvalid() {
         validOssConfig.put("OSS_TYPE_OSS_RETRY_ENABLED", "invalid");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_InvalidMaxRetryAttempts_ThrowsException() {
+    public void shouldThrowExceptionWhenMaxRetryAttemptsIsInvalid() {
         validOssConfig.put("OSS_TYPE_OSS_MAX_RETRY_ATTEMPTS", "invalid");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_NegativeMaxRetryAttempts_ThrowsException() {
+    public void shouldThrowExceptionWhenMaxRetryAttemptsIsNegative() {
         validOssConfig.put("OSS_TYPE_OSS_MAX_RETRY_ATTEMPTS", "-1");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_ZeroMaxRetryAttempts_ThrowsException() {
+    public void shouldThrowExceptionWhenMaxRetryAttemptsIsZero() {
         validOssConfig.put("OSS_TYPE_OSS_MAX_RETRY_ATTEMPTS", "0");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createObjectStorage_InvalidRegion_ThrowsException() {
+    public void shouldThrowExceptionWhenRegionIsInvalid() {
         validOssConfig.put("OSS_TYPE_OSS_REGION", "");
         BlobStorageFactory.createObjectStorage(BlobStorageType.OSS, validOssConfig);
     }
-
-
 }
