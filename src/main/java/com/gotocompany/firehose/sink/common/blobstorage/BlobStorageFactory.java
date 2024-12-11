@@ -1,7 +1,7 @@
 package com.gotocompany.firehose.sink.common.blobstorage;
 
 import com.gotocompany.firehose.config.GCSConfig;
-import com.gotocompany.firehose.config.OSSConfig;
+import com.gotocompany.firehose.config.ObjectStorageServiceConfig;
 import com.gotocompany.firehose.config.S3Config;
 import com.gotocompany.firehose.sink.common.blobstorage.gcs.GoogleCloudStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.oss.ObjectStorageService;
@@ -31,8 +31,8 @@ public class BlobStorageFactory {
                 }
             case OSS:
                 try {
-                    OSSConfig ossConfig = ConfigFactory.create(OSSConfig.class, config);
-                    return new ObjectStorageService(ossConfig);
+                    ObjectStorageServiceConfig objectStorageServiceConfig = ConfigFactory.create(ObjectStorageServiceConfig.class, config);
+                    return new ObjectStorageService(objectStorageServiceConfig);
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Exception while creating OSS Storage", e);
                 }
