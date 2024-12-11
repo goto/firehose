@@ -4,9 +4,9 @@ A Blob sink Firehose \(`SINK_TYPE`=`blob`\) requires the following variables to 
 
 ### `SINK_BLOB_STORAGE_TYPE`
 
-Defines the types of blob storage the destination remote file system the file will be uploaded. Currently, the only supported blob storages are `GCS` (google cloud storage) and `S3` (Amazon S3) .
+Defines the types of blob storage the destination remote file system the file will be uploaded. Currently, the only supported blob storages are `GCS` (google cloud storage), `OSS`( Alibaba Cloud Object Storage Service) and `S3` (Amazon S3) .
 
-- Example value: `GCS` or `S3`
+- Example value: `GCS`, `OSS` or `S3`
 - Type: `required`
 
 ### `SINK_BLOB_LOCAL_FILE_WRITER_TYPE`
