@@ -4,7 +4,6 @@ import com.gotocompany.firehose.config.AppConfig;
 import com.gotocompany.firehose.config.ErrorConfig;
 import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.error.ErrorHandler;
-import com.gotocompany.firehose.error.ErrorScope;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
