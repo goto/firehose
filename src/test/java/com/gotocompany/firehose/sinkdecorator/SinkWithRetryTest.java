@@ -285,7 +285,7 @@ public class SinkWithRetryTest {
     }
 
     @Test
-    public void shouldStopRetryingWhenNonRetryableErrodrOccurs() throws IOException, DeserializerException {
+    public void shouldStopRetryingWhenNonRetryableErrorOccurs() throws IOException, DeserializerException {
         errorHandler = new ErrorHandler(ConfigFactory.create(ErrorConfig.class, new HashMap<String, String>() {{
             put("ERROR_TYPES_FOR_RETRY", ErrorType.DESERIALIZATION_ERROR.name() + "," + ErrorType.SINK_RETRYABLE_ERROR.name());
         }}));
