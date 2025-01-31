@@ -104,6 +104,8 @@ dependencies {
     implementation group: 'com.gotocompany', name: 'depot', version: '0.10.4'
     implementation group: 'com.networknt', name: 'json-schema-validator', version: '1.0.59' exclude group: 'org.slf4j'
     implementation 'dev.cel:cel:0.5.2'
+    implementation 'com.qcloud:cos_api:5.6.227'
+    implementation 'com.qcloud:cos-sts_api:3.1.0'
 
     testImplementation group: 'junit', name: 'junit', version: '4.11'
     testImplementation 'org.hamcrest:hamcrest-all:1.3'
