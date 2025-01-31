@@ -22,8 +22,6 @@ public interface CloudObjectStorageConfig extends Config {
     @DefaultValue("1800")
     Integer getCosTempCredentialValiditySeconds();
 
-
     @Key("${COS_TYPE}_COS_APPID")
     String getCosAppId();
-
 }
