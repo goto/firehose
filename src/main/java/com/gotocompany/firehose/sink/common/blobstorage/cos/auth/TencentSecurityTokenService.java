@@ -59,7 +59,7 @@ public class TencentSecurityTokenService {
 
     private String buildResourceIdentifier() {
         String prefix = normalizeDirectoryPrefix();
-        return String.format("qcs::cos:%s:uid/%s:%s%s*",
+        return String.format("qcs::cos:%s:uid/%s:%s%s",
                 config.getCosRegion(),
                 config.getCosAppId(),
                 config.getCosBucketName(),
@@ -71,7 +71,8 @@ public class TencentSecurityTokenService {
         if (prefix == null || prefix.isEmpty()) {
             return "/";
         }
+        // Ensure prefix starts with a slash and does not end with one
         prefix = prefix.startsWith("/") ? prefix : "/" + prefix;
-        return prefix.endsWith("/") ? prefix : prefix + "/";
+        return prefix.endsWith("/") ? prefix.substring(0, prefix.length() - 1) : prefix;
     }
 }

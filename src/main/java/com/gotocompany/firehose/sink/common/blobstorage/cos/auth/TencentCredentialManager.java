@@ -19,10 +19,17 @@ public class TencentCredentialManager {
     }
 
     public synchronized COSSessionCredentials getCurrentCredentials() {
-        if (shouldRefreshCredentials()) {
-            refreshCredentials();
+        LOGGER.debug("Checking if credentials need refresh");
+        try {
+            if (shouldRefreshCredentials()) {
+                LOGGER.info("Refreshing COS credentials");
+                refreshCredentials();
+            }
+            return currentCredentials;
+        } catch (Exception e) {
+            LOGGER.error("Failed to get current credentials", e);
+            throw new IllegalStateException("Unable to obtain valid credentials", e);
         }
-        return currentCredentials;
     }
 
     private boolean shouldRefreshCredentials() {
@@ -33,11 +40,14 @@ public class TencentCredentialManager {
 
     private void refreshCredentials() {
         try {
+            LOGGER.debug("Requesting new temporary credentials");
             currentCredentials = securityTokenService.generateTemporaryCredentials();
             lastUpdateTime = System.currentTimeMillis();
+            LOGGER.info("Successfully refreshed COS credentials, valid for {} seconds", 
+                config.getCosTempCredentialValiditySeconds());
         } catch (Exception e) {
-            LOGGER.error("Failed to refresh Tencent COS credentials", e);
-            throw new IllegalStateException("Unable to refresh credentials", e);
+            LOGGER.error("Failed to refresh Tencent COS credentials: {}", e.getMessage(), e);
+            throw new IllegalStateException("Unable to refresh credentials: " + e.getMessage(), e);
         }
     }
 }
