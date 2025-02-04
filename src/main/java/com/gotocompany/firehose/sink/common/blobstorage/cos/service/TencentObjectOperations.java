@@ -17,7 +17,6 @@ public class TencentObjectOperations {
     private static final Logger LOGGER = LoggerFactory.getLogger(TencentObjectOperations.class);
     private static final String OBJECT_PATH_SEPARATOR = "/";
 
-    // HTTP Status Codes
     private static final int HTTP_BAD_REQUEST = 400;
     private static final int HTTP_UNAUTHORIZED = 401;
     private static final int HTTP_FORBIDDEN = 403;
@@ -150,11 +149,6 @@ public class TencentObjectOperations {
             LOGGER.error("Client error while deleting object from COS: {}", blobPath, e);
             throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(), "Failed to delete object from COS due to client error", e);
         }
-    }
-
-    public byte[] downloadObject(String objectKey) {
-        // Implementation
-        return new byte[0];
     }
 
     private COSErrorType getErrorType(int statusCode) {
