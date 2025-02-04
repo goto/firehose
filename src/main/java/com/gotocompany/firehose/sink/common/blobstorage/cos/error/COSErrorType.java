@@ -43,4 +43,4 @@ public enum COSErrorType {
     public int getCode() {
         return code;
     }
-} 
+}

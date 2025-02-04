@@ -4,7 +4,6 @@ import com.gotocompany.firehose.config.CloudObjectStorageConfig;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
 import com.gotocompany.firehose.sink.common.blobstorage.cos.auth.TencentCredentialManager;
-import com.gotocompany.firehose.sink.common.blobstorage.cos.error.COSErrorType;
 import com.gotocompany.firehose.sink.common.blobstorage.cos.service.TencentObjectOperations;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
@@ -16,27 +15,20 @@ import com.qcloud.cos.region.Region;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
 public class CloudObjectStorage implements BlobStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudObjectStorage.class);
 
-    private final TencentObjectOperations objectOperations;
+    private final TencentObjectOperations tencentObjectOperations;
     private final TencentCredentialManager credentialManager;
     private final COSClient cosClient;
     private final CloudObjectStorageConfig config;
 
     public CloudObjectStorage(CloudObjectStorageConfig config) {
-        this(config, createDefaultClientConfig(config));
-    }
-
-    public CloudObjectStorage(CloudObjectStorageConfig config, ClientConfig clientConfig) {
         this.config = config;
         this.credentialManager = new TencentCredentialManager(config);
-        this.cosClient = new COSClient(credentialManager.getCurrentCredentials(), clientConfig);
-        this.objectOperations = new TencentObjectOperations(cosClient, config);
+        ClientConfig clientConfig = new ClientConfig(new Region(config.getCosRegion()));
+        this.cosClient = new COSClient(credentialManager.getCredentials(), clientConfig);
+        this.tencentObjectOperations = new TencentObjectOperations(cosClient, config);
         checkBucket();
         logRetentionPolicy();
     }
@@ -59,7 +51,7 @@ public class CloudObjectStorage implements BlobStorage {
             }
             LOGGER.info("Successfully verified COS bucket exists: {}", bucketName);
         } catch (CosServiceException e) {
-            LOGGER.error("Failed to check bucket existence: {} - {} ({})", 
+            LOGGER.error("Failed to check bucket existence: {} - {} ({})",
                 bucketName, e.getErrorMessage(), e.getStatusCode(), e);
             throw new IllegalArgumentException("Failed to verify COS bucket: " + e.getMessage(), e);
         } catch (CosClientException e) {
@@ -81,44 +73,21 @@ public class CloudObjectStorage implements BlobStorage {
                 LOGGER.info("No retention policy configured for bucket: {}", bucketName);
             }
         } catch (CosServiceException e) {
-            LOGGER.warn("Unable to fetch retention policy for bucket {}: {} ({})", 
+            LOGGER.warn("Unable to fetch retention policy for bucket {}: {} ({})",
                 bucketName, e.getErrorMessage(), e.getStatusCode());
         } catch (CosClientException e) {
-            LOGGER.warn("Client error while fetching retention policy for bucket {}: {}", 
+            LOGGER.warn("Client error while fetching retention policy for bucket {}: {}",
                 bucketName, e.getMessage());
         }
     }
 
-    @Override
     public void store(String objectName, String filePath) throws BlobStorageException {
-        LOGGER.info("Storing file {} to COS object {}", filePath, objectName);
-        try {
-            byte[] content = Files.readAllBytes(Paths.get(filePath));
-            store(objectName, content);
-        } catch (IOException e) {
-            LOGGER.error("Failed to read file {}: {}", filePath, e.getMessage());
-            throw new BlobStorageException("FILE_READ_ERROR", "Failed to read source file", e);
-        }
+        LOGGER.info("Storing file to COS: {} -> {}", filePath, objectName);
+        tencentObjectOperations.uploadObject(objectName, filePath);
     }
 
-    @Override
     public void store(String objectName, byte[] content) throws BlobStorageException {
-        LOGGER.debug("Refreshing COS credentials before upload");
-        try {
-            cosClient.setCOSCredentials(credentialManager.getCurrentCredentials());
-            String finalPath = objectOperations.buildObjectPath(objectName);
-            LOGGER.info("Uploading content to COS path: {}", finalPath);
-            objectOperations.uploadObject(finalPath, content);
-        } catch (IllegalStateException e) {
-            LOGGER.error("Credential refresh failed: {}", e.getMessage());
-            throw new BlobStorageException(COSErrorType.UNAUTHORIZED.name(), 
-                "Failed to refresh credentials", e);
-        } catch (BlobStorageException e) {
-            throw e;
-        } catch (Exception e) {
-            LOGGER.error("Unexpected error during COS upload: {}", e.getMessage());
-            throw new BlobStorageException(COSErrorType.INTERNAL_SERVER_ERROR.name(), 
-                "Unexpected error during upload", e);
-        }
+        LOGGER.info("Storing content to COS: {} ({} bytes)", objectName, content.length);
+        tencentObjectOperations.uploadObject(objectName, content);
     }
 }

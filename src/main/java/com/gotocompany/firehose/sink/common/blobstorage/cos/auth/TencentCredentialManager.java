@@ -1,53 +1,74 @@
 package com.gotocompany.firehose.sink.common.blobstorage.cos.auth;
 
-import com.qcloud.cos.auth.COSSessionCredentials;
 import com.gotocompany.firehose.config.CloudObjectStorageConfig;
+import com.qcloud.cos.auth.BasicCOSCredentials;
+import com.qcloud.cos.auth.COSCredentials;
+import com.qcloud.cos.auth.COSCredentialsProvider;
+import com.tencent.cloud.CosStsClient;
+import com.tencent.cloud.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TencentCredentialManager {
+import java.util.TreeMap;
+
+public class TencentCredentialManager implements COSCredentialsProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(TencentCredentialManager.class);
-    private final TencentSecurityTokenService securityTokenService;
-    private volatile long lastUpdateTime;
-    private volatile COSSessionCredentials currentCredentials;
+    private static final int CREDENTIAL_REFRESH_THRESHOLD_MS = 1000;
+
     private final CloudObjectStorageConfig config;
+    private COSCredentials credentials;
+    private long lastUpdateTime;
 
     public TencentCredentialManager(CloudObjectStorageConfig config) {
         this.config = config;
-        this.securityTokenService = new TencentSecurityTokenService(config);
+        this.credentials = null;
         this.lastUpdateTime = 0;
     }
 
-    public synchronized COSSessionCredentials getCurrentCredentials() {
-        LOGGER.debug("Checking if credentials need refresh");
-        try {
-            if (shouldRefreshCredentials()) {
-                LOGGER.info("Refreshing COS credentials");
-                refreshCredentials();
-            }
-            return currentCredentials;
-        } catch (Exception e) {
-            LOGGER.error("Failed to get current credentials", e);
-            throw new IllegalStateException("Unable to obtain valid credentials", e);
+    @Override
+    public COSCredentials getCredentials() {
+        if (shouldRefreshCredentials()) {
+            refreshCredentials();
         }
+        return credentials;
+    }
+
+    @Override
+    public void refresh() {
+        refreshCredentials();
     }
 
     private boolean shouldRefreshCredentials() {
-        return currentCredentials == null ||
-                (System.currentTimeMillis() - lastUpdateTime) / 1000 >=
-                        config.getCosTempCredentialValiditySeconds();
+        return credentials == null || isCredentialsExpired();
+    }
+
+    private boolean isCredentialsExpired() {
+        return (System.currentTimeMillis() - lastUpdateTime) / CREDENTIAL_REFRESH_THRESHOLD_MS >= config.getCosTempCredentialValiditySeconds();
     }
 
     private void refreshCredentials() {
         try {
-            LOGGER.debug("Requesting new temporary credentials");
-            currentCredentials = securityTokenService.generateTemporaryCredentials();
+            TreeMap<String, Object> configMap = new TreeMap<>();
+            configMap.put("secretId", this.config.getCosSecretId());
+            configMap.put("secretKey", this.config.getCosSecretKey());
+            configMap.put("durationSeconds", this.config.getCosTempCredentialValiditySeconds());
+            configMap.put("bucket", this.config.getCosBucketName());
+            configMap.put("region", this.config.getCosRegion());
+            configMap.put("allowPrefix", "*");
+            String[] allowActions = new String[] {
+                "name/cos:PutObject",
+                "name/cos:DeleteObject",
+                "name/cos:GetObject"
+            };
+            configMap.put("allowActions", allowActions);
+
+            Response response = CosStsClient.getCredential(configMap);
+            credentials = new BasicCOSCredentials(response.credentials.tmpSecretId, response.credentials.tmpSecretKey);
             lastUpdateTime = System.currentTimeMillis();
-            LOGGER.info("Successfully refreshed COS credentials, valid for {} seconds", 
-                config.getCosTempCredentialValiditySeconds());
+            LOGGER.info("Successfully refreshed COS credentials");
         } catch (Exception e) {
-            LOGGER.error("Failed to refresh Tencent COS credentials: {}", e.getMessage(), e);
-            throw new IllegalStateException("Unable to refresh credentials: " + e.getMessage(), e);
+            LOGGER.error("Failed to refresh COS credentials", e);
+            throw new RuntimeException("Failed to refresh COS credentials", e);
         }
     }
 }
