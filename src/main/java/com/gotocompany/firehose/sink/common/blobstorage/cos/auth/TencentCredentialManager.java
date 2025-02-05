@@ -43,7 +43,7 @@ public class TencentCredentialManager implements COSCredentialsProvider {
     }
 
     private boolean isCredentialsExpired() {
-        return (System.currentTimeMillis() - lastUpdateTime) / CREDENTIAL_REFRESH_THRESHOLD_MS >= config.getCosTempCredentialValiditySeconds();
+        return (System.currentTimeMillis() - lastUpdateTime) / 1000 >= config.getCosTempCredentialValiditySeconds();
     }
 
     private void refreshCredentials() {
@@ -56,13 +56,19 @@ public class TencentCredentialManager implements COSCredentialsProvider {
             configMap.put("region", this.config.getCosRegion());
             configMap.put("allowPrefix", "*");
             String[] allowActions = new String[] {
-                "name/cos:PutObject",
-                "name/cos:DeleteObject",
-                "name/cos:GetObject"
+                "cos:PutObject",
+                "cos:DeleteObject",
+                "cos:GetObject",
+                "cos:HeadObject",
+                "cos:ListParts",
+                "cos:ListObjects"
             };
             configMap.put("allowActions", allowActions);
 
             Response response = CosStsClient.getCredential(configMap);
+            if (response == null || response.credentials == null) {
+                throw new RuntimeException("Failed to refresh COS credentials: null response or credentials");
+            }
             credentials = new BasicCOSCredentials(response.credentials.tmpSecretId, response.credentials.tmpSecretKey);
             lastUpdateTime = System.currentTimeMillis();
             LOGGER.info("Successfully refreshed COS credentials");
