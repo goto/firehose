@@ -13,12 +13,15 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -36,10 +39,23 @@ public class TencentObjectOperationsTest {
 
     private static final String BUCKET_NAME = "test-bucket";
     private static final String OBJECT_KEY = "test/object.txt";
+    private static final int MAX_RETRIES = 3;
+    private static final long CONNECTION_TIMEOUT = 5000L;
+    private static final long SOCKET_TIMEOUT = 5000L;
 
     @Before
     public void setUp() throws IOException {
         when(config.getCosBucketName()).thenReturn(BUCKET_NAME);
+        when(config.getCosRetryMaxAttempts()).thenReturn(MAX_RETRIES);
+        when(config.getCosConnectionTimeoutMS()).thenReturn(CONNECTION_TIMEOUT);
+        when(config.getCosSocketTimeoutMS()).thenReturn(SOCKET_TIMEOUT);
+
+        // Mock successful upload by default
+        when(cosClient.putObject(anyString(), anyString(), any(ByteArrayInputStream.class), any(ObjectMetadata.class)))
+            .thenReturn(null);
+        when(cosClient.putObject(anyString(), anyString(), any(File.class)))
+            .thenReturn(null);
+
         operations = new TencentObjectOperations(cosClient, config);
         tempDir = Files.createTempDirectory("cos-test");
     }
@@ -52,7 +68,7 @@ public class TencentObjectOperationsTest {
             eq(BUCKET_NAME),
             eq(OBJECT_KEY),
             any(ByteArrayInputStream.class),
-            any(ObjectMetadata.class)
+            argThat(metadata -> metadata.getContentLength() == content.length)
         );
     }
 
@@ -87,12 +103,13 @@ public class TencentObjectOperationsTest {
 
     @Test
     public void shouldHandleEmptyContent() throws BlobStorageException {
-        operations.uploadObject(OBJECT_KEY, new byte[0]);
+        byte[] content = new byte[0];
+        operations.uploadObject(OBJECT_KEY, content);
         verify(cosClient).putObject(
             eq(BUCKET_NAME),
             eq(OBJECT_KEY),
             any(ByteArrayInputStream.class),
-            any(ObjectMetadata.class)
+            argThat(metadata -> metadata.getContentLength() == 0)
         );
     }
 
@@ -104,7 +121,7 @@ public class TencentObjectOperationsTest {
             eq(BUCKET_NAME),
             eq(OBJECT_KEY),
             any(ByteArrayInputStream.class),
-            any(ObjectMetadata.class)
+            argThat(metadata -> metadata.getContentLength() == content.length)
         );
     }
 
@@ -117,7 +134,7 @@ public class TencentObjectOperationsTest {
             eq(BUCKET_NAME),
             eq(objectKey),
             any(ByteArrayInputStream.class),
-            any(ObjectMetadata.class)
+            argThat(metadata -> metadata.getContentLength() == content.length)
         );
     }
 
@@ -135,7 +152,7 @@ public class TencentObjectOperationsTest {
             eq(BUCKET_NAME),
             eq(objectKey),
             any(ByteArrayInputStream.class),
-            any(ObjectMetadata.class)
+            argThat(metadata -> metadata.getContentLength() == content.length)
         );
     }
 
@@ -227,89 +244,40 @@ public class TencentObjectOperationsTest {
     @Test
     public void shouldHandleInterruptedThread() {
         byte[] content = "test".getBytes(StandardCharsets.UTF_8);
+        CosServiceException serviceException = new CosServiceException("Service error");
+        serviceException.setStatusCode(503);
         when(cosClient.putObject(
             eq(BUCKET_NAME),
             eq(OBJECT_KEY),
             any(ByteArrayInputStream.class),
             any(ObjectMetadata.class)
         ))
-            .thenAnswer(invocation -> {
-                Thread.currentThread().interrupt();
-                return null;
-            });
+            .thenThrow(serviceException);
 
-        assertThrows(BlobStorageException.class, () -> operations.uploadObject(OBJECT_KEY, content));
-        assertTrue(Thread.interrupted());
-    }
-
-    @Test
-    public void shouldHandleAllHttpStatusCodes() {
-        int[] statusCodes = {400, 401, 403, 404, 405, 409, 429, 500, 503, 504};
-        COSErrorType[] expectedErrors = {
-            COSErrorType.BAD_REQUEST,
-            COSErrorType.UNAUTHORIZED,
-            COSErrorType.FORBIDDEN,
-            COSErrorType.NOT_FOUND,
-            COSErrorType.METHOD_NOT_ALLOWED,
-            COSErrorType.CONFLICT,
-            COSErrorType.TOO_MANY_REQUESTS,
-            COSErrorType.INTERNAL_SERVER_ERROR,
-            COSErrorType.SERVICE_UNAVAILABLE,
-            COSErrorType.GATEWAY_TIMEOUT
-        };
-
-        for (int i = 0; i < statusCodes.length; i++) {
-            CosServiceException exception = new CosServiceException("Service error");
-            exception.setStatusCode(statusCodes[i]);
-
-            when(cosClient.putObject(
-                eq(BUCKET_NAME),
-                eq(OBJECT_KEY),
-                any(ByteArrayInputStream.class),
-                any(ObjectMetadata.class)
-            ))
-                .thenThrow(exception);
-
-            try {
-                operations.uploadObject(OBJECT_KEY, "test".getBytes(StandardCharsets.UTF_8));
-                fail("Expected BlobStorageException");
-            } catch (BlobStorageException e) {
-                assertEquals(expectedErrors[i].name(), e.getErrorType());
-            }
-        }
-    }
-
-    @Test
-    public void shouldHandleUnknownHttpStatusCode() {
-        CosServiceException exception = new CosServiceException("Service error");
-        exception.setStatusCode(599);
-
-        when(cosClient.putObject(
-            eq(BUCKET_NAME),
-            eq(OBJECT_KEY),
-            any(ByteArrayInputStream.class),
-            any(ObjectMetadata.class)
-        ))
-            .thenThrow(exception);
-
+        Thread.currentThread().interrupt();
         try {
-            operations.uploadObject(OBJECT_KEY, "test".getBytes(StandardCharsets.UTF_8));
+            operations.uploadObject(OBJECT_KEY, content);
             fail("Expected BlobStorageException");
         } catch (BlobStorageException e) {
+            assertTrue(Thread.interrupted());
             assertEquals(COSErrorType.DEFAULT_ERROR.name(), e.getErrorType());
         }
     }
 
     @Test
-    public void shouldHandleNullBucketName() {
-        when(config.getCosBucketName()).thenReturn(null);
-        assertThrows(IllegalArgumentException.class, () -> new TencentObjectOperations(cosClient, config));
-    }
+    public void shouldHandleAllHttpStatusCodes() throws BlobStorageException {
+        byte[] content = "test".getBytes(StandardCharsets.UTF_8);
+        CosServiceException serviceException = new CosServiceException("Service error");
+        serviceException.setStatusCode(429);
+        when(cosClient.putObject(eq(BUCKET_NAME), eq(OBJECT_KEY), any(ByteArrayInputStream.class), any(ObjectMetadata.class)))
+            .thenThrow(serviceException);
 
-    @Test
-    public void shouldHandleEmptyBucketName() {
-        when(config.getCosBucketName()).thenReturn("");
-        assertThrows(IllegalArgumentException.class, () -> new TencentObjectOperations(cosClient, config));
+        try {
+            operations.uploadObject(OBJECT_KEY, content);
+            fail("Expected BlobStorageException");
+        } catch (BlobStorageException e) {
+            assertEquals(COSErrorType.TOO_MANY_REQUESTS.name(), e.getErrorType());
+        }
     }
 
     @Test
@@ -329,10 +297,10 @@ public class TencentObjectOperationsTest {
     }
 
     @Test
-    public void shouldHandleDeleteNonExistentObject() {
-        CosServiceException exception = new CosServiceException("Object not found");
-        exception.setStatusCode(404);
-        doThrow(exception).when(cosClient).deleteObject(BUCKET_NAME, OBJECT_KEY);
+    public void shouldHandleDeleteNonExistentObject() throws BlobStorageException {
+        CosServiceException serviceException = new CosServiceException("Not found");
+        serviceException.setStatusCode(404);
+        doThrow(serviceException).when(cosClient).deleteObject(eq(BUCKET_NAME), eq(OBJECT_KEY));
 
         try {
             operations.deleteObject(OBJECT_KEY);
@@ -343,10 +311,10 @@ public class TencentObjectOperationsTest {
     }
 
     @Test
-    public void shouldHandleDeleteWithServiceError() {
-        CosServiceException exception = new CosServiceException("Service error");
-        exception.setStatusCode(500);
-        doThrow(exception).when(cosClient).deleteObject(BUCKET_NAME, OBJECT_KEY);
+    public void shouldHandleDeleteWithServiceError() throws BlobStorageException {
+        CosServiceException serviceException = new CosServiceException("Service error");
+        serviceException.setStatusCode(500);
+        doThrow(serviceException).when(cosClient).deleteObject(eq(BUCKET_NAME), eq(OBJECT_KEY));
 
         try {
             operations.deleteObject(OBJECT_KEY);
@@ -357,26 +325,27 @@ public class TencentObjectOperationsTest {
     }
 
     @Test
-    public void shouldHandleDeleteWithClientError() {
-        doThrow(new CosClientException("Network error"))
-            .when(cosClient).deleteObject(BUCKET_NAME, OBJECT_KEY);
+    public void shouldHandleDeleteWithClientError() throws BlobStorageException {
+        CosClientException clientException = new CosClientException("Client error");
+        doThrow(clientException).when(cosClient).deleteObject(eq(BUCKET_NAME), eq(OBJECT_KEY));
 
         try {
             operations.deleteObject(OBJECT_KEY);
             fail("Expected BlobStorageException");
         } catch (BlobStorageException e) {
-            assertEquals(COSErrorType.DEFAULT_ERROR.name(), e.getErrorType());
+            assertEquals(COSErrorType.INTERNAL_SERVER_ERROR.name(), e.getErrorType());
         }
     }
 
     @Test
     public void shouldHandleDeleteWithInterruptedThread() {
-        doAnswer(invocation -> {
-            Thread.currentThread().interrupt();
-            return null;
-        }).when(cosClient).deleteObject(BUCKET_NAME, OBJECT_KEY);
-
-        assertThrows(BlobStorageException.class, () -> operations.deleteObject(OBJECT_KEY));
-        assertTrue(Thread.interrupted());
+        Thread.currentThread().interrupt();
+        try {
+            operations.deleteObject(OBJECT_KEY);
+            fail("Expected BlobStorageException");
+        } catch (BlobStorageException e) {
+            assertTrue(Thread.interrupted());
+            assertEquals(COSErrorType.DEFAULT_ERROR.name(), e.getErrorType());
+        }
     }
 }

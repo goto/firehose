@@ -45,12 +45,23 @@ public class TencentObjectOperations {
         if (config == null) {
             throw new IllegalArgumentException("CloudObjectStorageConfig cannot be null");
         }
+        String bucketName = config.getCosBucketName();
+        if (bucketName == null || bucketName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Bucket name cannot be null or empty");
+        }
         this.cosClient = cosClient;
         this.config = config;
         this.maxRetries = config.getCosRetryMaxAttempts() != null
             ? config.getCosRetryMaxAttempts()
             : DEFAULT_MAX_RETRIES;
         this.retryDelayMs = DEFAULT_RETRY_DELAY_MS;
+    }
+
+    private String buildObjectPath(String objectKey) {
+        if (objectKey == null || objectKey.trim().isEmpty()) {
+            throw new IllegalArgumentException("Object key cannot be null or empty");
+        }
+        return objectKey.startsWith(OBJECT_PATH_SEPARATOR) ? objectKey.substring(1) : objectKey;
     }
 
     public void uploadObject(String objectKey, byte[] content) throws BlobStorageException {
@@ -71,15 +82,16 @@ public class TencentObjectOperations {
             try {
                 ObjectMetadata metadata = new ObjectMetadata();
                 metadata.setContentLength(content.length);
-                cosClient.putObject(config.getCosBucketName(), objectKey, new ByteArrayInputStream(content), metadata);
+                cosClient.putObject(config.getCosBucketName(), blobPath, new ByteArrayInputStream(content), metadata);
                 LOGGER.info("Successfully uploaded content to COS: {}", blobPath);
                 return;
             } catch (CosServiceException e) {
                 lastException = e;
+                COSErrorType errorType = getErrorType(e.getStatusCode());
                 if (!isRetryableError(e.getStatusCode())) {
                     LOGGER.error("Non-retryable service error while uploading to COS: {} - {} ({})",
                         blobPath, e.getErrorMessage(), e.getStatusCode());
-                    throw new BlobStorageException(getErrorType(e.getStatusCode()).name(), e.getErrorMessage(), e);
+                    throw new BlobStorageException(errorType.name(), e.getErrorMessage(), e);
                 }
                 LOGGER.warn("Retryable service error while uploading to COS (attempt {}/{}): {} - {} ({})",
                     attempts + 1, maxRetries, blobPath, e.getErrorMessage(), e.getStatusCode());
@@ -100,11 +112,14 @@ public class TencentObjectOperations {
             }
         }
 
-        String errorMessage = lastException instanceof CosServiceException
-            ? ((CosServiceException) lastException).getErrorMessage()
-            : lastException.getMessage();
-        throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(),
-            String.format("Failed to upload after %d attempts: %s", maxRetries, errorMessage), lastException);
+        if (lastException instanceof CosServiceException) {
+            CosServiceException e = (CosServiceException) lastException;
+            throw new BlobStorageException(getErrorType(e.getStatusCode()).name(),
+                String.format("Failed to upload after %d attempts: %s", maxRetries, e.getErrorMessage()), lastException);
+        } else {
+            throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(),
+                String.format("Failed to upload after %d attempts: %s", maxRetries, lastException.getMessage()), lastException);
+        }
     }
 
     public void uploadObject(String objectKey, String filePath) throws BlobStorageException {
@@ -141,7 +156,7 @@ public class TencentObjectOperations {
 
         while (attempts < maxRetries) {
             try {
-                cosClient.putObject(config.getCosBucketName(), objectKey, path.toFile());
+                cosClient.putObject(config.getCosBucketName(), blobPath, path.toFile());
                 LOGGER.info("Successfully uploaded file to COS: {}", blobPath);
                 return;
             } catch (CosServiceException e) {
@@ -248,17 +263,17 @@ public class TencentObjectOperations {
             case HTTP_GATEWAY_TIMEOUT:
                 return COSErrorType.GATEWAY_TIMEOUT;
             default:
-                return COSErrorType.DEFAULT_ERROR;
+                return COSErrorType.INTERNAL_SERVER_ERROR;
         }
-    }
-
-    public String buildObjectPath(String objectKey) {
-        return String.join(OBJECT_PATH_SEPARATOR, config.getCosBucketName(), objectKey);
     }
 
     public void deleteObject(String objectKey) throws BlobStorageException {
         if (objectKey == null || objectKey.trim().isEmpty()) {
             throw new IllegalArgumentException("Object key cannot be null or empty");
+        }
+        if (Thread.interrupted()) {
+            Thread.currentThread().interrupt();
+            throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(), "Delete interrupted", new InterruptedException());
         }
         String blobPath = buildObjectPath(objectKey);
         LOGGER.info("Attempting to delete object from COS: {}", blobPath);
@@ -268,7 +283,7 @@ public class TencentObjectOperations {
         } catch (CosServiceException e) {
             LOGGER.error("COS service error while deleting {}: {} - {}",
                 blobPath, e.getErrorCode(), e.getErrorMessage());
-            COSErrorType errorType = mapServiceError(e);
+            COSErrorType errorType = getErrorType(e.getStatusCode());
             throw new BlobStorageException(errorType.name(), e.getErrorMessage(), e);
         } catch (CosClientException e) {
             LOGGER.error("COS client error while deleting {}: {}", blobPath, e.getMessage());
@@ -278,6 +293,27 @@ public class TencentObjectOperations {
     }
 
     private COSErrorType getErrorType(int statusCode) {
-        return mapHttpStatusToErrorType(statusCode);
+        switch (statusCode) {
+            case HTTP_BAD_REQUEST:
+                return COSErrorType.BAD_REQUEST;
+            case HTTP_UNAUTHORIZED:
+                return COSErrorType.UNAUTHORIZED;
+            case HTTP_FORBIDDEN:
+                return COSErrorType.FORBIDDEN;
+            case HTTP_NOT_FOUND:
+                return COSErrorType.NOT_FOUND;
+            case HTTP_METHOD_NOT_ALLOWED:
+                return COSErrorType.METHOD_NOT_ALLOWED;
+            case HTTP_CONFLICT:
+                return COSErrorType.CONFLICT;
+            case HTTP_TOO_MANY_REQUESTS:
+                return COSErrorType.TOO_MANY_REQUESTS;
+            case HTTP_SERVICE_UNAVAILABLE:
+                return COSErrorType.SERVICE_UNAVAILABLE;
+            case HTTP_GATEWAY_TIMEOUT:
+                return COSErrorType.GATEWAY_TIMEOUT;
+            default:
+                return COSErrorType.INTERNAL_SERVER_ERROR;
+        }
     }
 }

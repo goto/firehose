@@ -26,8 +26,18 @@ public class CloudObjectStorage implements BlobStorage {
     public CloudObjectStorage(CloudObjectStorageConfig config) {
         this.config = config;
         this.credentialManager = new TencentCredentialManager(config);
-        ClientConfig clientConfig = new ClientConfig(new Region(config.getCosRegion()));
+        ClientConfig clientConfig = createDefaultClientConfig(config);
         this.cosClient = new COSClient(credentialManager.getCredentials(), clientConfig);
+        this.tencentObjectOperations = new TencentObjectOperations(cosClient, config);
+        checkBucket();
+        logRetentionPolicy();
+    }
+
+    // Constructor for testing
+    CloudObjectStorage(CloudObjectStorageConfig config, TencentCredentialManager credentialManager, COSClient cosClient) {
+        this.config = config;
+        this.credentialManager = credentialManager;
+        this.cosClient = cosClient;
         this.tencentObjectOperations = new TencentObjectOperations(cosClient, config);
         checkBucket();
         logRetentionPolicy();
@@ -41,8 +51,15 @@ public class CloudObjectStorage implements BlobStorage {
         return clientConfig;
     }
 
-    private void checkBucket() {
+    void checkBucket() {
         String bucketName = config.getCosBucketName();
+        if (bucketName == null || bucketName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Bucket name cannot be null or empty");
+        }
+        String region = config.getCosRegion();
+        if (region == null || region.trim().isEmpty()) {
+            throw new IllegalArgumentException("Region cannot be null or empty");
+        }
         try {
             if (!cosClient.doesBucketExist(bucketName)) {
                 LOGGER.error("Bucket does not exist: {}", bucketName);
@@ -87,6 +104,9 @@ public class CloudObjectStorage implements BlobStorage {
     }
 
     public void store(String objectName, byte[] content) throws BlobStorageException {
+        if (content == null) {
+            throw new IllegalArgumentException("Content cannot be null");
+        }
         LOGGER.info("Storing content to COS: {} ({} bytes)", objectName, content.length);
         tencentObjectOperations.uploadObject(objectName, content);
     }
