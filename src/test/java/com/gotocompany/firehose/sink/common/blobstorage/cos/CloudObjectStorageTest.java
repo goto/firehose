@@ -3,7 +3,6 @@ package com.gotocompany.firehose.sink.common.blobstorage.cos;
 import com.gotocompany.firehose.config.CloudObjectStorageConfig;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
 import com.qcloud.cos.COSClient;
-import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.exception.CosClientException;
 import com.qcloud.cos.exception.CosServiceException;
 import com.qcloud.cos.model.BucketReplicationConfiguration;
@@ -19,12 +18,10 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.MockitoJUnitRunner;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.TreeMap;
 import static org.junit.Assert.*;
@@ -427,7 +424,7 @@ public class CloudObjectStorageTest {
 
             cloudObjectStorage = new CloudObjectStorage(config);
             String nonExistentFile = tempDir.resolve("nonexistent.txt").toString();
-            assertThrows(BlobStorageException.class, () -> 
+            assertThrows(BlobStorageException.class, () ->
                 cloudObjectStorage.store("test/object.txt", nonExistentFile));
         }
     }
@@ -486,7 +483,7 @@ public class CloudObjectStorageTest {
 
             cloudObjectStorage = new CloudObjectStorage(config);
             Path largeFile = tempDir.resolve("large.txt");
-            
+
             byte[] content = new byte[10 * 1024 * 1024];
             Files.write(largeFile, content);
 
@@ -724,4 +721,4 @@ public class CloudObjectStorageTest {
             assertTrue(Thread.interrupted());
         }
     }
-} 
+}

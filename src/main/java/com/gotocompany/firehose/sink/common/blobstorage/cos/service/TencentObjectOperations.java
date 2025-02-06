@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +29,9 @@ public class TencentObjectOperations {
     private static final int HTTP_TOO_MANY_REQUESTS = 429;
     private static final int HTTP_SERVICE_UNAVAILABLE = 503;
     private static final int HTTP_GATEWAY_TIMEOUT = 504;
+    private static final int DEFAULT_MAX_RETRIES = 3;
+    private static final int DEFAULT_RETRY_DELAY_MS = 1000;
+    private static final int HTTP_INTERNAL_SERVER_ERROR = 500;
 
     private final COSClient cosClient;
     private final CloudObjectStorageConfig config;
@@ -45,8 +47,10 @@ public class TencentObjectOperations {
         }
         this.cosClient = cosClient;
         this.config = config;
-        this.maxRetries = config.getCosRetryMaxAttempts() != null ? config.getCosRetryMaxAttempts() : 3;
-        this.retryDelayMs = 1000;
+        this.maxRetries = config.getCosRetryMaxAttempts() != null
+            ? config.getCosRetryMaxAttempts()
+            : DEFAULT_MAX_RETRIES;
+        this.retryDelayMs = DEFAULT_RETRY_DELAY_MS;
     }
 
     public void uploadObject(String objectKey, byte[] content) throws BlobStorageException {
@@ -96,8 +100,9 @@ public class TencentObjectOperations {
             }
         }
 
-        String errorMessage = lastException instanceof CosServiceException ?
-            ((CosServiceException) lastException).getErrorMessage() : lastException.getMessage();
+        String errorMessage = lastException instanceof CosServiceException
+            ? ((CosServiceException) lastException).getErrorMessage()
+            : lastException.getMessage();
         throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(),
             String.format("Failed to upload after %d attempts: %s", maxRetries, errorMessage), lastException);
     }
@@ -113,13 +118,19 @@ public class TencentObjectOperations {
         Path path = Paths.get(filePath);
         try {
             if (!Files.exists(path)) {
-                throw new BlobStorageException(COSErrorType.NOT_FOUND.name(), "File does not exist: " + filePath, new IOException("File not found"));
+                throw new BlobStorageException(COSErrorType.NOT_FOUND.name(),
+                    "File does not exist: " + filePath,
+                    new IOException("File not found"));
             }
             if (Files.isDirectory(path)) {
-                throw new BlobStorageException(COSErrorType.BAD_REQUEST.name(), "Path is a directory: " + filePath, new IOException("Path is a directory"));
+                throw new BlobStorageException(COSErrorType.BAD_REQUEST.name(),
+                    "Path is a directory: " + filePath,
+                    new IOException("Path is a directory"));
             }
         } catch (SecurityException e) {
-            throw new BlobStorageException(COSErrorType.FORBIDDEN.name(), "Access denied to file: " + filePath, e);
+            throw new BlobStorageException(COSErrorType.FORBIDDEN.name(),
+                "Access denied to file: " + filePath,
+                e);
         }
 
         String blobPath = buildObjectPath(objectKey);
@@ -159,17 +170,18 @@ public class TencentObjectOperations {
             }
         }
 
-        String errorMessage = lastException instanceof CosServiceException ?
-            ((CosServiceException) lastException).getErrorMessage() : lastException.getMessage();
+        String errorMessage = lastException instanceof CosServiceException
+            ? ((CosServiceException) lastException).getErrorMessage()
+            : lastException.getMessage();
         throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(),
             String.format("Failed to upload after %d attempts: %s", maxRetries, errorMessage), lastException);
     }
 
     private boolean isRetryableError(int statusCode) {
-        return statusCode == HTTP_TOO_MANY_REQUESTS ||
-               statusCode == HTTP_SERVICE_UNAVAILABLE ||
-               statusCode == HTTP_GATEWAY_TIMEOUT ||
-               statusCode >= 500;
+        return statusCode == HTTP_TOO_MANY_REQUESTS
+            || statusCode == HTTP_SERVICE_UNAVAILABLE
+            || statusCode == HTTP_GATEWAY_TIMEOUT
+            || statusCode >= HTTP_INTERNAL_SERVER_ERROR;
     }
 
     private COSErrorType mapServiceError(CosServiceException e) {

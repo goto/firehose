@@ -1,7 +1,6 @@
 package com.gotocompany.firehose.sink.common.blobstorage.cos.auth;
 
 import com.gotocompany.firehose.config.CloudObjectStorageConfig;
-import com.qcloud.cos.internal.SkipMd5CheckStrategy;
 import com.tencent.cloud.Response;
 import com.tencent.cloud.Credentials;
 import com.tencent.cloud.CosStsClient;
@@ -111,4 +110,4 @@ public class TencentCredentialManagerTest {
             assertNotNull(credentialManager.getCredentials());
         }
     }
-} 
+}

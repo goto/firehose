@@ -61,9 +61,12 @@ public class TencentSecurityTokenService {
         if (response.credentials == null) {
             throw new IllegalStateException("STS credentials cannot be null");
         }
-        if (response.credentials.tmpSecretId == null || response.credentials.tmpSecretId.trim().isEmpty() ||
-            response.credentials.tmpSecretKey == null || response.credentials.tmpSecretKey.trim().isEmpty() ||
-            response.credentials.sessionToken == null || response.credentials.sessionToken.trim().isEmpty()) {
+        if (response.credentials.tmpSecretId == null
+            || response.credentials.tmpSecretId.trim().isEmpty()
+            || response.credentials.tmpSecretKey == null
+            || response.credentials.tmpSecretKey.trim().isEmpty()
+            || response.credentials.sessionToken == null
+            || response.credentials.sessionToken.trim().isEmpty()) {
             throw new IllegalStateException("Invalid STS credentials: temporary credentials cannot be null or empty");
         }
         if (response.expiredTime <= 0) {

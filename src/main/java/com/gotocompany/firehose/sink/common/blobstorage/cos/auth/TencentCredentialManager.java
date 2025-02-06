@@ -43,7 +43,7 @@ public class TencentCredentialManager implements COSCredentialsProvider {
     }
 
     private boolean isCredentialsExpired() {
-        return (System.currentTimeMillis() - lastUpdateTime) / 1000 >= config.getCosTempCredentialValiditySeconds();
+        return (System.currentTimeMillis() - lastUpdateTime) / CREDENTIAL_REFRESH_THRESHOLD_MS >= config.getCosTempCredentialValiditySeconds();
     }
 
     private void refreshCredentials() {
