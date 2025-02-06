@@ -33,7 +33,6 @@ public class CloudObjectStorage implements BlobStorage {
         logRetentionPolicy();
     }
 
-    // Constructor for testing
     CloudObjectStorage(CloudObjectStorageConfig config, TencentCredentialManager credentialManager, COSClient cosClient) {
         this.config = config;
         this.credentialManager = credentialManager;
