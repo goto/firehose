@@ -50,7 +50,6 @@ public class TencentObjectOperationsTest {
         when(config.getCosConnectionTimeoutMS()).thenReturn(CONNECTION_TIMEOUT);
         when(config.getCosSocketTimeoutMS()).thenReturn(SOCKET_TIMEOUT);
 
-        // Mock successful upload by default
         when(cosClient.putObject(anyString(), anyString(), any(ByteArrayInputStream.class), any(ObjectMetadata.class)))
             .thenReturn(null);
         when(cosClient.putObject(anyString(), anyString(), any(File.class)))

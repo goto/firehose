@@ -60,7 +60,6 @@ public class CloudObjectStorageTest {
     public void setUp() throws IOException {
         MockitoAnnotations.openMocks(this);
 
-        // Mock config
         when(config.getCosRegion()).thenReturn(REGION);
         when(config.getCosBucketName()).thenReturn(BUCKET_NAME);
         when(config.getCosRetryMaxAttempts()).thenReturn(MAX_RETRIES);
@@ -70,18 +69,15 @@ public class CloudObjectStorageTest {
         when(config.getCosSecretKey()).thenReturn(SECRET_KEY);
         when(config.getCosAppId()).thenReturn(APP_ID);
 
-        // Mock credentials
         COSCredentials credentials = new BasicCOSCredentials(SECRET_ID, SECRET_KEY);
         when(credentialManager.getCredentials()).thenReturn(credentials);
 
-        // Mock COS client
         when(cosClient.doesBucketExist(anyString())).thenReturn(true);
         when(cosClient.putObject(anyString(), anyString(), any(ByteArrayInputStream.class), any(ObjectMetadata.class))).thenReturn(null);
         when(cosClient.putObject(anyString(), anyString(), any(File.class))).thenReturn(null);
 
         tempDir = Files.createTempDirectory("cos-test");
 
-        // Create CloudObjectStorage instance with mocked dependencies
         cloudObjectStorage = new CloudObjectStorage(config, credentialManager, cosClient);
     }
 
