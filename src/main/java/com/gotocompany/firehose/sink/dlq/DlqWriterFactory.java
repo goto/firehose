@@ -42,6 +42,9 @@ public class DlqWriterFactory {
                     case OSS:
                         configuration.put("OSS_TYPE", "DLQ");
                         break;
+                    case COS:
+                        configuration.put("COS_TYPE", "DLQ");
+                        break;
                     default:
                         throw new IllegalArgumentException("DLQ Blob Storage type " + dlqConfig.getBlobStorageType() + "is not supported");
                 }
