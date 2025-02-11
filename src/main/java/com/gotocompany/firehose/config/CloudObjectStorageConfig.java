@@ -48,4 +48,8 @@ public interface CloudObjectStorageConfig extends Config {
     @Key("${COS_TYPE}_COS_SOCKET_TIMEOUT_MS")
     @DefaultValue("50000")
     Long getCosSocketTimeoutMS();
+
+    @Key("${COS_TYPE}_COS_RETRY_DELAY_MS")
+    @DefaultValue("1000")
+    Long getCosRetryDelayMS();
 }

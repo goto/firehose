@@ -30,7 +30,6 @@ public class TencentObjectOperations {
     private static final int HTTP_SERVICE_UNAVAILABLE = 503;
     private static final int HTTP_GATEWAY_TIMEOUT = 504;
     private static final int DEFAULT_MAX_RETRIES = 3;
-    private static final int DEFAULT_RETRY_DELAY_MS = 1000;
     private static final int HTTP_INTERNAL_SERVER_ERROR = 500;
 
     private final COSClient cosClient;
@@ -52,9 +51,9 @@ public class TencentObjectOperations {
         this.cosClient = cosClient;
         this.config = config;
         this.maxRetries = config.getCosRetryMaxAttempts() != null
-            ? config.getCosRetryMaxAttempts()
-            : DEFAULT_MAX_RETRIES;
-        this.retryDelayMs = DEFAULT_RETRY_DELAY_MS;
+                ? config.getCosRetryMaxAttempts()
+                : DEFAULT_MAX_RETRIES;
+        this.retryDelayMs = config.getCosRetryDelayMS();
     }
 
     private String buildObjectPath(String objectKey) {
@@ -90,15 +89,15 @@ public class TencentObjectOperations {
                 COSErrorType errorType = getErrorType(e.getStatusCode());
                 if (!isRetryableError(e.getStatusCode())) {
                     LOGGER.error("Non-retryable service error while uploading to COS: {} - {} ({})",
-                        blobPath, e.getErrorMessage(), e.getStatusCode());
+                            blobPath, e.getErrorMessage(), e.getStatusCode());
                     throw new BlobStorageException(errorType.name(), e.getErrorMessage(), e);
                 }
                 LOGGER.warn("Retryable service error while uploading to COS (attempt {}/{}): {} - {} ({})",
-                    attempts + 1, maxRetries, blobPath, e.getErrorMessage(), e.getStatusCode());
+                        attempts + 1, maxRetries, blobPath, e.getErrorMessage(), e.getStatusCode());
             } catch (CosClientException e) {
                 lastException = e;
                 LOGGER.warn("Client error while uploading to COS (attempt {}/{}): {} - {}",
-                    attempts + 1, maxRetries, blobPath, e.getMessage());
+                        attempts + 1, maxRetries, blobPath, e.getMessage());
             }
 
             attempts++;
@@ -115,10 +114,12 @@ public class TencentObjectOperations {
         if (lastException instanceof CosServiceException) {
             CosServiceException e = (CosServiceException) lastException;
             throw new BlobStorageException(getErrorType(e.getStatusCode()).name(),
-                String.format("Failed to upload after %d attempts: %s", maxRetries, e.getErrorMessage()), lastException);
+                    String.format("Failed to upload after %d attempts: %s", maxRetries, e.getErrorMessage()),
+                    lastException);
         } else {
             throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(),
-                String.format("Failed to upload after %d attempts: %s", maxRetries, lastException.getMessage()), lastException);
+                    String.format("Failed to upload after %d attempts: %s", maxRetries, lastException.getMessage()),
+                    lastException);
         }
     }
 
@@ -134,18 +135,18 @@ public class TencentObjectOperations {
         try {
             if (!Files.exists(path)) {
                 throw new BlobStorageException(COSErrorType.NOT_FOUND.name(),
-                    "File does not exist: " + filePath,
-                    new IOException("File not found"));
+                        "File does not exist: " + filePath,
+                        new IOException("File not found"));
             }
             if (Files.isDirectory(path)) {
                 throw new BlobStorageException(COSErrorType.BAD_REQUEST.name(),
-                    "Path is a directory: " + filePath,
-                    new IOException("Path is a directory"));
+                        "Path is a directory: " + filePath,
+                        new IOException("Path is a directory"));
             }
         } catch (SecurityException e) {
             throw new BlobStorageException(COSErrorType.FORBIDDEN.name(),
-                "Access denied to file: " + filePath,
-                e);
+                    "Access denied to file: " + filePath,
+                    e);
         }
 
         String blobPath = buildObjectPath(objectKey);
@@ -163,15 +164,15 @@ public class TencentObjectOperations {
                 lastException = e;
                 if (!isRetryableError(e.getStatusCode())) {
                     LOGGER.error("Non-retryable service error while uploading to COS: {} - {} ({})",
-                        blobPath, e.getErrorMessage(), e.getStatusCode());
+                            blobPath, e.getErrorMessage(), e.getStatusCode());
                     throw new BlobStorageException(getErrorType(e.getStatusCode()).name(), e.getErrorMessage(), e);
                 }
                 LOGGER.warn("Retryable service error while uploading to COS (attempt {}/{}): {} - {} ({})",
-                    attempts + 1, maxRetries, blobPath, e.getErrorMessage(), e.getStatusCode());
+                        attempts + 1, maxRetries, blobPath, e.getErrorMessage(), e.getStatusCode());
             } catch (CosClientException e) {
                 lastException = e;
                 LOGGER.warn("Client error while uploading to COS (attempt {}/{}): {} - {}",
-                    attempts + 1, maxRetries, blobPath, e.getMessage());
+                        attempts + 1, maxRetries, blobPath, e.getMessage());
             }
 
             attempts++;
@@ -186,19 +187,18 @@ public class TencentObjectOperations {
         }
 
         String errorMessage = lastException instanceof CosServiceException
-            ? ((CosServiceException) lastException).getErrorMessage()
-            : lastException.getMessage();
+                ? ((CosServiceException) lastException).getErrorMessage()
+                : lastException.getMessage();
         throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(),
-            String.format("Failed to upload after %d attempts: %s", maxRetries, errorMessage), lastException);
+                String.format("Failed to upload after %d attempts: %s", maxRetries, errorMessage), lastException);
     }
 
     private boolean isRetryableError(int statusCode) {
         return statusCode == HTTP_TOO_MANY_REQUESTS
-            || statusCode == HTTP_SERVICE_UNAVAILABLE
-            || statusCode == HTTP_GATEWAY_TIMEOUT
-            || statusCode >= HTTP_INTERNAL_SERVER_ERROR;
+                || statusCode == HTTP_SERVICE_UNAVAILABLE
+                || statusCode == HTTP_GATEWAY_TIMEOUT
+                || statusCode >= HTTP_INTERNAL_SERVER_ERROR;
     }
-
 
     private COSErrorType mapClientError(CosClientException e) {
         String message = e.getMessage().toLowerCase();
@@ -224,7 +224,8 @@ public class TencentObjectOperations {
         }
         if (Thread.interrupted()) {
             Thread.currentThread().interrupt();
-            throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(), "Delete interrupted", new InterruptedException());
+            throw new BlobStorageException(COSErrorType.DEFAULT_ERROR.name(), "Delete interrupted",
+                    new InterruptedException());
         }
         String blobPath = buildObjectPath(objectKey);
         LOGGER.info("Attempting to delete object from COS: {}", blobPath);
@@ -233,7 +234,7 @@ public class TencentObjectOperations {
             LOGGER.info("Successfully deleted object from COS: {}", blobPath);
         } catch (CosServiceException e) {
             LOGGER.error("COS service error while deleting {}: {} - {}",
-                blobPath, e.getErrorCode(), e.getErrorMessage());
+                    blobPath, e.getErrorCode(), e.getErrorMessage());
             COSErrorType errorType = getErrorType(e.getStatusCode());
             throw new BlobStorageException(errorType.name(), e.getErrorMessage(), e);
         } catch (CosClientException e) {
