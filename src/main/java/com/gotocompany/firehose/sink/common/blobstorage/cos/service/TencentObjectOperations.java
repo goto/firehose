@@ -199,30 +199,6 @@ public class TencentObjectOperations {
             || statusCode >= HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    private COSErrorType mapServiceError(CosServiceException e) {
-        switch (e.getStatusCode()) {
-            case HTTP_BAD_REQUEST:
-                return COSErrorType.BAD_REQUEST;
-            case HTTP_UNAUTHORIZED:
-                return COSErrorType.UNAUTHORIZED;
-            case HTTP_FORBIDDEN:
-                return COSErrorType.FORBIDDEN;
-            case HTTP_NOT_FOUND:
-                return COSErrorType.NOT_FOUND;
-            case HTTP_METHOD_NOT_ALLOWED:
-                return COSErrorType.METHOD_NOT_ALLOWED;
-            case HTTP_CONFLICT:
-                return COSErrorType.CONFLICT;
-            case HTTP_TOO_MANY_REQUESTS:
-                return COSErrorType.TOO_MANY_REQUESTS;
-            case HTTP_SERVICE_UNAVAILABLE:
-                return COSErrorType.SERVICE_UNAVAILABLE;
-            case HTTP_GATEWAY_TIMEOUT:
-                return COSErrorType.GATEWAY_TIMEOUT;
-            default:
-                return COSErrorType.INTERNAL_SERVER_ERROR;
-        }
-    }
 
     private COSErrorType mapClientError(CosClientException e) {
         String message = e.getMessage().toLowerCase();
@@ -240,31 +216,6 @@ public class TencentObjectOperations {
             return COSErrorType.BAD_GATEWAY;
         }
         return COSErrorType.INTERNAL_SERVER_ERROR;
-    }
-
-    private COSErrorType mapHttpStatusToErrorType(int statusCode) {
-        switch (statusCode) {
-            case HTTP_BAD_REQUEST:
-                return COSErrorType.BAD_REQUEST;
-            case HTTP_UNAUTHORIZED:
-                return COSErrorType.UNAUTHORIZED;
-            case HTTP_FORBIDDEN:
-                return COSErrorType.FORBIDDEN;
-            case HTTP_NOT_FOUND:
-                return COSErrorType.NOT_FOUND;
-            case HTTP_METHOD_NOT_ALLOWED:
-                return COSErrorType.METHOD_NOT_ALLOWED;
-            case HTTP_CONFLICT:
-                return COSErrorType.CONFLICT;
-            case HTTP_TOO_MANY_REQUESTS:
-                return COSErrorType.TOO_MANY_REQUESTS;
-            case HTTP_SERVICE_UNAVAILABLE:
-                return COSErrorType.SERVICE_UNAVAILABLE;
-            case HTTP_GATEWAY_TIMEOUT:
-                return COSErrorType.GATEWAY_TIMEOUT;
-            default:
-                return COSErrorType.INTERNAL_SERVER_ERROR;
-        }
     }
 
     public void deleteObject(String objectKey) throws BlobStorageException {
