@@ -32,7 +32,7 @@ Max attempts to retry for dlq.
 
 ## `DLQ_BLOB_STORAGE_TYPE`
 
-If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Currently, GCS, S3 and OSS are supported.
+If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Currently, GCS, S3, COS, and OSS are supported.
 
 * Example value: `GCS`
 * Type: `optional`
@@ -313,3 +313,110 @@ The maximum number of retry attempts. To be used in conjunction when `DLQ_OSS_RE
 * Example value: `3`
 * Type: `required`
 * Default value : `3`
+
+## `DLQ_COS_REGION`
+
+The region where your Tencent COS bucket is located. For example, 'ap-beijing', 'ap-guangzhou'. For a complete list of regions, refer to [Tencent COS Regions and Access Endpoints](https://www.tencentcloud.com/document/product/436/6224).
+
+* Example value: `ap-beijing`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is COS`
+
+## `DLQ_COS_BUCKET_NAME`
+
+The name of your Tencent COS bucket. Must follow COS bucket naming conventions: lowercase letters, numbers, and hyphens (-), 1-40 characters.
+
+* Example value: `my-dlq-bucket`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is COS`
+
+## `DLQ_COS_DIRECTORY_PREFIX`
+
+Optional prefix for organizing objects within the bucket. Acts like a folder path. Will be prepended to all object keys.
+
+* Example value: `dlq/failed-messages/`
+* Type: `optional`
+* Default value: `""`
+
+## `DLQ_COS_SECRET_ID`
+
+The SecretId part of your Tencent Cloud API credentials. Can be obtained from the [Tencent Cloud Console](https://console.tencentcloud.com/cam/capi).
+
+* Example value: `your-secret-id-here`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is COS`
+
+## `DLQ_COS_SECRET_KEY`
+
+The SecretKey part of your Tencent Cloud API credentials. Can be obtained from the [Tencent Cloud Console](https://console.tencentcloud.com/cam/capi).
+
+* Example value: `your-secret-key-here`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is COS`
+
+## `DLQ_COS_TEMP_CREDENTIAL_VALIDITY_SECONDS`
+
+Duration in seconds for which temporary credentials are valid when using STS (Security Token Service). These temporary credentials are automatically refreshed before expiration.
+
+* Example value: `1800`
+* Type: `optional`
+* Default value: `1800` (30 minutes)
+
+## `DLQ_COS_APPID`
+
+Your Tencent Cloud Account's APPID. Can be found in the [Tencent Cloud Console](https://console.tencentcloud.com/developer).
+
+* Example value: `1250000000`
+* Type: `Required if DLQ_BLOB_STORAGE_TYPE is COS`
+
+## `DLQ_COS_RETRY_MAX_ATTEMPTS`
+
+Maximum number of retry attempts for failed COS operations before giving up.
+
+* Example value: `10`
+* Type: `optional`
+* Default value: `10`
+
+## `DLQ_COS_RETRY_INITIAL_DELAY_MS`
+
+Initial delay in milliseconds before the first retry attempt. For subsequent retries, this value may be increased based on retry strategy.
+
+* Example value: `1000`
+* Type: `optional`
+* Default value: `1000` (1 second)
+
+## `DLQ_COS_RETRY_MAX_DELAY_MS`
+
+Maximum delay in milliseconds between retry attempts. The actual delay will not exceed this value, even with exponential backoff.
+
+* Example value: `30000`
+* Type: `optional`
+* Default value: `30000` (30 seconds)
+
+## `DLQ_COS_RETRY_TOTAL_TIMEOUT_MS`
+
+Total timeout in milliseconds for all retry attempts combined. If exceeded, no more retries will be attempted.
+
+* Example value: `120000`
+* Type: `optional`
+* Default value: `120000` (2 minutes)
+
+## `DLQ_COS_CONNECTION_TIMEOUT_MS`
+
+Timeout in milliseconds for establishing a connection to COS.
+
+* Example value: `5000`
+* Type: `optional`
+* Default value: `5000` (5 seconds)
+
+## `DLQ_COS_SOCKET_TIMEOUT_MS`
+
+Timeout in milliseconds for waiting for data from an established connection to COS.
+
+* Example value: `50000`
+* Type: `optional`
+* Default value: `50000` (50 seconds)
+
+## `DLQ_COS_RETRY_DELAY_MS`
+
+Base delay in milliseconds between retry attempts. This value may be increased for subsequent retries based on retry strategy.
+
+* Example value: `1000`
+* Type: `optional`
+* Default value: `1000` (1 second)
