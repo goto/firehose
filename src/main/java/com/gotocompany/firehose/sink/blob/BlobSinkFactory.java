@@ -73,6 +73,9 @@ public class BlobSinkFactory {
             case OSS:
                 configuration.put("OSS_TYPE", "SINK_BLOB");
                 break;
+            case COS:
+                configuration.put("COS_TYPE", "SINK_BLOB");
+                break;
             default:
                 throw new IllegalArgumentException("Sink Blob Storage type " + sinkConfig.getBlobStorageType() + "is not supported");
         }
