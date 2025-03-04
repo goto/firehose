@@ -33,14 +33,16 @@ public class BlobStorageFactory {
                 }
             case OSS:
                 try {
-                    ObjectStorageServiceConfig objectStorageServiceConfig = ConfigFactory.create(ObjectStorageServiceConfig.class, config);
+                    ObjectStorageServiceConfig objectStorageServiceConfig = ConfigFactory
+                            .create(ObjectStorageServiceConfig.class, config);
                     return new ObjectStorageService(objectStorageServiceConfig);
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Exception while creating OSS Storage", e);
                 }
             case COS:
                 try {
-                    CloudObjectStorageConfig cloudObjectStorageConfig = ConfigFactory.create(CloudObjectStorageConfig.class, config);
+                    CloudObjectStorageConfig cloudObjectStorageConfig = ConfigFactory
+                            .create(CloudObjectStorageConfig.class, config);
                     return new CloudObjectStorage(cloudObjectStorageConfig);
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Exception while creating COS Storage", e);

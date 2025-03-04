@@ -3,110 +3,81 @@ package com.gotocompany.firehose.sink.common.blobstorage.cos;
 import com.gotocompany.firehose.config.CloudObjectStorageConfig;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
-import com.gotocompany.firehose.sink.common.blobstorage.cos.auth.TencentCredentialManager;
-import com.gotocompany.firehose.sink.common.blobstorage.cos.service.TencentObjectOperations;
+import com.gotocompany.firehose.sink.common.blobstorage.cos.auth.SessionTokenGenerator;
+import com.gotocompany.firehose.sink.common.blobstorage.cos.auth.TokenLifecycleManager;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
+import com.qcloud.cos.auth.COSSessionCredentials;
 import com.qcloud.cos.exception.CosClientException;
 import com.qcloud.cos.exception.CosServiceException;
-import com.qcloud.cos.model.BucketReplicationConfiguration;
-import com.qcloud.cos.model.ReplicationRule;
 import com.qcloud.cos.region.Region;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 public class CloudObjectStorage implements BlobStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudObjectStorage.class);
-
-    private final TencentObjectOperations tencentObjectOperations;
-    private final TencentCredentialManager credentialManager;
+    private final CloudObjectStorageConfig cloudObjectStorageConfig;
     private final COSClient cosClient;
-    private final CloudObjectStorageConfig config;
+    private final SessionTokenGenerator sessionTokenGenerator;
+    private final TokenLifecycleManager tokenLifecycleManager;
 
-    public CloudObjectStorage(CloudObjectStorageConfig config) {
-        this.config = config;
-        this.credentialManager = new TencentCredentialManager(config);
-        ClientConfig clientConfig = createDefaultClientConfig(config);
-        this.cosClient = new COSClient(credentialManager.getCredentials(), clientConfig);
-        this.tencentObjectOperations = new TencentObjectOperations(cosClient, config);
-        checkBucket();
-        logRetentionPolicy();
+    public CloudObjectStorage(CloudObjectStorageConfig cloudObjectStorageConfig) {
+        this.cloudObjectStorageConfig = cloudObjectStorageConfig;
+        this.sessionTokenGenerator = new SessionTokenGenerator(cloudObjectStorageConfig);
+        COSSessionCredentials cred = sessionTokenGenerator.getCOSCredentials();
+        ClientConfig clientConfig = new ClientConfig(new Region(cloudObjectStorageConfig.getCosRegion()));
+        this.cosClient = new COSClient(cred, clientConfig);
+        this.tokenLifecycleManager = new TokenLifecycleManager(cloudObjectStorageConfig, cosClient, sessionTokenGenerator);
     }
 
-    CloudObjectStorage(CloudObjectStorageConfig config, TencentCredentialManager credentialManager, COSClient cosClient) {
-        this.config = config;
-        this.credentialManager = credentialManager;
+    public CloudObjectStorage(CloudObjectStorageConfig cloudObjectStorageConfig,
+                               COSClient cosClient,
+                               SessionTokenGenerator sessionTokenGenerator,
+                               TokenLifecycleManager tokenLifecycleManager) {
+        this.cloudObjectStorageConfig = cloudObjectStorageConfig;
         this.cosClient = cosClient;
-        this.tencentObjectOperations = new TencentObjectOperations(cosClient, config);
-        checkBucket();
-        logRetentionPolicy();
+        this.sessionTokenGenerator = sessionTokenGenerator;
+        this.tokenLifecycleManager = tokenLifecycleManager;
     }
 
-    private static ClientConfig createDefaultClientConfig(CloudObjectStorageConfig config) {
-        ClientConfig clientConfig = new ClientConfig(new Region(config.getCosRegion()));
-        clientConfig.setMaxErrorRetry(config.getCosRetryMaxAttempts());
-        clientConfig.setConnectionTimeout(config.getCosConnectionTimeoutMS().intValue());
-        clientConfig.setSocketTimeout(config.getCosSocketTimeoutMS().intValue());
-        return clientConfig;
-    }
-
-    void checkBucket() {
-        String bucketName = config.getCosBucketName();
-        if (bucketName == null || bucketName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Bucket name cannot be null or empty");
-        }
-        String region = config.getCosRegion();
-        if (region == null || region.trim().isEmpty()) {
-            throw new IllegalArgumentException("Region cannot be null or empty");
-        }
-        try {
-            if (!cosClient.doesBucketExist(bucketName)) {
-                LOGGER.error("Bucket does not exist: {}", bucketName);
-                LOGGER.error("Please create COS bucket before running firehose: {}", bucketName);
-                throw new IllegalArgumentException("COS Bucket not found: " + bucketName);
-            }
-            LOGGER.info("Successfully verified COS bucket exists: {}", bucketName);
-        } catch (CosServiceException e) {
-            LOGGER.error("Failed to check bucket existence: {} - {} ({})",
-                bucketName, e.getErrorMessage(), e.getStatusCode(), e);
-            throw new IllegalArgumentException("Failed to verify COS bucket: " + e.getMessage(), e);
-        } catch (CosClientException e) {
-            LOGGER.error("Client error while checking bucket: {}", bucketName, e);
-            throw new IllegalArgumentException("Failed to verify COS bucket due to client error", e);
-        }
-    }
-
-    private void logRetentionPolicy() {
-        String bucketName = config.getCosBucketName();
-        try {
-            BucketReplicationConfiguration replication = cosClient.getBucketReplicationConfiguration(bucketName);
-            if (replication != null && replication.getRules() != null) {
-                LOGGER.info("Retention Policy for bucket: {}", bucketName);
-                for (ReplicationRule rule : replication.getRules()) {
-                    LOGGER.info("Rule ID: {}, Status: {}", rule.getID(), rule.getStatus());
-                }
-            } else {
-                LOGGER.info("No retention policy configured for bucket: {}", bucketName);
-            }
-        } catch (CosServiceException e) {
-            LOGGER.warn("Unable to fetch retention policy for bucket {}: {} ({})",
-                bucketName, e.getErrorMessage(), e.getStatusCode());
-        } catch (CosClientException e) {
-            LOGGER.warn("Client error while fetching retention policy for bucket {}: {}",
-                bucketName, e.getMessage());
-        }
-    }
-
+    @Override
     public void store(String objectName, String filePath) throws BlobStorageException {
-        LOGGER.info("Storing file to COS: {} -> {}", filePath, objectName);
-        tencentObjectOperations.uploadObject(objectName, filePath);
+        String finalPath = getAbsolutePath(objectName);
+        try {
+            byte[] content = Files.readAllBytes(Paths.get(filePath));
+            store(finalPath, content);
+        } catch (Exception e) {
+            LOGGER.error("Failed to read local file {}", filePath);
+            throw new BlobStorageException("file_io_error", "File Read failed", e);
+        }
     }
 
+    @Override
     public void store(String objectName, byte[] content) throws BlobStorageException {
-        if (content == null) {
-            throw new IllegalArgumentException("Content cannot be null");
+        tokenLifecycleManager.softRefreshCredential();
+        String finalPath = getAbsolutePath(objectName);
+        try {
+            String contentStr = new String(content);
+            cosClient.putObject(cloudObjectStorageConfig.getCOSBucketName(), finalPath, contentStr);
+            LOGGER.info("Created object in COS {}", objectName);
+        } catch (CosServiceException cse) {
+            LOGGER.error("Failed to create object in COS {}, service happen exception", objectName);
+            throw new BlobStorageException(cse.getErrorCode(), cse.getMessage(), cse);
+        } catch (CosClientException cce) {
+            LOGGER.error("Failed to create object in COS {}, client happen exception", objectName);
+            throw new BlobStorageException(cce.getErrorCode(), cce.getMessage(), cce);
         }
-        LOGGER.info("Storing content to COS: {} ({} bytes)", objectName, content.length);
-        tencentObjectOperations.uploadObject(objectName, content);
+    }
+
+    private String getAbsolutePath(String objectName) {
+        String prefix = cloudObjectStorageConfig.getCOSDirectoryPrefix();
+        if (prefix != null && !prefix.endsWith("/")
+                && objectName.startsWith("/")) {
+            prefix += "/";
+        }
+        return prefix == null || prefix.isEmpty() ? objectName : Paths.get(prefix, objectName).toString();
     }
 }
