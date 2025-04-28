@@ -21,6 +21,7 @@ import com.gotocompany.firehose.filter.NoOpFilter;
 import com.gotocompany.firehose.filter.jexl.JexlFilter;
 import com.gotocompany.firehose.filter.json.JsonFilter;
 import com.gotocompany.firehose.filter.json.JsonFilterUtil;
+import com.gotocompany.firehose.filter.timestamp.TimestampFilter;
 import com.gotocompany.firehose.sink.Sink;
 import com.gotocompany.firehose.sink.common.KeyOrMessageParser;
 import com.gotocompany.firehose.sinkdecorator.BackOff;
@@ -99,6 +100,9 @@ public class FirehoseConsumerFactory {
                 break;
             case JEXL:
                 filter = new JexlFilter(filterConfig, new FirehoseInstrumentation(statsDReporter, JexlFilter.class));
+                break;
+            case TIMESTAMP:
+                filter = new TimestampFilter(stencilClient, filterConfig, new FirehoseInstrumentation(statsDReporter, TimestampFilter.class));
                 break;
             case NO_OP:
                 filter = new NoOpFilter(new FirehoseInstrumentation(statsDReporter, NoOpFilter.class));
