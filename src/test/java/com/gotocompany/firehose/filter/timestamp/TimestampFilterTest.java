@@ -489,7 +489,6 @@ public class TimestampFilterTest {
         // Get the configured window sizes from the mock config
         Long pastWindowSeconds = filterConfig.getFilterTimestampPastWindowSeconds();
         Long futureWindowSeconds = filterConfig.getFilterTimestampFutureWindowSeconds();
-        
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
         List<Message> messages = new ArrayList<>();
