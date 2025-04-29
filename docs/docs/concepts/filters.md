@@ -73,8 +73,8 @@ The filtering process works as follows:
 3. The timestamp field specified by `FILTER_TIMESTAMP_FIELD_NAME` is extracted from the message.
 4. The current time is determined and the acceptable time window is calculated.
 5. Messages are kept only if their timestamp is:
-   - Not older than (current_time - `FILTER_TIMESTAMP_PAST_WINDOW`) seconds
-   - Not newer than (current_time + `FILTER_TIMESTAMP_FUTURE_WINDOW`) seconds
+   - Not older than (current_time - `FILTER_TIMESTAMP_PAST_WINDOW_SECONDS`) seconds
+   - Not newer than (current_time + `FILTER_TIMESTAMP_FUTURE_WINDOW_SECONDS`) seconds
 6. Messages with timestamps outside this window are filtered out.
 
 Timestamp filters support various timestamp formats:

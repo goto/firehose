@@ -64,8 +64,8 @@ public class TimestampFilterTest {
         when(filterConfig.getFilterDataSource()).thenReturn(FilterDataSourceType.MESSAGE);
         when(filterConfig.getFilterTimestampFieldName()).thenReturn(TIMESTAMP_FIELD);
         when(filterConfig.getFilterDropDeserializationError()).thenReturn(true);
-        when(filterConfig.getFilterTimestampPastWindow()).thenReturn(604800L);
-        when(filterConfig.getFilterTimestampFutureWindow()).thenReturn(604800L);
+        when(filterConfig.getFilterTimestampPastWindowSeconds()).thenReturn(604800L);
+        when(filterConfig.getFilterTimestampFutureWindowSeconds()).thenReturn(604800L);
         when(filterConfig.getFilterSchemaProtoClass()).thenReturn(PROTO_CLASS);
 
         when(stencilClient.getParser(PROTO_CLASS)).thenReturn(parser);
@@ -486,13 +486,17 @@ public class TimestampFilterTest {
 
     @Test
     public void testFilterEdgesOfTimestampWindow() throws InvalidProtocolBufferException, FilterException {
+        // Get the configured window sizes from the mock config
+        Long pastWindowSeconds = filterConfig.getFilterTimestampPastWindowSeconds();
+        Long futureWindowSeconds = filterConfig.getFilterTimestampFutureWindowSeconds();
+        
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
         List<Message> messages = new ArrayList<>();
 
         long currentTime = Instant.now().getEpochSecond();
-        long pastEdge = currentTime - 604800L;
-        long futureEdge = currentTime + 604800L;
+        long pastEdge = currentTime - pastWindowSeconds;
+        long futureEdge = currentTime + futureWindowSeconds;
 
         byte[] pastData = "past_edge".getBytes();
         Message pastMessage = new Message(new byte[1], pastData, "topic", 0, 0);
@@ -526,8 +530,8 @@ public class TimestampFilterTest {
 
     @Test
     public void testFilterCustomWindowSizes() throws InvalidProtocolBufferException, FilterException {
-        when(filterConfig.getFilterTimestampPastWindow()).thenReturn(3600L);
-        when(filterConfig.getFilterTimestampFutureWindow()).thenReturn(1800L);
+        when(filterConfig.getFilterTimestampPastWindowSeconds()).thenReturn(3600L);
+        when(filterConfig.getFilterTimestampFutureWindowSeconds()).thenReturn(1800L);
 
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
@@ -873,8 +877,8 @@ public class TimestampFilterTest {
 
     @Test
     public void testFilterWithVeryShortWindowSizes() throws InvalidProtocolBufferException, FilterException {
-        when(filterConfig.getFilterTimestampPastWindow()).thenReturn(1L);
-        when(filterConfig.getFilterTimestampFutureWindow()).thenReturn(1L);
+        when(filterConfig.getFilterTimestampPastWindowSeconds()).thenReturn(1L);
+        when(filterConfig.getFilterTimestampFutureWindowSeconds()).thenReturn(1L);
 
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
@@ -921,8 +925,8 @@ public class TimestampFilterTest {
     @Test
     public void testFilterWithVeryLargeWindowSizes() throws InvalidProtocolBufferException, FilterException {
         long tenYearsInSeconds = 10L * 365 * 24 * 60 * 60;
-        when(filterConfig.getFilterTimestampPastWindow()).thenReturn(tenYearsInSeconds);
-        when(filterConfig.getFilterTimestampFutureWindow()).thenReturn(tenYearsInSeconds);
+        when(filterConfig.getFilterTimestampPastWindowSeconds()).thenReturn(tenYearsInSeconds);
+        when(filterConfig.getFilterTimestampFutureWindowSeconds()).thenReturn(tenYearsInSeconds);
 
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
@@ -946,8 +950,8 @@ public class TimestampFilterTest {
 
     @Test
     public void testFilterWithZeroWindowSizes() throws InvalidProtocolBufferException, FilterException {
-        when(filterConfig.getFilterTimestampPastWindow()).thenReturn(0L);
-        when(filterConfig.getFilterTimestampFutureWindow()).thenReturn(0L);
+        when(filterConfig.getFilterTimestampPastWindowSeconds()).thenReturn(0L);
+        when(filterConfig.getFilterTimestampFutureWindowSeconds()).thenReturn(0L);
 
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 

@@ -40,12 +40,12 @@ public interface FilterConfig extends Config {
     @DefaultValue("false")
     Boolean getFilterDropDeserializationError();
 
-    @Key("FILTER_TIMESTAMP_PAST_WINDOW")
+    @Key("FILTER_TIMESTAMP_PAST_WINDOW_SECONDS")
     @DefaultValue("604800")
-    Long getFilterTimestampPastWindow();
+    Long getFilterTimestampPastWindowSeconds();
 
-    @Key("FILTER_TIMESTAMP_FUTURE_WINDOW")
+    @Key("FILTER_TIMESTAMP_FUTURE_WINDOW_SECONDS")
     @DefaultValue("604800")
-    Long getFilterTimestampFutureWindow();
+    Long getFilterTimestampFutureWindowSeconds();
 
 }

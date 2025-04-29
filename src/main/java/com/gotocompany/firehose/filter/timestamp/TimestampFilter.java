@@ -48,8 +48,8 @@ public class TimestampFilter implements Filter {
         this.filterDataSourceType = filterConfig.getFilterDataSource();
         this.timestampFieldName = filterConfig.getFilterTimestampFieldName();
         this.dropDeserializationError = filterConfig.getFilterDropDeserializationError();
-        this.pastWindowSeconds = filterConfig.getFilterTimestampPastWindow();
-        this.futureWindowSeconds = filterConfig.getFilterTimestampFutureWindow();
+        this.pastWindowSeconds = filterConfig.getFilterTimestampPastWindowSeconds();
+        this.futureWindowSeconds = filterConfig.getFilterTimestampFutureWindowSeconds();
 
         if (filterConfig.getFilterSchemaProtoClass() == null || filterConfig.getFilterSchemaProtoClass().isEmpty()) {
             throw new IllegalArgumentException("FILTER_SCHEMA_PROTO_CLASS configuration is required for timestamp filter");

@@ -54,7 +54,7 @@ Field name containing the timestamp for timestamp-based filtering.
 * Type: `optional`
 * Default value: `event_timestamp`
 
-## `FILTER_TIMESTAMP_PAST_WINDOW`
+## `FILTER_TIMESTAMP_PAST_WINDOW_SECONDS`
 
 Time window in seconds for past timestamps. Messages with timestamps older than (current_time - past_window) will be filtered out.
 
@@ -62,7 +62,7 @@ Time window in seconds for past timestamps. Messages with timestamps older than 
 * Type: `optional`
 * Default value: `604800` (7 days)
 
-## `FILTER_TIMESTAMP_FUTURE_WINDOW`
+## `FILTER_TIMESTAMP_FUTURE_WINDOW_SECONDS`
 
 Time window in seconds for future timestamps. Messages with timestamps newer than (current_time + future_window) will be filtered out.
 
