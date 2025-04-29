@@ -246,8 +246,6 @@ public class TimestampFilter implements Filter {
                         throw new FilterException("Could not parse String value as timestamp: " + fieldValue);
                     }
                 }
-            } else if (isProtobufTimestamp(fieldValue)) {
-                return extractFromProtobufTimestamp(fieldValue);
             } else if (fieldValue instanceof DynamicMessage) {
                 DynamicMessage dynamicMsg = (DynamicMessage) fieldValue;
                 String typeName = dynamicMsg.getDescriptorForType().getFullName();
@@ -257,6 +255,8 @@ public class TimestampFilter implements Filter {
                 firehoseInstrumentation.logDebug("Unrecognized DynamicMessage type: {}", typeName);
                 firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
                 throw new FilterException("Unsupported DynamicMessage type: " + typeName);
+            } else if (isProtobufTimestamp(fieldValue)) {
+                return extractFromProtobufTimestamp(fieldValue);
             } else {
                 firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
                 throw new FilterException("Unsupported timestamp field type: " + fieldValue.getClass().getName());
@@ -271,8 +271,7 @@ public class TimestampFilter implements Filter {
 
     private boolean isProtobufTimestamp(Object obj) {
         if (obj instanceof DynamicMessage) {
-            DynamicMessage dynamicMsg = (DynamicMessage) obj;
-            return "google.protobuf.Timestamp".equals(dynamicMsg.getDescriptorForType().getFullName());
+            return false;
         }
         return obj.getClass().getName().endsWith("Timestamp")
                 || obj.getClass().getName().equals("com.google.protobuf.Timestamp");
