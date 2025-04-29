@@ -295,23 +295,23 @@ public class TimestampFilter implements Filter {
             throw new FilterException("Failed to extract seconds from Timestamp", e);
         }
     }
-    
+
     private long extractFromDynamicTimestamp(DynamicMessage dynamicMsg) throws FilterException {
         try {
             Descriptors.FieldDescriptor secondsField = dynamicMsg.getDescriptorForType().findFieldByName("seconds");
             if (secondsField == null) {
                 throw new FilterException("Field 'seconds' not found in google.protobuf.Timestamp");
             }
-            
+
             if (!dynamicMsg.hasField(secondsField)) {
                 throw new FilterException("Timestamp message does not contain 'seconds' field");
             }
-            
+
             Object secondsValue = dynamicMsg.getField(secondsField);
             if (!(secondsValue instanceof Long)) {
                 throw new FilterException("seconds field is not of type Long");
             }
-            
+
             return (Long) secondsValue;
         } catch (Exception e) {
             if (!(e instanceof FilterException)) {
