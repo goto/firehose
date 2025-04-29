@@ -1021,4 +1021,92 @@ public class TimestampFilterTest {
         assertEquals(66, result.getValidMessages().size());
         assertEquals(34, result.getInvalidMessages().size());
     }
+
+    @Test
+    public void testFilterWithProtobufTimestampAsDynamicMessage() throws InvalidProtocolBufferException, FilterException {
+        timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
+
+        byte[] messageData = "dynamic_protobuf_timestamp".getBytes();
+        Message message = new Message(new byte[1], messageData, "topic", 0, 0);
+        List<Message> messages = Collections.singletonList(message);
+
+        when(parser.parse(messageData)).thenReturn(dynamicMessage);
+
+        DynamicMessage timestampDynamicMsg = mock(DynamicMessage.class);
+        Descriptors.Descriptor timestampDescriptor = mock(Descriptors.Descriptor.class);
+        Descriptors.FieldDescriptor secondsFieldDescriptor = mock(Descriptors.FieldDescriptor.class);
+        
+        when(dynamicMessage.hasField(fieldDescriptor)).thenReturn(true);
+        when(dynamicMessage.getField(fieldDescriptor)).thenReturn(timestampDynamicMsg);
+        
+        when(timestampDynamicMsg.getDescriptorForType()).thenReturn(timestampDescriptor);
+        when(timestampDescriptor.getFullName()).thenReturn("google.protobuf.Timestamp");
+        when(timestampDescriptor.findFieldByName("seconds")).thenReturn(secondsFieldDescriptor);
+        
+        long currentTime = Instant.now().getEpochSecond();
+        when(timestampDynamicMsg.hasField(secondsFieldDescriptor)).thenReturn(true);
+        when(timestampDynamicMsg.getField(secondsFieldDescriptor)).thenReturn(currentTime);
+
+        FilteredMessages result = timestampFilter.filter(messages);
+
+        assertNotNull(result);
+        assertEquals(1, result.getValidMessages().size());
+        assertEquals(0, result.getInvalidMessages().size());
+        
+        verify(timestampDynamicMsg).getField(secondsFieldDescriptor);
+    }
+
+    @Test
+    public void testFilterWithInvalidProtobufTimestampAsDynamicMessage() throws InvalidProtocolBufferException, FilterException {
+        timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
+
+        byte[] messageData = "invalid_dynamic_protobuf_timestamp".getBytes();
+        Message message = new Message(new byte[1], messageData, "topic", 0, 0);
+        List<Message> messages = Collections.singletonList(message);
+
+        when(parser.parse(messageData)).thenReturn(dynamicMessage);
+
+        DynamicMessage timestampDynamicMsg = mock(DynamicMessage.class);
+        Descriptors.Descriptor timestampDescriptor = mock(Descriptors.Descriptor.class);
+        
+        when(dynamicMessage.hasField(fieldDescriptor)).thenReturn(true);
+        when(dynamicMessage.getField(fieldDescriptor)).thenReturn(timestampDynamicMsg);
+        
+        when(timestampDynamicMsg.getDescriptorForType()).thenReturn(timestampDescriptor);
+        when(timestampDescriptor.getFullName()).thenReturn("google.protobuf.Timestamp");
+        when(timestampDescriptor.findFieldByName("seconds")).thenReturn(null); // seconds field not found
+
+        FilteredMessages result = timestampFilter.filter(messages);
+
+        assertNotNull(result);
+        assertEquals(0, result.getValidMessages().size());
+        assertEquals(1, result.getInvalidMessages().size());
+    }
+
+    @Test
+    public void testFilterWithNonTimestampDynamicMessage() throws InvalidProtocolBufferException, FilterException {
+        timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
+
+        byte[] messageData = "non_timestamp_dynamic_message".getBytes();
+        Message message = new Message(new byte[1], messageData, "topic", 0, 0);
+        List<Message> messages = Collections.singletonList(message);
+
+        when(parser.parse(messageData)).thenReturn(dynamicMessage);
+
+        DynamicMessage nonTimestampDynamicMsg = mock(DynamicMessage.class);
+        Descriptors.Descriptor otherDescriptor = mock(Descriptors.Descriptor.class);
+        
+        when(dynamicMessage.hasField(fieldDescriptor)).thenReturn(true);
+        when(dynamicMessage.getField(fieldDescriptor)).thenReturn(nonTimestampDynamicMsg);
+        
+        when(nonTimestampDynamicMsg.getDescriptorForType()).thenReturn(otherDescriptor);
+        when(otherDescriptor.getFullName()).thenReturn("com.example.SomeOtherMessage");
+
+        FilteredMessages result = timestampFilter.filter(messages);
+
+        assertNotNull(result);
+        assertEquals(0, result.getValidMessages().size());
+        assertEquals(1, result.getInvalidMessages().size());
+        verify(instrumentation).captureCount(contains("unsupported_type_errors_total"), eq(1L));
+    }
 }
