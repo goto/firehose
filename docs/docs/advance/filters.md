@@ -46,7 +46,7 @@ JSON Schema string containing the filter rules to be applied.
 * Example value: `{"properties":{"order_number":{"const":"1253"}}}`
 * Type: `optional`
 
-## `FILTER_TIMESTAMP_FIELD_NAME`
+## `FILTER_TIMESTAMP_PROTO_FIELD_NAME`
 
 Field name containing the timestamp for timestamp-based filtering.
 

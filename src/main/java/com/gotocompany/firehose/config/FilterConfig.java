@@ -32,7 +32,7 @@ public interface FilterConfig extends Config {
     @Key("FILTER_JSON_SCHEMA")
     String getFilterJsonSchema();
 
-    @Key("FILTER_TIMESTAMP_FIELD_NAME")
+    @Key("FILTER_TIMESTAMP_PROTO_FIELD_NAME")
     @DefaultValue("event_timestamp")
     String getFilterTimestampFieldName();
 

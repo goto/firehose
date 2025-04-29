@@ -70,7 +70,7 @@ The filtering process works as follows:
 
 1. Firehose Consumer creates a Filter object and initializes it with values from the environment variables for timestamp field name, past window, and future window.
 2. For each message, the specified Protobuf schema is used to deserialize the key or message (as specified by `FILTER_DATA_SOURCE`).
-3. The timestamp field specified by `FILTER_TIMESTAMP_FIELD_NAME` is extracted from the message.
+3. The timestamp field specified by `FILTER_TIMESTAMP_PROTO_FIELD_NAME` is extracted from the message.
 4. The current time is determined and the acceptable time window is calculated.
 5. Messages are kept only if their timestamp is:
    - Not older than (current_time - `FILTER_TIMESTAMP_PAST_WINDOW_SECONDS`) seconds

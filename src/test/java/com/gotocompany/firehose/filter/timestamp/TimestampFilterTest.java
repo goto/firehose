@@ -486,7 +486,6 @@ public class TimestampFilterTest {
 
     @Test
     public void testFilterEdgesOfTimestampWindow() throws InvalidProtocolBufferException, FilterException {
-        // Get the configured window sizes from the mock config
         Long pastWindowSeconds = filterConfig.getFilterTimestampPastWindowSeconds();
         Long futureWindowSeconds = filterConfig.getFilterTimestampFutureWindowSeconds();
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
@@ -1071,7 +1070,7 @@ public class TimestampFilterTest {
         when(dynamicMessage.getField(fieldDescriptor)).thenReturn(timestampDynamicMsg);
         when(timestampDynamicMsg.getDescriptorForType()).thenReturn(timestampDescriptor);
         when(timestampDescriptor.getFullName()).thenReturn("google.protobuf.Timestamp");
-        when(timestampDescriptor.findFieldByName("seconds")).thenReturn(null); // seconds field not found
+        when(timestampDescriptor.findFieldByName("seconds")).thenReturn(null);
 
         FilteredMessages result = timestampFilter.filter(messages);
 
