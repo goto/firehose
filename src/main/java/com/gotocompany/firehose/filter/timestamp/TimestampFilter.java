@@ -248,6 +248,15 @@ public class TimestampFilter implements Filter {
                 }
             } else if (isProtobufTimestamp(fieldValue)) {
                 return extractFromProtobufTimestamp(fieldValue);
+            } else if (fieldValue instanceof DynamicMessage) {
+                DynamicMessage dynamicMsg = (DynamicMessage) fieldValue;
+                String typeName = dynamicMsg.getDescriptorForType().getFullName();
+                if ("google.protobuf.Timestamp".equals(typeName)) {
+                    return extractFromDynamicTimestamp(dynamicMsg);
+                }
+                firehoseInstrumentation.logDebug("Unrecognized DynamicMessage type: {}", typeName);
+                firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
+                throw new FilterException("Unsupported DynamicMessage type: " + typeName);
             } else {
                 firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
                 throw new FilterException("Unsupported timestamp field type: " + fieldValue.getClass().getName());
@@ -261,6 +270,10 @@ public class TimestampFilter implements Filter {
     }
 
     private boolean isProtobufTimestamp(Object obj) {
+        if (obj instanceof DynamicMessage) {
+            DynamicMessage dynamicMsg = (DynamicMessage) obj;
+            return "google.protobuf.Timestamp".equals(dynamicMsg.getDescriptorForType().getFullName());
+        }
         return obj.getClass().getName().endsWith("Timestamp")
                 || obj.getClass().getName().equals("com.google.protobuf.Timestamp");
     }
@@ -280,6 +293,31 @@ public class TimestampFilter implements Filter {
             return seconds;
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new FilterException("Failed to extract seconds from Timestamp", e);
+        }
+    }
+    
+    private long extractFromDynamicTimestamp(DynamicMessage dynamicMsg) throws FilterException {
+        try {
+            Descriptors.FieldDescriptor secondsField = dynamicMsg.getDescriptorForType().findFieldByName("seconds");
+            if (secondsField == null) {
+                throw new FilterException("Field 'seconds' not found in google.protobuf.Timestamp");
+            }
+            
+            if (!dynamicMsg.hasField(secondsField)) {
+                throw new FilterException("Timestamp message does not contain 'seconds' field");
+            }
+            
+            Object secondsValue = dynamicMsg.getField(secondsField);
+            if (!(secondsValue instanceof Long)) {
+                throw new FilterException("seconds field is not of type Long");
+            }
+            
+            return (Long) secondsValue;
+        } catch (Exception e) {
+            if (!(e instanceof FilterException)) {
+                e = new FilterException("Failed to extract seconds from DynamicMessage Timestamp", e);
+            }
+            throw (FilterException) e;
         }
     }
 }
