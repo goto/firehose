@@ -1035,14 +1035,11 @@ public class TimestampFilterTest {
         DynamicMessage timestampDynamicMsg = mock(DynamicMessage.class);
         Descriptors.Descriptor timestampDescriptor = mock(Descriptors.Descriptor.class);
         Descriptors.FieldDescriptor secondsFieldDescriptor = mock(Descriptors.FieldDescriptor.class);
-        
         when(dynamicMessage.hasField(fieldDescriptor)).thenReturn(true);
         when(dynamicMessage.getField(fieldDescriptor)).thenReturn(timestampDynamicMsg);
-        
         when(timestampDynamicMsg.getDescriptorForType()).thenReturn(timestampDescriptor);
         when(timestampDescriptor.getFullName()).thenReturn("google.protobuf.Timestamp");
         when(timestampDescriptor.findFieldByName("seconds")).thenReturn(secondsFieldDescriptor);
-        
         long currentTime = Instant.now().getEpochSecond();
         when(timestampDynamicMsg.hasField(secondsFieldDescriptor)).thenReturn(true);
         when(timestampDynamicMsg.getField(secondsFieldDescriptor)).thenReturn(currentTime);
@@ -1052,7 +1049,6 @@ public class TimestampFilterTest {
         assertNotNull(result);
         assertEquals(1, result.getValidMessages().size());
         assertEquals(0, result.getInvalidMessages().size());
-        
         verify(timestampDynamicMsg).getField(secondsFieldDescriptor);
     }
 
@@ -1068,10 +1064,8 @@ public class TimestampFilterTest {
 
         DynamicMessage timestampDynamicMsg = mock(DynamicMessage.class);
         Descriptors.Descriptor timestampDescriptor = mock(Descriptors.Descriptor.class);
-        
         when(dynamicMessage.hasField(fieldDescriptor)).thenReturn(true);
         when(dynamicMessage.getField(fieldDescriptor)).thenReturn(timestampDynamicMsg);
-        
         when(timestampDynamicMsg.getDescriptorForType()).thenReturn(timestampDescriptor);
         when(timestampDescriptor.getFullName()).thenReturn("google.protobuf.Timestamp");
         when(timestampDescriptor.findFieldByName("seconds")).thenReturn(null); // seconds field not found
@@ -1095,10 +1089,8 @@ public class TimestampFilterTest {
 
         DynamicMessage nonTimestampDynamicMsg = mock(DynamicMessage.class);
         Descriptors.Descriptor otherDescriptor = mock(Descriptors.Descriptor.class);
-        
         when(dynamicMessage.hasField(fieldDescriptor)).thenReturn(true);
         when(dynamicMessage.getField(fieldDescriptor)).thenReturn(nonTimestampDynamicMsg);
-        
         when(nonTimestampDynamicMsg.getDescriptorForType()).thenReturn(otherDescriptor);
         when(otherDescriptor.getFullName()).thenReturn("com.example.SomeOtherMessage");
 
