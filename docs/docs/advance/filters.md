@@ -46,3 +46,35 @@ JSON Schema string containing the filter rules to be applied.
 * Example value: `{"properties":{"order_number":{"const":"1253"}}}`
 * Type: `optional`
 
+## `FILTER_TIMESTAMP_FIELD_NAME`
+
+Field name containing the timestamp for timestamp-based filtering.
+
+* Example value: `event_timestamp`
+* Type: `optional`
+* Default value: `event_timestamp`
+
+## `FILTER_TIMESTAMP_PAST_WINDOW`
+
+Time window in seconds for past timestamps. Messages with timestamps older than (current_time - past_window) will be filtered out.
+
+* Example value: `86400` (1 day)
+* Type: `optional`
+* Default value: `604800` (7 days)
+
+## `FILTER_TIMESTAMP_FUTURE_WINDOW`
+
+Time window in seconds for future timestamps. Messages with timestamps newer than (current_time + future_window) will be filtered out.
+
+* Example value: `3600` (1 hour)
+* Type: `optional`
+* Default value: `604800` (7 days)
+
+## `FILTER_DROP_DESERIALIZATION_ERROR`
+
+Whether to drop messages with deserialization errors when using timestamp filter.
+
+* Example value: `true`
+* Type: `optional`
+* Default value: `false`
+
