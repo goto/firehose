@@ -709,7 +709,8 @@ public class TimestampFilterTest {
     }
 
     @Test
-    public void testFilterWithJustBeyondFutureBoundaryTimestamp() throws InvalidProtocolBufferException, FilterException {
+    public void testFilterWithJustBeyondFutureBoundaryTimestamp()
+            throws InvalidProtocolBufferException, FilterException {
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
         byte[] messageData = "beyond_future_boundary".getBytes();
@@ -1025,7 +1026,8 @@ public class TimestampFilterTest {
     }
 
     @Test
-    public void testFilterWithProtobufTimestampAsDynamicMessage() throws InvalidProtocolBufferException, FilterException {
+    public void testFilterWithProtobufTimestampAsDynamicMessage()
+            throws InvalidProtocolBufferException, FilterException {
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
         byte[] messageData = "dynamic_protobuf_timestamp".getBytes();
@@ -1055,7 +1057,8 @@ public class TimestampFilterTest {
     }
 
     @Test
-    public void testFilterWithInvalidProtobufTimestampAsDynamicMessage() throws InvalidProtocolBufferException, FilterException {
+    public void testFilterWithInvalidProtobufTimestampAsDynamicMessage()
+            throws InvalidProtocolBufferException, FilterException {
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
 
         byte[] messageData = "invalid_dynamic_protobuf_timestamp".getBytes();
