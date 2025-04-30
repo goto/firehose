@@ -286,7 +286,8 @@ public class TimestampFilterTest {
         assertEquals(0, result.getValidMessages().size());
         assertEquals(1, result.getInvalidMessages().size());
 
-        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L));
+        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L),
+                eq("type=RECORD_MISSING_TIMESTAMP_FIELD"));
         verify(instrumentation).logDebug(contains("does not contain the timestamp field"), eq(TIMESTAMP_FIELD));
     }
 
