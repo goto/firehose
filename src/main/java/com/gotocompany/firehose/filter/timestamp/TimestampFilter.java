@@ -230,8 +230,6 @@ public class TimestampFilter implements Filter {
             }
 
             return !isInvalid;
-        } catch (FilterException e) {
-            throw e;
         } catch (Exception e) {
             firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L);
             throw new FilterException("Failed to validate timestamp: " + e.getMessage(), e);
