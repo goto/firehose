@@ -214,7 +214,7 @@ public class TimestampFilter implements Filter {
                         timestamp, currentTimeSeconds, pastThreshold, futureThreshold);
             }
 
-            boolean isInvalid = timestamp >= futureThreshold || timestamp <= pastThreshold;
+            boolean isInvalid = timestamp > futureThreshold || timestamp < pastThreshold;
             if (isInvalid) {
                 if (timestamp < pastThreshold) {
                     firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L, "type=RECORD_TOO_OLD");
