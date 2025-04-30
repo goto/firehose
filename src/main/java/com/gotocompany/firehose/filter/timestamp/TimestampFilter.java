@@ -42,7 +42,8 @@ public class TimestampFilter implements Filter {
     private final long futureWindowSeconds;
     private final Parser parser;
 
-    public TimestampFilter(StencilClient stencilClient, FilterConfig filterConfig, FirehoseInstrumentation firehoseInstrumentation) {
+    public TimestampFilter(StencilClient stencilClient, FilterConfig filterConfig,
+            FirehoseInstrumentation firehoseInstrumentation) {
         this.filterConfig = filterConfig;
         this.firehoseInstrumentation = firehoseInstrumentation;
         this.filterDataSourceType = filterConfig.getFilterDataSource();
@@ -52,13 +53,15 @@ public class TimestampFilter implements Filter {
         this.futureWindowSeconds = filterConfig.getFilterTimestampFutureWindowSeconds();
 
         if (filterConfig.getFilterSchemaProtoClass() == null || filterConfig.getFilterSchemaProtoClass().isEmpty()) {
-            throw new IllegalArgumentException("FILTER_SCHEMA_PROTO_CLASS configuration is required for timestamp filter");
+            throw new IllegalArgumentException(
+                    "FILTER_SCHEMA_PROTO_CLASS configuration is required for timestamp filter");
         }
 
         this.parser = stencilClient.getParser(filterConfig.getFilterSchemaProtoClass());
 
         if (this.parser == null) {
-            throw new IllegalArgumentException("Failed to create parser for " + filterConfig.getFilterSchemaProtoClass());
+            throw new IllegalArgumentException(
+                    "Failed to create parser for " + filterConfig.getFilterSchemaProtoClass());
         }
 
         logConfiguration();
@@ -104,7 +107,8 @@ public class TimestampFilter implements Filter {
                     continue;
                 }
 
-                byte[] data = (filterDataSourceType.equals(FilterDataSourceType.KEY)) ? message.getLogKey() : message.getLogMessage();
+                byte[] data = (filterDataSourceType.equals(FilterDataSourceType.KEY)) ? message.getLogKey()
+                        : message.getLogMessage();
 
                 if (data == null || data.length == 0) {
                     firehoseInstrumentation.logWarn("Message has empty data. Skipping. Source: {}",
@@ -158,7 +162,8 @@ public class TimestampFilter implements Filter {
         firehoseInstrumentation.captureCount(INVALID_MESSAGES, (long) invalidCount);
         firehoseInstrumentation.captureValue(FILTER_DURATION_MS, (int) duration);
 
-        firehoseInstrumentation.logInfo("TimestampFilter processed {} messages in {}ms: {} valid, {} invalid, {} deserialization errors",
+        firehoseInstrumentation.logInfo(
+                "TimestampFilter processed {} messages in {}ms: {} valid, {} invalid, {} deserialization errors",
                 processedCount, duration, validCount, invalidCount, deserializationErrorCount);
 
         return filteredMessages;
@@ -172,7 +177,8 @@ public class TimestampFilter implements Filter {
         }
 
         try {
-            Descriptors.FieldDescriptor fieldDescriptor = message.getDescriptorForType().findFieldByName(timestampFieldName);
+            Descriptors.FieldDescriptor fieldDescriptor = message.getDescriptorForType()
+                    .findFieldByName(timestampFieldName);
 
             if (fieldDescriptor == null) {
                 firehoseInstrumentation.logWarn("Field '{}' not found in message type '{}'",
@@ -182,7 +188,8 @@ public class TimestampFilter implements Filter {
             }
 
             if (!message.hasField(fieldDescriptor)) {
-                firehoseInstrumentation.logDebug("Message does not contain the timestamp field '{}'", timestampFieldName);
+                firehoseInstrumentation.logDebug("Message does not contain the timestamp field '{}'",
+                        timestampFieldName);
                 firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L);
                 return false;
             }
@@ -191,7 +198,7 @@ public class TimestampFilter implements Filter {
 
             if (fieldValue == null) {
                 firehoseInstrumentation.logDebug("Timestamp field '{}' has null value", timestampFieldName);
-                firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L);
+                firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L, "type=RECORD_NULL_TIMESTAMP_FIELD");
                 return false;
             }
 
@@ -211,10 +218,12 @@ public class TimestampFilter implements Filter {
             if (!isValid) {
                 firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L);
                 if (timestamp < pastThreshold) {
-                    firehoseInstrumentation.logDebug("Message filtered out: timestamp {} is too old (past threshold: {})",
+                    firehoseInstrumentation.logDebug(
+                            "Message filtered out: timestamp {} is too old (past threshold: {})",
                             timestamp, pastThreshold);
                 } else {
-                    firehoseInstrumentation.logDebug("Message filtered out: timestamp {} is too far in future (future threshold: {})",
+                    firehoseInstrumentation.logDebug(
+                            "Message filtered out: timestamp {} is too far in future (future threshold: {})",
                             timestamp, futureThreshold);
                 }
             }
