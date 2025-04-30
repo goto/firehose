@@ -74,7 +74,7 @@ Time window in seconds for future timestamps. Messages with timestamps newer tha
 
 Whether to drop messages with deserialization errors when using timestamp filter.
 
-* Example value: `true`
+* Example value: `false`
 * Type: `optional`
-* Default value: `false`
+* Default value: `true`
 
