@@ -237,7 +237,8 @@ public class TimestampFilterTest {
         assertEquals(0, result.getValidMessages().size());
         assertEquals(1, result.getInvalidMessages().size());
 
-        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L));
+        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L),
+                eq("type=RECORD_TOO_OLD"));
         verify(instrumentation).logDebug(contains("Message filtered out"), anyLong(), anyLong());
     }
 
@@ -262,7 +263,8 @@ public class TimestampFilterTest {
         assertEquals(0, result.getValidMessages().size());
         assertEquals(1, result.getInvalidMessages().size());
 
-        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L));
+        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L),
+                eq("type=RECORD_TOO_FUTURE"));
         verify(instrumentation).logDebug(contains("too far in future"), anyLong(), anyLong());
     }
 
@@ -307,7 +309,8 @@ public class TimestampFilterTest {
         assertEquals(0, result.getValidMessages().size());
         assertEquals(1, result.getInvalidMessages().size());
 
-        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L));
+        verify(instrumentation).captureCount(contains("invalid_timestamp_errors_total"), eq(1L),
+                eq("type=RECORD_NULL_TIMESTAMP_FIELD"));
         verify(instrumentation).logDebug(contains("has null value"), eq(TIMESTAMP_FIELD));
     }
 

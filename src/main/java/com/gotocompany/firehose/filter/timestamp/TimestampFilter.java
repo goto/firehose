@@ -216,12 +216,13 @@ public class TimestampFilter implements Filter {
             boolean isValid = timestamp >= pastThreshold && timestamp <= futureThreshold;
 
             if (!isValid) {
-                firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L, "type=RECORD_TOO_OLD");
                 if (timestamp < pastThreshold) {
+                    firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L, "type=RECORD_TOO_OLD");
                     firehoseInstrumentation.logDebug(
                             "Message filtered out: timestamp {} is too old (past threshold: {})",
                             timestamp, pastThreshold);
                 } else {
+                    firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L, "type=RECORD_TOO_FUTURE");
                     firehoseInstrumentation.logDebug(
                             "Message filtered out: timestamp {} is too far in future (future threshold: {})",
                             timestamp, futureThreshold);
