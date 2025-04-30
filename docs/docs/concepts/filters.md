@@ -2,7 +2,7 @@
 
 ## Filtering Messages
 
-When you are consuming from a topic that collects data from multiple publishers and you are concerned with only a particular subset of that data, in that case, you don’t need to consume all of it from the topic.
+When you are consuming from a topic that collects data from multiple publishers and you are concerned with only a particular subset of that data, in that case, you don't need to consume all of it from the topic.
 
 Instead, use this Filter feature provided in Firehose which allows you to apply any filters on the fields present in the key or message of the event data set and helps you narrow it down to your use case-specific data.
 
@@ -54,6 +54,36 @@ The filtering occurs in the following steps -
 - The JSON Schema validator performs a validation on the JSON message against the filter rules specified in the JSON Schema string provided in the environment variable`FILTER_JSON_SCHEMA.`
 - If there are any validation errors, then that key/message is filtered out and the validation errors are logged to the firehoseInstrumentation in debug mode.
 - If all validation checks pass, then the key/message is added to the ArrayList of filtered messages and returned by the JsonFilter.
+
+## Timestamp-based Filtering
+
+Timestamp-based filtering allows you to filter messages based on their timestamp value, keeping only messages whose timestamps fall within a configurable window relative to the current time. This is useful for filtering out stale messages or messages with future timestamps that may be invalid.
+
+Timestamp filtering is particularly helpful when:
+- You want to ignore historical data during reprocessing
+- You need to filter out messages with unreasonably old or future timestamps
+- You're building a real-time processing system that only needs recent data
+
+### How Timestamp Filters Work
+
+The filtering process works as follows:
+
+1. Firehose Consumer creates a Filter object and initializes it with values from the environment variables for timestamp field name, past window, and future window.
+2. For each message, the specified Protobuf schema is used to deserialize the key or message (as specified by `FILTER_DATA_SOURCE`).
+3. The timestamp field specified by `FILTER_TIMESTAMP_PROTO_FIELD_NAME` is extracted from the message.
+4. The current time is determined and the acceptable time window is calculated.
+5. Messages are kept only if their timestamp is:
+   - Not older than (current_time - `FILTER_TIMESTAMP_PAST_WINDOW_SECONDS`) seconds
+   - Not newer than (current_time + `FILTER_TIMESTAMP_FUTURE_WINDOW_SECONDS`) seconds
+6. Messages with timestamps outside this window are filtered out.
+
+Timestamp filters support various timestamp formats:
+- Long/Integer values representing epoch seconds
+- Date objects
+- String values that can be parsed as epoch seconds or ISO8601 timestamp strings
+- Google Protobuf Timestamp messages
+
+Messages with invalid timestamp formats or missing timestamp fields will be filtered out, and appropriate errors will be logged.
 
 ## Why Use Filters
 
