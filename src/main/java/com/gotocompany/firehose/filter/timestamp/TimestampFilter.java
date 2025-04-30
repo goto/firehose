@@ -190,7 +190,8 @@ public class TimestampFilter implements Filter {
             if (!message.hasField(fieldDescriptor)) {
                 firehoseInstrumentation.logDebug("Message does not contain the timestamp field '{}'",
                         timestampFieldName);
-                firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L);
+                firehoseInstrumentation.captureCount(INVALID_TIMESTAMP_ERRORS, 1L,
+                        "type=RECORD_MISSING_TIMESTAMP_FIELD");
                 return false;
             }
 
