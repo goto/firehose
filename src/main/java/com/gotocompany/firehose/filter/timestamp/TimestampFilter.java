@@ -237,43 +237,36 @@ public class TimestampFilter implements Filter {
     }
 
     private long extractTimestampValue(Object fieldValue) throws FilterException {
-        try {
-            if (fieldValue instanceof Long) {
-                return (Long) fieldValue;
-            } else if (fieldValue instanceof Integer) {
-                return ((Integer) fieldValue).longValue();
-            } else if (fieldValue instanceof Date) {
-                return TimeUnit.MILLISECONDS.toSeconds(((Date) fieldValue).getTime());
-            } else if (fieldValue instanceof String) {
+        if (fieldValue instanceof Long) {
+            return (Long) fieldValue;
+        } else if (fieldValue instanceof Integer) {
+            return ((Integer) fieldValue).longValue();
+        } else if (fieldValue instanceof Date) {
+            return TimeUnit.MILLISECONDS.toSeconds(((Date) fieldValue).getTime());
+        } else if (fieldValue instanceof String) {
+            try {
+                return Long.parseLong((String) fieldValue);
+            } catch (NumberFormatException e) {
                 try {
-                    return Long.parseLong((String) fieldValue);
-                } catch (NumberFormatException e) {
-                    try {
-                        return Instant.parse((String) fieldValue).getEpochSecond();
-                    } catch (DateTimeException dateException) {
-                        throw new FilterException("Could not parse String value as timestamp: " + fieldValue);
-                    }
+                    return Instant.parse((String) fieldValue).getEpochSecond();
+                } catch (DateTimeException dateException) {
+                    throw new FilterException("Could not parse String value as timestamp: " + fieldValue);
                 }
-            } else if (fieldValue instanceof DynamicMessage) {
-                DynamicMessage dynamicMsg = (DynamicMessage) fieldValue;
-                String typeName = dynamicMsg.getDescriptorForType().getFullName();
-                if ("google.protobuf.Timestamp".equals(typeName)) {
-                    return extractFromDynamicTimestamp(dynamicMsg);
-                }
-                firehoseInstrumentation.logDebug("Unrecognized DynamicMessage type: {}", typeName);
-                firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
-                throw new FilterException("Unsupported DynamicMessage type: " + typeName);
-            } else if (isProtobufTimestamp(fieldValue)) {
-                return extractFromProtobufTimestamp(fieldValue);
-            } else {
-                firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
-                throw new FilterException("Unsupported timestamp field type: " + fieldValue.getClass().getName());
             }
-        } catch (Exception e) {
-            if (!(e instanceof FilterException)) {
-                e = new FilterException("Error extracting timestamp from value: " + fieldValue, e);
+        } else if (fieldValue instanceof DynamicMessage) {
+            DynamicMessage dynamicMsg = (DynamicMessage) fieldValue;
+            String typeName = dynamicMsg.getDescriptorForType().getFullName();
+            if ("google.protobuf.Timestamp".equals(typeName)) {
+                return extractFromDynamicTimestamp(dynamicMsg);
             }
-            throw (FilterException) e;
+            firehoseInstrumentation.logDebug("Unrecognized DynamicMessage type: {}", typeName);
+            firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
+            throw new FilterException("Unsupported DynamicMessage type: " + typeName);
+        } else if (isProtobufTimestamp(fieldValue)) {
+            return extractFromProtobufTimestamp(fieldValue);
+        } else {
+            firehoseInstrumentation.captureCount(UNSUPPORTED_TYPE_ERRORS, 1L);
+            throw new FilterException("Unsupported timestamp field type: " + fieldValue.getClass().getName());
         }
     }
 
