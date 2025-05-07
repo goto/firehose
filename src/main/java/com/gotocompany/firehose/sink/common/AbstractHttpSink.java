@@ -61,7 +61,14 @@ public abstract class AbstractHttpSink extends AbstractSink {
                     printRequest(httpRequests.get(i), contentStringList);
                 }
                 if (shouldRetry(response)) {
-                    failedMessages.add(sourceMessages.get(i));
+                    if (sourceMessages.size() == httpRequests.size()) {
+                        failedMessages.add(sourceMessages.get(i));
+                    } else {
+                        int batchSize = sourceMessages.size() / httpRequests.size();
+                        int batchStartIndex = i * batchSize;
+                        int batchEndIndex = Math.min((i + 1) * batchSize, sourceMessages.size());
+                        failedMessages.addAll(sourceMessages.subList(batchStartIndex, batchEndIndex));
+                    }
                 } else if (!Pattern.compile(SUCCESS_CODE_PATTERN).matcher(String.valueOf(response.getStatusLine().getStatusCode())).matches()) {
                     contentStringList = contentStringList == null ? readContent(httpRequests.get(i)) : contentStringList;
                     captureMessageDropCount(response, contentStringList);
