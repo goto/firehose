@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sinkdecorator;
 
 import com.gotocompany.firehose.config.DlqConfig;
 import com.gotocompany.firehose.config.ErrorConfig;
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.error.ErrorHandler;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
@@ -180,9 +181,9 @@ public class SinkWithDlqTest {
     @Test
     public void shouldCommitOffsetsOfDlqMessagesWhenSinkManageOffset() throws IOException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, 0, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
-        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, 0, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
-        Message message3 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 3, null, 0, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, 0, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF);
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, 0, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF);
+        Message message3 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 3, null, 0, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF);
 
         ArrayList<Message> messages = new ArrayList<>();
         messages.add(message1);

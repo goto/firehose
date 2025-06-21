@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.dlq;
 
 import com.gotocompany.depot.error.ErrorInfo;
 import com.gotocompany.depot.error.ErrorType;
+import com.gotocompany.firehose.config.enums.InputSchemaType;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.sink.dlq.log.LogDlqWriter;
@@ -35,7 +36,7 @@ public class LogDlqWriterTest {
     @Test
     public void shouldWriteMessagesToLog() throws IOException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF);
 
         String key = new String(message.getLogKey());
         String value = new String(message.getLogMessage());
@@ -51,7 +52,7 @@ public class LogDlqWriterTest {
     @Test
     public void shouldWriteMessagesToLogWhenKeyIsNull() throws IOException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        Message message = new Message(null, "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message = new Message(null, "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF);
 
         String value = new String(message.getLogMessage());
         ErrorInfo errorInfo = message.getErrorInfo();
@@ -66,7 +67,7 @@ public class LogDlqWriterTest {
     @Test
     public void shouldWriteMessagesToLogWhenValueIsNull() throws IOException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        Message message = new Message("123".getBytes(), null, "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message = new Message("123".getBytes(), null, "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF);
 
         String key = new String(message.getLogKey());
         ErrorInfo errorInfo = message.getErrorInfo();
@@ -81,7 +82,7 @@ public class LogDlqWriterTest {
     @Test
     public void shouldWriteMessagesToLogWhenErrorInfoIsNull() throws IOException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, null);
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, null, InputSchemaType.PROTOBUF);
 
         String key = new String(message.getLogKey());
         String value = new String(message.getLogMessage());
@@ -95,7 +96,7 @@ public class LogDlqWriterTest {
     @Test
     public void shouldWriteMessagesToLogWhenErrorInfoExceptionIsNull() throws IOException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(null, ErrorType.DESERIALIZATION_ERROR));
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(null, ErrorType.DESERIALIZATION_ERROR), InputSchemaType.PROTOBUF);
 
         String key = new String(message.getLogKey());
         String value = new String(message.getLogMessage());
