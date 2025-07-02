@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
@@ -31,12 +32,16 @@ import static com.gotocompany.firehose.config.enums.FilterDataSourceType.KEY;
  */
 public class JsonFilter implements Filter {
 
+    private static final String METRIC_PREFIX = "firehose_json_filter_";
+    private static final String DESERIALIZATION_ERRORS = METRIC_PREFIX + "deserialization_errors_total";
+
     private final FilterConfig filterConfig;
     private final FirehoseInstrumentation firehoseInstrumentation;
     private final JsonSchema schema;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private JsonFormat.Printer jsonPrinter;
     private Parser parser;
+    private final boolean dropDeserializationError;
 
     /**
      * Instantiates a new Json filter.
@@ -47,6 +52,7 @@ public class JsonFilter implements Filter {
     public JsonFilter(StencilClient stencilClient, FilterConfig filterConfig, FirehoseInstrumentation firehoseInstrumentation) {
         this.firehoseInstrumentation = firehoseInstrumentation;
         this.filterConfig = filterConfig;
+        this.dropDeserializationError = filterConfig.getFilterDropDeserializationError();
         JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
         this.schema = schemaFactory.getSchema(filterConfig.getFilterJsonSchema());
         if (filterConfig.getFilterESBMessageFormat() == FilterMessageFormatType.PROTOBUF) {
@@ -68,7 +74,7 @@ public class JsonFilter implements Filter {
         for (Message message : messages) {
             byte[] data = (filterConfig.getFilterDataSource().equals(KEY)) ? message.getLogKey() : message.getLogMessage();
             String jsonMessage = deserialize(data);
-            if (evaluate(jsonMessage)) {
+            if (jsonMessage != null && evaluate(jsonMessage)) {
                 filteredMessages.addToValidMessages(message);
             } else {
                 filteredMessages.addToInvalidMessages(message);
@@ -99,9 +105,14 @@ public class JsonFilter implements Filter {
                 try {
                     DynamicMessage message = parser.parse(data);
                     return jsonPrinter.print(message);
-
                 } catch (Exception e) {
-                    throw new FilterException("Failed to parse Protobuf message", e);
+                    if (dropDeserializationError && (e instanceof InvalidProtocolBufferException || e.getCause() instanceof InvalidProtocolBufferException)) {
+                        firehoseInstrumentation.captureCount(DESERIALIZATION_ERRORS, 1L);
+                        firehoseInstrumentation.logWarn("Failed to deserialize protobuf message: {}", e.getMessage());
+                        return null;
+                    } else {
+                        throw new FilterException("Failed to parse Protobuf message", e);
+                    }
                 }
             case JSON:
                 return new String(data, Charset.defaultCharset());
