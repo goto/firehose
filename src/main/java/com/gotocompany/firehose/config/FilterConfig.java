@@ -37,7 +37,7 @@ public interface FilterConfig extends Config {
     String getFilterTimestampFieldName();
 
     @Key("FILTER_DROP_DESERIALIZATION_ERROR")
-    @DefaultValue("true")
+    @DefaultValue("false")
     Boolean getFilterDropDeserializationError();
 
     @Key("FILTER_TIMESTAMP_PAST_WINDOW_SECONDS")
