@@ -72,9 +72,9 @@ Time window in seconds for future timestamps. Messages with timestamps newer tha
 
 ## `FILTER_DROP_DESERIALIZATION_ERROR`
 
-Whether to drop messages with deserialization errors when using timestamp filter.
+Whether to drop messages with protobuf deserialization errors instead of failing the entire batch. Applies to all filter types (JSON, JEXL, Timestamp) when processing protobuf messages.
 
-* Example value: `false`
+* Example value: `true`
 * Type: `optional`
-* Default value: `true`
+* Default value: `false`
 

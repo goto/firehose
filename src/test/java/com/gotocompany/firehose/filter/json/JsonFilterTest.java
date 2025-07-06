@@ -261,4 +261,93 @@ public class JsonFilterTest {
         jsonFilter.filter(Arrays.asList(message1, message2));
         verify(firehoseInstrumentation, times(1)).logDebug("Message filtered out due to: {}", "$.order_number: must be a constant value 123");
     }
+
+    @Test
+    public void shouldDropProtobufMessageWhenDeserializationFailsAndDropConfigEnabled() throws FilterException {
+        Message invalidMessage = new Message(new byte[]{1, 2}, new byte[]{1, 2, 3}, "topic1", 0, 100);
+        Message validMessage = new Message(testKeyProto1.toByteArray(), testMessageProto1.toByteArray(), "topic1", 0, 101);
+        Map<String, String> filterConfigs = new HashMap<>();
+        filterConfigs.put("FILTER_DATA_SOURCE", "message");
+        filterConfigs.put("FILTER_ESB_MESSAGE_FORMAT", "PROTOBUF");
+        filterConfigs.put("FILTER_JSON_SCHEMA", "{\"properties\":{\"order_number\":{\"const\":\"123\"}}}");
+        filterConfigs.put("FILTER_SCHEMA_PROTO_CLASS", TestMessage.class.getName());
+        filterConfigs.put("FILTER_DROP_DESERIALIZATION_ERROR", "true");
+        filterConfig = ConfigFactory.create(FilterConfig.class, filterConfigs);
+        jsonFilter = new JsonFilter(stencilClient, filterConfig, firehoseInstrumentation);
+        FilteredMessages filteredMessages = jsonFilter.filter(Arrays.asList(invalidMessage, validMessage));
+        assertEquals(1, filteredMessages.sizeOfValidMessages());
+        assertEquals(1, filteredMessages.sizeOfInvalidMessages());
+        verify(firehoseInstrumentation, times(1)).captureCount("firehose_json_filter_deserialization_errors_total", 1L);
+        verify(firehoseInstrumentation, times(1)).logWarn(eq("Failed to deserialize protobuf message: {}"), any(String.class));
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenDeserializationFailsAndDropConfigDisabled() throws FilterException {
+        Message invalidMessage = new Message(new byte[]{1, 2}, new byte[]{1, 2, 3}, "topic1", 0, 100);
+        Map<String, String> filterConfigs = new HashMap<>();
+        filterConfigs.put("FILTER_DATA_SOURCE", "message");
+        filterConfigs.put("FILTER_ESB_MESSAGE_FORMAT", "PROTOBUF");
+        filterConfigs.put("FILTER_JSON_SCHEMA", "{\"properties\":{\"order_number\":{\"const\":\"123\"}}}");
+        filterConfigs.put("FILTER_SCHEMA_PROTO_CLASS", TestMessage.class.getName());
+        filterConfigs.put("FILTER_DROP_DESERIALIZATION_ERROR", "false");
+        filterConfig = ConfigFactory.create(FilterConfig.class, filterConfigs);
+        jsonFilter = new JsonFilter(stencilClient, filterConfig, firehoseInstrumentation);
+        thrown.expect(FilterException.class);
+        thrown.expectMessage("Failed to parse Protobuf message");
+        jsonFilter.filter(Arrays.asList(invalidMessage));
+    }
+
+    @Test
+    public void shouldNotDropJsonMessageWhenDeserializationFailsEvenWithDropConfigEnabled() throws FilterException {
+        Message invalidMessage = new Message(new byte[]{1, 2}, new byte[]{1, 2, 3}, "topic1", 0, 100);
+        Map<String, String> filterConfigs = new HashMap<>();
+        filterConfigs.put("FILTER_DATA_SOURCE", "key");
+        filterConfigs.put("FILTER_ESB_MESSAGE_FORMAT", "JSON");
+        filterConfigs.put("FILTER_JSON_SCHEMA", "{\"properties\":{\"order_number\":{\"const\":\"123\"}}}");
+        filterConfigs.put("FILTER_DROP_DESERIALIZATION_ERROR", "true");
+        filterConfig = ConfigFactory.create(FilterConfig.class, filterConfigs);
+        jsonFilter = new JsonFilter(stencilClient, filterConfig, firehoseInstrumentation);
+        thrown.expect(FilterException.class);
+        thrown.expectMessage("Failed to parse JSON message");
+        jsonFilter.filter(Arrays.asList(invalidMessage));
+    }
+
+    @Test
+    public void shouldNotCaptureMetricsWhenDropConfigDisabled() throws FilterException {
+        Message invalidMessage = new Message(new byte[]{1, 2}, new byte[]{1, 2, 3}, "topic1", 0, 100);
+        Map<String, String> filterConfigs = new HashMap<>();
+        filterConfigs.put("FILTER_DATA_SOURCE", "message");
+        filterConfigs.put("FILTER_ESB_MESSAGE_FORMAT", "PROTOBUF");
+        filterConfigs.put("FILTER_JSON_SCHEMA", "{\"properties\":{\"order_number\":{\"const\":\"123\"}}}");
+        filterConfigs.put("FILTER_SCHEMA_PROTO_CLASS", TestMessage.class.getName());
+        filterConfigs.put("FILTER_DROP_DESERIALIZATION_ERROR", "false");
+        filterConfig = ConfigFactory.create(FilterConfig.class, filterConfigs);
+        jsonFilter = new JsonFilter(stencilClient, filterConfig, firehoseInstrumentation);
+        try {
+            jsonFilter.filter(Arrays.asList(invalidMessage));
+        } catch (FilterException e) {
+        }
+        verify(firehoseInstrumentation, never()).captureCount(eq("firehose_json_filter_deserialization_errors_total"), any(Long.class));
+        verify(firehoseInstrumentation, never()).logWarn(eq("Failed to deserialize protobuf message: {}"), any(String.class));
+    }
+
+    @Test
+    public void shouldDropMultipleInvalidProtobufMessagesAndCaptureCorrectMetrics() throws FilterException {
+        Message invalidMessage1 = new Message(new byte[]{1, 2}, new byte[]{1, 2, 3}, "topic1", 0, 100);
+        Message invalidMessage2 = new Message(new byte[]{4, 5}, new byte[]{4, 5, 6}, "topic1", 0, 101);
+        Message validMessage = new Message(testKeyProto1.toByteArray(), testMessageProto1.toByteArray(), "topic1", 0, 102);
+        Map<String, String> filterConfigs = new HashMap<>();
+        filterConfigs.put("FILTER_DATA_SOURCE", "message");
+        filterConfigs.put("FILTER_ESB_MESSAGE_FORMAT", "PROTOBUF");
+        filterConfigs.put("FILTER_JSON_SCHEMA", "{\"properties\":{\"order_number\":{\"const\":\"123\"}}}");
+        filterConfigs.put("FILTER_SCHEMA_PROTO_CLASS", TestMessage.class.getName());
+        filterConfigs.put("FILTER_DROP_DESERIALIZATION_ERROR", "true");
+        filterConfig = ConfigFactory.create(FilterConfig.class, filterConfigs);
+        jsonFilter = new JsonFilter(stencilClient, filterConfig, firehoseInstrumentation);
+        FilteredMessages filteredMessages = jsonFilter.filter(Arrays.asList(invalidMessage1, invalidMessage2, validMessage));
+        assertEquals(1, filteredMessages.sizeOfValidMessages());
+        assertEquals(2, filteredMessages.sizeOfInvalidMessages());
+        verify(firehoseInstrumentation, times(2)).captureCount("firehose_json_filter_deserialization_errors_total", 1L);
+        verify(firehoseInstrumentation, times(2)).logWarn(eq("Failed to deserialize protobuf message: {}"), any(String.class));
+    }
 }
