@@ -9,7 +9,9 @@ import com.google.gson.Gson;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.gotocompany.stencil.Parser;
 import org.json.simple.parser.JSONParser;
@@ -33,6 +35,8 @@ public class MessageToTemplatizedJson implements MessageSerializer {
     private HashSet<String> pathsToReplace;
     private JSONParser jsonParser;
     private FirehoseInstrumentation firehoseInstrumentation;
+    private final Configuration jsonPathConfig = Configuration.defaultConfiguration()
+            .addOptions(Option.SUPPRESS_EXCEPTIONS);
 
     public static MessageToTemplatizedJson create(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser) {
         MessageToTemplatizedJson messageToTemplatizedJson = new MessageToTemplatizedJson(firehoseInstrumentation, httpSinkJsonBodyTemplate, protoParser);
@@ -85,13 +89,8 @@ public class MessageToTemplatizedJson implements MessageSerializer {
                 if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {
                     jsonString = jsonMessage;
                 } else {
-                    try {
-                        Object element = JsonPath.read(jsonMessage, path.replaceAll("\"", ""));
-                        jsonString = gson.toJson(element);
-                    } catch (PathNotFoundException e) {
-                        jsonString = "";
-                        firehoseInstrumentation.logDebug("Path not found: {}, using empty value", path);
-                    }
+                    Object element = JsonPath.using(jsonPathConfig).parse(jsonMessage).read(path.replaceAll("\"", ""));
+                    jsonString = (element == null) ? "" : gson.toJson(element);
                 }
                 finalMessage = finalMessage.replace(path, jsonString);
             }
