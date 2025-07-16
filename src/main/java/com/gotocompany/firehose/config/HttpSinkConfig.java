@@ -1,6 +1,12 @@
 package com.gotocompany.firehose.config;
 
-import com.gotocompany.firehose.config.converter.*;
+import com.gotocompany.firehose.config.converter.RangeToHashMapConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkRequestMethodConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkParameterSourceTypeConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkParameterDataFormatConverter;
+import com.gotocompany.firehose.config.converter.HttpJsonBodyTemplateParseOptionConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkParameterPlacementTypeConverter;
+import com.gotocompany.firehose.config.converter.HttpSinkSerializerJsonTypecastConfigConverter;
 import com.gotocompany.firehose.config.enums.HttpSinkDataFormatType;
 import com.gotocompany.firehose.config.enums.HttpSinkParameterPlacementType;
 import com.gotocompany.firehose.config.enums.HttpSinkParameterSourceType;
