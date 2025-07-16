@@ -1,15 +1,11 @@
 package com.gotocompany.firehose.config;
 
-import com.gotocompany.firehose.config.converter.HttpSinkSerializerJsonTypecastConfigConverter;
+import com.gotocompany.firehose.config.converter.*;
 import com.gotocompany.firehose.config.enums.HttpSinkDataFormatType;
 import com.gotocompany.firehose.config.enums.HttpSinkParameterPlacementType;
 import com.gotocompany.firehose.config.enums.HttpSinkParameterSourceType;
 import com.gotocompany.firehose.config.enums.HttpSinkRequestMethodType;
-import com.gotocompany.firehose.config.converter.HttpSinkRequestMethodConverter;
-import com.gotocompany.firehose.config.converter.HttpSinkParameterDataFormatConverter;
-import com.gotocompany.firehose.config.converter.HttpSinkParameterPlacementTypeConverter;
-import com.gotocompany.firehose.config.converter.HttpSinkParameterSourceTypeConverter;
-import com.gotocompany.firehose.config.converter.RangeToHashMapConverter;
+import com.jayway.jsonpath.Option;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -79,6 +75,11 @@ public interface HttpSinkConfig extends AppConfig {
     @Key("SINK_HTTP_JSON_BODY_TEMPLATE")
     @DefaultValue("")
     String getSinkHttpJsonBodyTemplate();
+
+    @Key("SINK_HTTP_JSON_BODY_TEMPLATE_PARSE_OPTION")
+    @DefaultValue("")
+    @ConverterClass(HttpJsonBodyTemplateParseOptionConverter.class)
+    Option getSinkHttpJsonBodyTemplateParseOption();
 
     @Key("SINK_HTTP_PARAMETER_PLACEMENT")
     @DefaultValue("header")

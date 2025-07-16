@@ -39,7 +39,7 @@ public class SerializerFactory {
             } else {
                 firehoseInstrumentation.logDebug("Serializer type: EsbMessageToTemplatizedJson");
                 return getTypecastedJsonSerializer(
-                        MessageToTemplatizedJson.create(new FirehoseInstrumentation(statsDReporter, MessageToTemplatizedJson.class), httpSinkConfig.getSinkHttpJsonBodyTemplate(), protoParser));
+                        MessageToTemplatizedJson.create(new FirehoseInstrumentation(statsDReporter, MessageToTemplatizedJson.class), httpSinkConfig.getSinkHttpJsonBodyTemplate(), protoParser, httpSinkConfig.getSinkHttpJsonBodyTemplateParseOption()));
             }
         }
 
