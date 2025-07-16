@@ -85,8 +85,13 @@ public class MessageToTemplatizedJson implements MessageSerializer {
                 if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {
                     jsonString = jsonMessage;
                 } else {
-                    Object element = JsonPath.read(jsonMessage, path.replaceAll("\"", ""));
-                    jsonString = gson.toJson(element);
+                    try {
+                        Object element = JsonPath.read(jsonMessage, path.replaceAll("\"", ""));
+                        jsonString = gson.toJson(element);
+                    } catch (PathNotFoundException e) {
+                        jsonString = "";
+                        firehoseInstrumentation.logDebug("Path not found: {}, using empty value", path);
+                    }
                 }
                 finalMessage = finalMessage.replace(path, jsonString);
             }
