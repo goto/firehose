@@ -34,15 +34,13 @@ public class MessageToTemplatizedJson implements MessageSerializer {
     private Parser protoParser;
     private HashSet<String> pathsToReplace;
     private JSONParser jsonParser;
-    private final Configuration jsonPathConfig;
+    private Configuration jsonPathConfig;
     private FirehoseInstrumentation firehoseInstrumentation;
 
     public static MessageToTemplatizedJson create(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser, Option option) {
         MessageToTemplatizedJson messageToTemplatizedJson = new MessageToTemplatizedJson(firehoseInstrumentation, httpSinkJsonBodyTemplate, protoParser, option);
         if (messageToTemplatizedJson.isInvalidJson()) {
-            throw new ConfigurationException("Given HTTPSink JSON body template :"
-                    + httpSinkJsonBodyTemplate
-                    + ", must be a valid JSON.");
+            throw new ConfigurationException("Given HTTPSink JSON body template: " + httpSinkJsonBodyTemplate + " must be a valid JSON.");
         }
         messageToTemplatizedJson.setPathsFromTemplate();
         return messageToTemplatizedJson;
@@ -53,7 +51,9 @@ public class MessageToTemplatizedJson implements MessageSerializer {
         this.protoParser = protoParser;
         this.jsonParser = new JSONParser();
         this.gson = new Gson();
-        this.jsonPathConfig = Configuration.defaultConfiguration().addOptions(option);
+        this.jsonPathConfig = option == null
+                ? Configuration.defaultConfiguration()
+                : Configuration.defaultConfiguration().addOptions(option);
         this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
@@ -85,15 +85,6 @@ public class MessageToTemplatizedJson implements MessageSerializer {
             DynamicMessage msg = protoParser.parse(message.getLogMessage());
             jsonMessage = JsonFormat.printer().includingDefaultValueFields().preservingProtoFieldNames().print(msg);
             String finalMessage = httpSinkJsonBodyTemplate;
-            for (String path : pathsToReplace) {
-                if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {
-                    jsonString = jsonMessage;
-                } else {
-                    Object element = JsonPath.read(jsonMessage, path.replaceAll("\"", ""));
-                    jsonString = gson.toJson(element);
-                }
-                finalMessage = finalMessage.replace(path, jsonString);
-            }
 
             for (String path : pathsToReplace) {
                 if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {

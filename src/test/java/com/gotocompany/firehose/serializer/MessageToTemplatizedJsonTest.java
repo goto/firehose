@@ -55,7 +55,7 @@ public class MessageToTemplatizedJsonTest {
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
         MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                .create(firehoseInstrumentation, template, protoParser);
+                .create(firehoseInstrumentation, template, protoParser, null);
         Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                 Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -69,8 +69,7 @@ public class MessageToTemplatizedJsonTest {
         String template = "\"$._all_\"";
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
-        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                .create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
         Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                 Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -94,8 +93,7 @@ public class MessageToTemplatizedJsonTest {
         String template = "{\"test\":\"$.invalidPath\"}";
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
-        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                .create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
         Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                 Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -108,7 +106,7 @@ public class MessageToTemplatizedJsonTest {
         expectedException.expectMessage("must be a valid JSON.");
 
         String template = "{\"test:\"$.routes[0]\", \"$.order_number\" : \"xxx\"}";
-        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
     }
 
 
@@ -118,7 +116,7 @@ public class MessageToTemplatizedJsonTest {
         expectedException.expectMessage("must be a valid JSON.");
 
         String template = "{\"test:\"$.routes[0]\", \"$.order_number\" : \"xxx\"}";
-        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
     }
 
     @Test
@@ -136,7 +134,7 @@ public class MessageToTemplatizedJsonTest {
 
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
-        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
 
         Mockito.verify(firehoseInstrumentation, Mockito.times(1)).logDebug("\nPaths: {}", pathList);
     }
