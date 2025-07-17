@@ -91,7 +91,8 @@ public class MessageToTemplatizedJson implements MessageSerializer {
                     jsonString = jsonMessage;
                 } else {
                     Object element = JsonPath.using(jsonPathConfig).parse(jsonMessage).read(path.replaceAll("\"", ""));
-                    if (element == null && jsonPathConfig.getOptions().contains(Option.SUPPRESS_EXCEPTIONS)) {
+                    if (element == null && (jsonPathConfig.getOptions().contains(Option.DEFAULT_PATH_LEAF_TO_NULL)
+                            || jsonPathConfig.getOptions().contains(Option.SUPPRESS_EXCEPTIONS))) {
                         firehoseInstrumentation.logWarn("Missing value for path: {}", path);
                         jsonString = "";
                     } else {
