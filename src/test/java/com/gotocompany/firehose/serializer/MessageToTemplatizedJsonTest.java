@@ -73,7 +73,7 @@ public class MessageToTemplatizedJsonTest {
             StencilClient stencilClient = StencilClientFactory.getClient();
             protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
             MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                    .create(firehoseInstrumentation, template, protoParser,option);
+                    .create(firehoseInstrumentation, template, protoParser, option);
             Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                     Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -91,7 +91,7 @@ public class MessageToTemplatizedJsonTest {
             StencilClient stencilClient = StencilClientFactory.getClient();
             protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
             MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                    .create(firehoseInstrumentation, template, protoParser,option);
+                    .create(firehoseInstrumentation, template, protoParser, option);
             Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                     Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -111,7 +111,7 @@ public class MessageToTemplatizedJsonTest {
             StencilClient stencilClient = StencilClientFactory.getClient();
             protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
             MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                    .create(firehoseInstrumentation, template, protoParser,option);
+                    .create(firehoseInstrumentation, template, protoParser, option);
             Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                     Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -141,7 +141,7 @@ public class MessageToTemplatizedJsonTest {
 
     @Test
     public void shouldGiveEmptyFieldInMessageWithSuppressExceptionsWhenFieldDoesNotExistAndMapIsUsed() {
-        String template ="{\"test\":\"$.vehicle_type\", \"test2\":\"$.xyz\", \"test3\":\"$.field1.value1.field2.value2\"}";
+        String template = "{\"test\":\"$.vehicle_type\", \"test2\":\"$.xyz\", \"test3\":\"$.field1.value1.field2.value2\"}";
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
         MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
@@ -162,7 +162,7 @@ public class MessageToTemplatizedJsonTest {
             StencilClient stencilClient = StencilClientFactory.getClient();
             protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
             MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                    .create(firehoseInstrumentation, template, protoParser,option);
+                    .create(firehoseInstrumentation, template, protoParser, option);
             Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                     Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -182,7 +182,7 @@ public class MessageToTemplatizedJsonTest {
             StencilClient stencilClient = StencilClientFactory.getClient();
             protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
             MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                    .create(firehoseInstrumentation, template, protoParser,option);
+                    .create(firehoseInstrumentation, template, protoParser, option);
             Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                     Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
