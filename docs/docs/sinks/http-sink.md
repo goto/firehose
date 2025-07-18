@@ -160,3 +160,25 @@ Currently supported typecasting target: DOUBLE, INTEGER, LONG, STRING
 - Example value: `[{"jsonPath": "$.root.someIntegerField", "type": "INTEGER"}, {"jsonPath": "$..[*].doubleField", "type": "DOUBLE"}]`
 - Type: `optional`
 - Default Value: `[]`
+
+### `SINK_HTTP_JSON_BODY_TEMPLATE_PARSE_OPTION`
+
+Defines the parsing options for the JSON body template. This configuration controls how JsonPath expressions behave when parsing the protobuf message to extract values for the template.
+**Available Options:**
+
+- **`DEFAULT_PATH_LEAF_TO_NULL`**: Returns `null` for missing leaf properties instead of throwing exceptions. Only affects missing final properties in a path (e.g., `$.user.name` on `{"user": {}}` returns `null`). Recommended for graceful handling of optional fields.
+
+- **`ALWAYS_RETURN_LIST`**: Forces all JsonPath queries to return results as a List, even for single values. For example, `$.name` returns `["John"]` instead of `"John"`. Useful when you need consistent List return types.
+
+- **`AS_PATH_LIST`**: Returns the JsonPath expressions pointing to matching nodes instead of their actual values. For example, returns `["$['users'][0]['name']"]` instead of `"John"`. Useful when you need to know data location rather than the data itself.
+
+- **`SUPPRESS_EXCEPTIONS`**: Suppresses ALL exceptions during JsonPath evaluation and returns `null` or empty collections for any errors (syntax errors, missing paths, type errors). Provides complete fault tolerance but less specific error handling.
+
+- **`REQUIRE_PROPERTIES`**: Throws exceptions if any property referenced in the path doesn't exist. Opposite of `DEFAULT_PATH_LEAF_TO_NULL` - enforces strict validation that all path components exist.
+
+**Key Differences:**
+- `SUPPRESS_EXCEPTIONS` vs `DEFAULT_PATH_LEAF_TO_NULL`: The former suppresses all types of exceptions broadly, while the latter only handles missing leaf properties specifically, allowing other exceptions (like syntax errors) to still be thrown for better debugging.
+
+- Example value: `DEFAULT_PATH_LEAF_TO_NULL`
+- Type: `optional`
+- Default Value: `""`

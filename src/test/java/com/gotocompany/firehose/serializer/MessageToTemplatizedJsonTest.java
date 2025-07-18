@@ -11,6 +11,7 @@ import com.gotocompany.firehose.consumer.TestAggregatedSupplyMessage;
 import com.gotocompany.stencil.StencilClientFactory;
 import com.gotocompany.stencil.client.StencilClient;
 import com.gotocompany.stencil.Parser;
+import com.jayway.jsonpath.Option;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,7 +56,7 @@ public class MessageToTemplatizedJsonTest {
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
         MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                .create(firehoseInstrumentation, template, protoParser);
+                .create(firehoseInstrumentation, template, protoParser, null);
         Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                 Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -65,12 +66,171 @@ public class MessageToTemplatizedJsonTest {
     }
 
     @Test
+    public void shouldProperlySerializeMessageToTemplateWithAllOptionConfigurationWhenFieldsExist() {
+        Option[] options = {Option.DEFAULT_PATH_LEAF_TO_NULL, Option.SUPPRESS_EXCEPTIONS, Option.REQUIRE_PROPERTIES};
+        for (Option option : options) {
+            String template = "{\"test\":\"$.vehicle_type\"}";
+            StencilClient stencilClient = StencilClientFactory.getClient();
+            protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+            MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                    .create(firehoseInstrumentation, template, protoParser, option);
+            Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                    Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+            String serializedMessage = messageToTemplatizedJson.serialize(message);
+            String expectedMessage = "{\"test\":\"BIKE\"}";
+            Assert.assertEquals(expectedMessage, serializedMessage);
+        }
+    }
+
+    @Test
+    public void shouldProperlySerializeMessageToTemplateAsListWithAlwaysReturnList() {
+        Option[] options = {Option.ALWAYS_RETURN_LIST};
+        for (Option option : options) {
+            String template = "{\"test\":\"$.vehicle_type\"}";
+            StencilClient stencilClient = StencilClientFactory.getClient();
+            protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+            MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                    .create(firehoseInstrumentation, template, protoParser, option);
+            Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                    Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+            String serializedMessage = messageToTemplatizedJson.serialize(message);
+            //  Forces all path evaluations to return a list even when only a single value is found
+            //  Helps standardize return types in your application
+            String expectedMessage = "{\"test\":[\"BIKE\"]}";
+            Assert.assertEquals(expectedMessage, serializedMessage);
+        }
+    }
+
+    @Test
+    public void shouldProperlySerializeMessageToTemplateAsListOfPathWhenTheFieldIsFoundWithAsPathList() {
+        Option[] options = {Option.AS_PATH_LIST};
+        for (Option option : options) {
+            String template = "{\"test\":\"$.vehicle_type\"}";
+            StencilClient stencilClient = StencilClientFactory.getClient();
+            protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+            MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                    .create(firehoseInstrumentation, template, protoParser, option);
+            Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                    Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+            String serializedMessage = messageToTemplatizedJson.serialize(message);
+            //  Note: The serialized message will contain the path as a string in the list
+            //  Returns path references instead of actual values
+            //  Useful when you need to know the paths where matches were found rather than the values
+            String expectedMessage = "{\"test\":[\"$[\\u0027vehicle_type\\u0027]\"]}";
+            Assert.assertEquals(expectedMessage, serializedMessage);
+        }
+    }
+
+    @Test
+    public void shouldProperlySerializeMessageToTemplateWithConfigSuppressExceptions() {
+        String template = "{\"test\":\"$.vehicle_type\"}";
+        StencilClient stencilClient = StencilClientFactory.getClient();
+        protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                .create(firehoseInstrumentation, template, protoParser, Option.SUPPRESS_EXCEPTIONS);
+        Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+        String serializedMessage = messageToTemplatizedJson.serialize(message);
+        String expectedMessage = "{\"test\":\"BIKE\"}";
+        Assert.assertEquals(expectedMessage, serializedMessage);
+    }
+
+    @Test
+    public void shouldGiveEmptyFieldInMessageWithSuppressExceptionsWhenFieldDoesNotExistAndMapIsUsed() {
+        String template = "{\"test\":\"$.vehicle_type\", \"test2\":\"$.xyz\", \"test3\":\"$.field1.value1.field2.value2\"}";
+        StencilClient stencilClient = StencilClientFactory.getClient();
+        protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                .create(firehoseInstrumentation, template, protoParser, Option.SUPPRESS_EXCEPTIONS);
+        Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+        String serializedMessage = messageToTemplatizedJson.serialize(message);
+        String expectedMessage = "{\"test\":\"BIKE\", \"test2\":, \"test3\":}";
+        Assert.assertEquals(expectedMessage, serializedMessage);
+    }
+
+    @Test
+    public void shouldGiveEmptyFieldInMessageWithDefaultPathLeafToNullWhenFieldDoesNotExist() {
+        Option[] options = {Option.DEFAULT_PATH_LEAF_TO_NULL, Option.SUPPRESS_EXCEPTIONS};
+        for (Option option : options) {
+            String template = "{\"test\":\"$.vehicle_type\", \"test2\":\"$.xyz\"}";
+            StencilClient stencilClient = StencilClientFactory.getClient();
+            protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+            MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                    .create(firehoseInstrumentation, template, protoParser, option);
+            Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                    Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+            String serializedMessage = messageToTemplatizedJson.serialize(message);
+            String expectedMessage = "{\"test\":\"BIKE\", \"test2\":}";
+            Assert.assertEquals(expectedMessage, serializedMessage);
+        }
+    }
+
+    @Test
+    public void shouldFailWithNoPathFoundExceptionWithDefaultPathLeafToNullWhenMapFieldDoesNotExist() {
+        Option[] options = {Option.DEFAULT_PATH_LEAF_TO_NULL};
+        for (Option option : options) {
+            expectedException.expect(DeserializerException.class);
+            expectedException.expectMessage("Missing property in path $['field1']");
+            String template = "{\"test\":\"$.vehicle_type\", \"test2\":\"$.xyz\", \"test3\":\"$.field1.value1.field2.value2\"}";
+            StencilClient stencilClient = StencilClientFactory.getClient();
+            protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+            MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                    .create(firehoseInstrumentation, template, protoParser, option);
+            Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                    Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+            String serializedMessage = messageToTemplatizedJson.serialize(message);
+
+        }
+    }
+
+    @Test
+    public void shouldFailWithDeserializerExceptionForListOptionsWhenFieldDoesNotExist() {
+        Option[] options = {Option.ALWAYS_RETURN_LIST, Option.AS_PATH_LIST, Option.REQUIRE_PROPERTIES};
+        for (Option option : options) {
+            expectedException.expect(DeserializerException.class);
+            expectedException.expectMessage("No results for path: $['xyz']");
+            String template = "{\"test\":\"$.vehicle_type\", \"test2\":\"$.xyz\"}";
+            StencilClient stencilClient = StencilClientFactory.getClient();
+            protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+            MessageToTemplatizedJson messageToTemplatizedJson =
+                    MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, option);
+            Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                    Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+            messageToTemplatizedJson.serialize(message);
+        }
+    }
+
+    @Test
+    public void shouldFailWithIllegalArgumentExceptionWithBadConfigHttpJsonBodyTemplateParseOptionConverter() {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No enum constant com.jayway.jsonpath.Option.abc");
+
+        String template = "{\"test\":\"$.vehicle_type\", \"test2\":\"$.xyz\"}";
+        StencilClient stencilClient = StencilClientFactory.getClient();
+        protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
+                .create(firehoseInstrumentation, template, protoParser, Option.valueOf("abc"));
+        Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
+                Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
+
+        messageToTemplatizedJson.serialize(message);
+    }
+
+    @Test
     public void shouldProperlySerializeMessageToTemplateWithAsItIs() {
         String template = "\"$._all_\"";
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
-        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                .create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
         Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                 Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -94,8 +254,7 @@ public class MessageToTemplatizedJsonTest {
         String template = "{\"test\":\"$.invalidPath\"}";
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
-        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson
-                .create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson messageToTemplatizedJson = MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
         Message message = new Message(Base64.getDecoder().decode(logKey.getBytes()),
                 Base64.getDecoder().decode(logMessage.getBytes()), "sample-topic", 0, 100);
 
@@ -108,7 +267,7 @@ public class MessageToTemplatizedJsonTest {
         expectedException.expectMessage("must be a valid JSON.");
 
         String template = "{\"test:\"$.routes[0]\", \"$.order_number\" : \"xxx\"}";
-        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
     }
 
 
@@ -118,7 +277,7 @@ public class MessageToTemplatizedJsonTest {
         expectedException.expectMessage("must be a valid JSON.");
 
         String template = "{\"test:\"$.routes[0]\", \"$.order_number\" : \"xxx\"}";
-        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
     }
 
     @Test
@@ -136,7 +295,7 @@ public class MessageToTemplatizedJsonTest {
 
         StencilClient stencilClient = StencilClientFactory.getClient();
         protoParser = stencilClient.getParser(TestAggregatedSupplyMessage.class.getName());
-        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser);
+        MessageToTemplatizedJson.create(firehoseInstrumentation, template, protoParser, null);
 
         Mockito.verify(firehoseInstrumentation, Mockito.times(1)).logDebug("\nPaths: {}", pathList);
     }

@@ -9,7 +9,9 @@ import com.google.gson.Gson;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.gotocompany.stencil.Parser;
 import org.json.simple.parser.JSONParser;
@@ -32,24 +34,26 @@ public class MessageToTemplatizedJson implements MessageSerializer {
     private Parser protoParser;
     private HashSet<String> pathsToReplace;
     private JSONParser jsonParser;
+    private Configuration jsonPathConfig;
     private FirehoseInstrumentation firehoseInstrumentation;
 
-    public static MessageToTemplatizedJson create(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser) {
-        MessageToTemplatizedJson messageToTemplatizedJson = new MessageToTemplatizedJson(firehoseInstrumentation, httpSinkJsonBodyTemplate, protoParser);
+    public static MessageToTemplatizedJson create(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser, Option option) {
+        MessageToTemplatizedJson messageToTemplatizedJson = new MessageToTemplatizedJson(firehoseInstrumentation, httpSinkJsonBodyTemplate, protoParser, option);
         if (messageToTemplatizedJson.isInvalidJson()) {
-            throw new ConfigurationException("Given HTTPSink JSON body template :"
-                    + httpSinkJsonBodyTemplate
-                    + ", must be a valid JSON.");
+            throw new ConfigurationException("Given HTTPSink JSON body template: " + httpSinkJsonBodyTemplate + " must be a valid JSON.");
         }
         messageToTemplatizedJson.setPathsFromTemplate();
         return messageToTemplatizedJson;
     }
 
-    public MessageToTemplatizedJson(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser) {
+    public MessageToTemplatizedJson(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser, Option option) {
         this.httpSinkJsonBodyTemplate = httpSinkJsonBodyTemplate;
         this.protoParser = protoParser;
         this.jsonParser = new JSONParser();
         this.gson = new Gson();
+        this.jsonPathConfig = option == null
+                ? Configuration.defaultConfiguration()
+                : Configuration.defaultConfiguration().addOptions(option);
         this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
@@ -81,15 +85,23 @@ public class MessageToTemplatizedJson implements MessageSerializer {
             DynamicMessage msg = protoParser.parse(message.getLogMessage());
             jsonMessage = JsonFormat.printer().includingDefaultValueFields().preservingProtoFieldNames().print(msg);
             String finalMessage = httpSinkJsonBodyTemplate;
+
             for (String path : pathsToReplace) {
                 if (path.equals(ALL_FIELDS_FROM_TEMPLATE)) {
                     jsonString = jsonMessage;
                 } else {
-                    Object element = JsonPath.read(jsonMessage, path.replaceAll("\"", ""));
-                    jsonString = gson.toJson(element);
+                    Object element = JsonPath.using(jsonPathConfig).parse(jsonMessage).read(path.replaceAll("\"", ""));
+                    if (element == null && (jsonPathConfig.getOptions().contains(Option.DEFAULT_PATH_LEAF_TO_NULL)
+                            || jsonPathConfig.getOptions().contains(Option.SUPPRESS_EXCEPTIONS))) {
+                        firehoseInstrumentation.logWarn("Missing value for path: {}", path);
+                        jsonString = "";
+                    } else {
+                        jsonString = gson.toJson(element);
+                    }
                 }
                 finalMessage = finalMessage.replace(path, jsonString);
             }
+
             return finalMessage;
         } catch (InvalidProtocolBufferException | PathNotFoundException e) {
             throw new DeserializerException(e.getMessage());
