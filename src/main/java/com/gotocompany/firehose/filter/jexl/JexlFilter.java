@@ -1,5 +1,6 @@
 package com.gotocompany.firehose.filter.jexl;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.config.FilterConfig;
@@ -27,9 +28,14 @@ import java.util.List;
  */
 public class JexlFilter implements Filter {
 
+    private static final String METRIC_PREFIX = "firehose_jexl_filter_";
+    private static final String DESERIALIZATION_ERRORS = METRIC_PREFIX + "deserialization_errors_total";
+
     private final Expression expression;
     private final FilterDataSourceType filterDataSourceType;
     private final String protoSchema;
+    private final boolean dropDeserializationError;
+    private final FirehoseInstrumentation firehoseInstrumentation;
 
     /**
      * Instantiates a new Message filter.
@@ -43,6 +49,8 @@ public class JexlFilter implements Filter {
         engine.setStrict(true);
         this.filterDataSourceType = filterConfig.getFilterDataSource();
         this.protoSchema = filterConfig.getFilterSchemaProtoClass();
+        this.dropDeserializationError = filterConfig.getFilterDropDeserializationError();
+        this.firehoseInstrumentation = firehoseInstrumentation;
         firehoseInstrumentation.logInfo("\n\tFilter type: {}", this.filterDataSourceType);
         this.expression = engine.createExpression(filterConfig.getFilterJexlExpression());
         firehoseInstrumentation.logInfo("\n\tFilter schema: {}", this.protoSchema);
@@ -62,13 +70,25 @@ public class JexlFilter implements Filter {
         for (Message message : messages) {
             try {
                 Object data = (filterDataSourceType.equals(FilterDataSourceType.KEY)) ? message.getLogKey() : message.getLogMessage();
-                Object obj = MethodUtils.invokeStaticMethod(Class.forName(protoSchema), "parseFrom", data);
+                Object obj;
+                try {
+                    obj = MethodUtils.invokeStaticMethod(Class.forName(protoSchema), "parseFrom", data);
+                } catch (InvocationTargetException e) {
+                    if (dropDeserializationError && e.getCause() instanceof InvalidProtocolBufferException) {
+                        firehoseInstrumentation.captureCount(DESERIALIZATION_ERRORS, 1L);
+                        firehoseInstrumentation.logWarn("Failed to deserialize protobuf message: {}", e.getCause().getMessage());
+                        filteredMessages.addToInvalidMessages(message);
+                        continue;
+                    } else {
+                        throw new FilterException("Failed while filtering EsbMessages", e);
+                    }
+                }
                 if (evaluate(obj)) {
                     filteredMessages.addToValidMessages(message);
                 } else {
                     filteredMessages.addToInvalidMessages(message);
                 }
-            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException e) {
                 throw new FilterException("Failed while filtering EsbMessages", e);
             }
         }

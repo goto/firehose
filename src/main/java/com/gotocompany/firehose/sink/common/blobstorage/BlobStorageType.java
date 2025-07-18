@@ -3,5 +3,6 @@ package com.gotocompany.firehose.sink.common.blobstorage;
 public enum BlobStorageType {
     GCS,
     S3,
-    OSS
+    OSS,
+    COS
 }

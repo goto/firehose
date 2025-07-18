@@ -32,4 +32,20 @@ public interface FilterConfig extends Config {
     @Key("FILTER_JSON_SCHEMA")
     String getFilterJsonSchema();
 
+    @Key("FILTER_TIMESTAMP_PROTO_FIELD_NAME")
+    @DefaultValue("event_timestamp")
+    String getFilterTimestampFieldName();
+
+    @Key("FILTER_DROP_DESERIALIZATION_ERROR")
+    @DefaultValue("false")
+    Boolean getFilterDropDeserializationError();
+
+    @Key("FILTER_TIMESTAMP_PAST_WINDOW_SECONDS")
+    @DefaultValue("604800")
+    Long getFilterTimestampPastWindowSeconds();
+
+    @Key("FILTER_TIMESTAMP_FUTURE_WINDOW_SECONDS")
+    @DefaultValue("604800")
+    Long getFilterTimestampFutureWindowSeconds();
+
 }
