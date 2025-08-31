@@ -3,6 +3,7 @@ package com.gotocompany.firehose.config;
 import com.gotocompany.firehose.config.converter.BlobSinkFilePartitionTypeConverter;
 import com.gotocompany.firehose.config.converter.BlobSinkLocalFileWriterTypeConverter;
 import com.gotocompany.firehose.config.converter.BlobStorageTypeConverter;
+import com.gotocompany.firehose.config.enums.TimePartitionType;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageType;
 import com.gotocompany.firehose.sink.blob.Constants;
 
@@ -48,6 +49,15 @@ public interface BlobSinkConfig extends AppConfig {
 
     @Key("SINK_BLOB_FILE_PARTITION_PROTO_TIMESTAMP_FIELD_NAME")
     String getFilePartitionProtoTimestampFieldName();
+
+    @Key("SINK_BLOB_GLOBAL_FILE_ROTATION_MAX_SIZE_BYTES")
+    @DefaultValue("268435456")
+    long getGlobalFileRotationMaxSizeBytes();
+
+
+    @Key("SINK_BLOB_FILE_PARTITION_TIME_TYPE")
+    @DefaultValue("EVENT_TIMESTAMP")
+    TimePartitionType getFilePartitionTimeType();
 
     @Key("SINK_BLOB_FILE_PARTITION_TIME_GRANULARITY_TYPE")
     @DefaultValue("day")
