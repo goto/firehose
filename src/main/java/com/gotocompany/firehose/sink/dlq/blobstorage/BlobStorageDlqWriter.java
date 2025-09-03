@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 public class BlobStorageDlqWriter implements DlqWriter {
     private static final String DEFAULT_TIMEZONE = "UTC";
     private static final ZoneId DEFAULT_ZONE_ID = ZoneId.of(DEFAULT_TIMEZONE);
-    
+
     private final BlobStorage blobStorage;
     private final ObjectMapper objectMapper;
     private final DlqConfig dlqConfig;
@@ -38,13 +38,14 @@ public class BlobStorageDlqWriter implements DlqWriter {
         this.blobStorage = blobStorage;
         this.objectMapper = new ObjectMapper();
         this.dlqConfig = dlqConfig;
-        
+
         validateTimezoneConfiguration();
     }
 
     @Override
     public List<Message> write(List<Message> messages) throws IOException {
-        Map<Path, List<Message>> messagesByPartition = messages.stream().collect(Collectors.groupingBy(this::createPartition));
+        Map<Path, List<Message>> messagesByPartition = messages.stream()
+                .collect(Collectors.groupingBy(this::createPartition));
         List<Message> failedMessages = new LinkedList<>();
         messagesByPartition.forEach((path, partitionedMessages) -> {
             String data = partitionedMessages.stream().map(this::convertToString).collect(Collectors.joining("\n"));
@@ -63,8 +64,10 @@ public class BlobStorageDlqWriter implements DlqWriter {
     private String convertToString(Message message) {
         try {
             return objectMapper.writeValueAsString(new DlqMessage(
-                    Base64.getEncoder().encodeToString(message.getLogKey() == null ? "".getBytes() : message.getLogKey()),
-                    Base64.getEncoder().encodeToString(message.getLogMessage() == null ? "".getBytes() : message.getLogMessage()),
+                    Base64.getEncoder()
+                            .encodeToString(message.getLogKey() == null ? "".getBytes() : message.getLogKey()),
+                    Base64.getEncoder()
+                            .encodeToString(message.getLogMessage() == null ? "".getBytes() : message.getLogMessage()),
                     message.getTopic(),
                     message.getPartition(),
                     message.getOffset(),
@@ -88,29 +91,32 @@ public class BlobStorageDlqWriter implements DlqWriter {
     private ZoneId getSafeZoneId() {
         try {
             String configuredTimezone = dlqConfig.getDlqBlobFilePartitionTimezone();
-            
+
             if (configuredTimezone == null || configuredTimezone.trim().isEmpty()) {
-                log.warn("DLQ blob file partition timezone is null or empty, using default timezone: {}", DEFAULT_TIMEZONE);
+                log.warn("DLQ blob file partition timezone is null or empty, using default timezone: {}",
+                        DEFAULT_TIMEZONE);
                 return DEFAULT_ZONE_ID;
             }
-            
+
             String trimmedTimezone = configuredTimezone.trim();
             ZoneId zoneId = ZoneId.of(trimmedTimezone);
-            
+
             if (!zoneId.getId().equals(trimmedTimezone)) {
-                log.warn("DLQ blob file partition timezone '{}' was normalized to '{}', consider using the normalized form", 
+                log.warn(
+                        "DLQ blob file partition timezone '{}' was normalized to '{}', consider using the normalized form",
                         trimmedTimezone, zoneId.getId());
             }
-            
+
             return zoneId;
-            
+
         } catch (ZoneRulesException e) {
-            log.error("Invalid DLQ blob file partition timezone '{}', falling back to default timezone '{}'. Error: {}", 
+            log.error("Invalid DLQ blob file partition timezone '{}', falling back to default timezone '{}'. Error: {}",
                     dlqConfig.getDlqBlobFilePartitionTimezone(), DEFAULT_TIMEZONE, e.getMessage());
             return DEFAULT_ZONE_ID;
-            
+
         } catch (Exception e) {
-            log.error("Unexpected error while getting DLQ blob file partition timezone, falling back to default timezone '{}'. Error: {}", 
+            log.error(
+                    "Unexpected error while getting DLQ blob file partition timezone, falling back to default timezone '{}'. Error: {}",
                     DEFAULT_TIMEZONE, e.getMessage());
             return DEFAULT_ZONE_ID;
         }
@@ -119,30 +125,34 @@ public class BlobStorageDlqWriter implements DlqWriter {
     private void validateTimezoneConfiguration() {
         try {
             String configuredTimezone = dlqConfig.getDlqBlobFilePartitionTimezone();
-            
+
             if (configuredTimezone == null || configuredTimezone.trim().isEmpty()) {
-                log.warn("DLQ blob file partition timezone configuration is null or empty, will use default timezone '{}' for partitioning", DEFAULT_TIMEZONE);
+                log.warn(
+                        "DLQ blob file partition timezone configuration is null or empty, will use default timezone '{}' for partitioning",
+                        DEFAULT_TIMEZONE);
                 return;
             }
-            
+
             String trimmedTimezone = configuredTimezone.trim();
             ZoneId zoneId = ZoneId.of(trimmedTimezone);
-            
+
             log.info("DLQ blob file partition timezone configuration validated successfully: '{}'", zoneId.getId());
-            
+
             if (!zoneId.getId().equals(trimmedTimezone)) {
-                log.warn("DLQ blob file partition timezone '{}' was normalized to '{}' during validation", 
+                log.warn("DLQ blob file partition timezone '{}' was normalized to '{}' during validation",
                         trimmedTimezone, zoneId.getId());
             }
-            
+
         } catch (ZoneRulesException e) {
-            log.error("Invalid DLQ blob file partition timezone configuration '{}', will fall back to '{}' during runtime. " +
-                     "Please check your configuration and provide a valid timezone identifier. Error: {}", 
-                     dlqConfig.getDlqBlobFilePartitionTimezone(), DEFAULT_TIMEZONE, e.getMessage());
-                     
+            log.error(
+                    "Invalid DLQ blob file partition timezone configuration '{}', will fall back to '{}' during runtime. "
+                            +
+                            "Please check your configuration and provide a valid timezone identifier. Error: {}",
+                    dlqConfig.getDlqBlobFilePartitionTimezone(), DEFAULT_TIMEZONE, e.getMessage());
+
         } catch (Exception e) {
-            log.error("Unexpected error during DLQ blob file partition timezone configuration validation, " +
-                     "will fall back to '{}' during runtime. Error: {}", DEFAULT_TIMEZONE, e.getMessage());
+            log.error("Unexpected error during DLQ blob file partition timezone configuration validation, "
+                    + "will fall back to '{}' during runtime. Error: {}", DEFAULT_TIMEZONE, e.getMessage());
         }
     }
 }
