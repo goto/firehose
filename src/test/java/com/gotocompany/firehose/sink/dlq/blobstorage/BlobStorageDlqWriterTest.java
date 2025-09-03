@@ -262,4 +262,19 @@ public class BlobStorageDlqWriterTest {
 
         verify(blobStorage, times(2)).store(anyString(), any(byte[].class));
     }
+
+    @Test
+    public void shouldHandleNullErrorInfoGracefully() throws IOException, BlobStorageException {
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("UTC");
+
+        BlobStorageDlqWriter writer = new BlobStorageDlqWriter(blobStorage, dlqConfig);
+
+        long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
+        Message messageWithNullErrorInfo = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp, utcTimestamp, null);
+
+        List<Message> messages = Arrays.asList(messageWithNullErrorInfo);
+        writer.write(messages);
+
+        verify(blobStorage).store(contains("booking/2020-01-01"), any(byte[].class));
+    }
 }

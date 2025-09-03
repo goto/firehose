@@ -33,6 +33,7 @@ public class BlobStorageDlqWriter implements DlqWriter {
     private final BlobStorage blobStorage;
     private final ObjectMapper objectMapper;
     private final DlqConfig dlqConfig;
+    private volatile ZoneId cachedZoneId;
 
     public BlobStorageDlqWriter(BlobStorage blobStorage, DlqConfig dlqConfig) {
         this.blobStorage = blobStorage;
@@ -63,6 +64,13 @@ public class BlobStorageDlqWriter implements DlqWriter {
 
     private String convertToString(Message message) {
         try {
+            String errorString = "";
+            String errorType = "";
+            if (message.getErrorInfo() != null) {
+                errorString = message.getErrorInfo().toString();
+                errorType = message.getErrorInfo().getErrorType().name();
+            }
+
             return objectMapper.writeValueAsString(new DlqMessage(
                     Base64.getEncoder()
                             .encodeToString(message.getLogKey() == null ? "".getBytes() : message.getLogKey()),
@@ -72,8 +80,8 @@ public class BlobStorageDlqWriter implements DlqWriter {
                     message.getPartition(),
                     message.getOffset(),
                     message.getTimestamp(),
-                    message.getErrorInfo().toString(),
-                    message.getErrorInfo().getErrorType().name()));
+                    errorString,
+                    errorType));
         } catch (JsonProcessingException e) {
             log.warn("Not able to convert message into json", e);
             return "";
@@ -89,12 +97,18 @@ public class BlobStorageDlqWriter implements DlqWriter {
     }
 
     private ZoneId getSafeZoneId() {
+        ZoneId cached = cachedZoneId;
+        if (cached != null) {
+            return cached;
+        }
+
         try {
             String configuredTimezone = dlqConfig.getDlqBlobFilePartitionTimezone();
 
             if (configuredTimezone == null || configuredTimezone.trim().isEmpty()) {
                 log.warn("DLQ blob file partition timezone is null or empty, using default timezone: {}",
                         DEFAULT_TIMEZONE);
+                cachedZoneId = DEFAULT_ZONE_ID;
                 return DEFAULT_ZONE_ID;
             }
 
@@ -107,17 +121,20 @@ public class BlobStorageDlqWriter implements DlqWriter {
                         trimmedTimezone, zoneId.getId());
             }
 
+            cachedZoneId = zoneId;
             return zoneId;
 
         } catch (ZoneRulesException e) {
             log.error("Invalid DLQ blob file partition timezone '{}', falling back to default timezone '{}'. Error: {}",
                     dlqConfig.getDlqBlobFilePartitionTimezone(), DEFAULT_TIMEZONE, e.getMessage());
+            cachedZoneId = DEFAULT_ZONE_ID;
             return DEFAULT_ZONE_ID;
 
         } catch (Exception e) {
             log.error(
                     "Unexpected error while getting DLQ blob file partition timezone, falling back to default timezone '{}'. Error: {}",
                     DEFAULT_TIMEZONE, e.getMessage());
+            cachedZoneId = DEFAULT_ZONE_ID;
             return DEFAULT_ZONE_ID;
         }
     }
