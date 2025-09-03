@@ -29,4 +29,8 @@ public interface DlqConfig extends AppConfig {
     @DefaultValue("false")
     boolean getDlqSinkEnable();
 
+    @Key("DLQ_BLOB_FILE_PARTITION_TIMEZONE")
+    @DefaultValue("UTC")
+    String getDlqBlobFilePartitionTimezone();
+
 }

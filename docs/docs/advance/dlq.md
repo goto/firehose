@@ -38,6 +38,14 @@ If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Curre
 * Type: `optional`
 * Default value: `GCS`
 
+## `DLQ_BLOB_FILE_PARTITION_TIMEZONE`
+
+Timezone to be used for date-based partitioning of DLQ files when using BLOB_STORAGE writer type. DLQ files are organized into directories based on the consume timestamp of the message converted to the specified timezone. This allows for timezone-aware partitioning of failed messages.
+
+* Example value: `Asia/Tokyo`
+* Type: `optional`
+* Default value: `UTC`
+
 ## `DLQ_GCS_GOOGLE_CLOUD_PROJECT_ID`
 
 * Example value: `my-project-id`
