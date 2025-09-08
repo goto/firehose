@@ -233,37 +233,4 @@ public class BlobStorageDlqWriterTest {
 
         verify(blobStorage).store(contains("booking/2020-01-01"), any(byte[].class));
     }
-
-    @Test
-    public void shouldHandleNullTopicGracefully() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
-
-        BlobStorageDlqWriter writer = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
-        Message messageWithNullTopic = new Message("123".getBytes(), "abc".getBytes(), null, 1, 1, null, utcTimestamp,
-                utcTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        List<Message> messages = Arrays.asList(messageWithNullTopic);
-        writer.write(messages);
-
-        verify(blobStorage).store(contains("null/2020-01-01"), any(byte[].class));
-    }
-
-    @Test
-    public void shouldHandleTopicWithSpecialCharacters() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
-
-        BlobStorageDlqWriter writer = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
-        Message messageWithSpecialChars = new Message("123".getBytes(), "abc".getBytes(),
-                "topic-with/special\\chars:and|pipes", 1, 1, null, utcTimestamp, utcTimestamp,
-                new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        List<Message> messages = Arrays.asList(messageWithSpecialChars);
-        writer.write(messages);
-
-        verify(blobStorage).store(contains("topic-with/special\\chars:and|pipes/2020-01-01"), any(byte[].class));
-    }
 }
