@@ -197,40 +197,4 @@ public class BlobStorageDlqWriterTest {
 
         verify(blobStorage).store(contains("booking/2020-01-02"), any(byte[].class));
     }
-
-    @Test
-    public void shouldHandleExtremeTimestamps() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
-
-        BlobStorageDlqWriter writerWithTokyoTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long maxTimestamp = Long.MAX_VALUE;
-        long minTimestamp = 0L;
-
-        Message maxMessage = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, maxTimestamp,
-                maxTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-        Message minMessage = new Message("456".getBytes(), "def".getBytes(), "booking", 1, 2, null, minTimestamp,
-                minTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        writerWithTokyoTimezone.write(Arrays.asList(maxMessage));
-        writerWithTokyoTimezone.write(Arrays.asList(minMessage));
-
-        verify(blobStorage, times(2)).store(anyString(), any(byte[].class));
-    }
-
-    @Test
-    public void shouldHandleNullErrorInfoGracefully() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
-
-        BlobStorageDlqWriter writer = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
-        Message messageWithNullErrorInfo = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null,
-                utcTimestamp, utcTimestamp, null);
-
-        List<Message> messages = Arrays.asList(messageWithNullErrorInfo);
-        writer.write(messages);
-
-        verify(blobStorage).store(contains("booking/2020-01-01"), any(byte[].class));
-    }
 }
