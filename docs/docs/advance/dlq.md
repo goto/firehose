@@ -40,7 +40,7 @@ If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Curre
 
 ## `DLQ_BLOB_FILE_PARTITION_TIMEZONE`
 
-Timezone to be used for date-based partitioning of DLQ files when using BLOB_STORAGE writer type. DLQ files are organized into directories based on the consume timestamp of the message converted to the specified timezone. The configuration accepts standard timezone identifiers and gracefully falls back to UTC if an invalid timezone is provided.
+Timezone to be used for date-based partitioning of DLQ files when using BLOB_STORAGE writer type. DLQ files are organized into directories based on the consume timestamp of the message converted to the specified timezone. The configuration accepts standard timezone identifiers and will fail application startup if an invalid timezone is provided.
 
 * Example value: `Asia/Tokyo`
 * Type: `optional`

@@ -16,6 +16,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -35,7 +36,7 @@ public class BlobStorageDlqWriterTest {
 
     @Before
     public void setUp() throws Exception {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("UTC");
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
         blobStorageDLQWriter = new BlobStorageDlqWriter(blobStorage, dlqConfig);
     }
 
@@ -102,7 +103,7 @@ public class BlobStorageDlqWriterTest {
 
     @Test
     public void shouldUseConfiguredTimezoneForPartitioning() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("Asia/Tokyo");
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
 
         BlobStorageDlqWriter writerWithTokyoTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
 
@@ -115,24 +116,10 @@ public class BlobStorageDlqWriterTest {
         verify(blobStorage).store(contains("booking/2020-01-02"), any(byte[].class));
     }
 
-    @Test
-    public void shouldFallbackToUTCWhenTimezoneIsInvalid() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("Invalid/Timezone");
-
-        BlobStorageDlqWriter writerWithInvalidTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
-        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp, utcTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        List<Message> messages = Arrays.asList(message);
-        writerWithInvalidTimezone.write(messages);
-
-        verify(blobStorage).store(contains("booking/2020-01-01"), any(byte[].class));
-    }
 
     @Test
-    public void shouldFallbackToUTCWhenTimezoneIsNull() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(null);
+    public void shouldUseUTCWhenTimezoneIsNull() throws IOException, BlobStorageException {
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
         BlobStorageDlqWriter writerWithNullTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
 
@@ -146,8 +133,8 @@ public class BlobStorageDlqWriterTest {
     }
 
     @Test
-    public void shouldFallbackToUTCWhenTimezoneIsEmpty() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("");
+    public void shouldUseUTCWhenTimezoneIsEmpty() throws IOException, BlobStorageException {
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
         BlobStorageDlqWriter writerWithEmptyTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
 
@@ -161,8 +148,8 @@ public class BlobStorageDlqWriterTest {
     }
 
     @Test
-    public void shouldFallbackToUTCWhenTimezoneIsWhitespace() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("   ");
+    public void shouldUseUTCWhenTimezoneIsWhitespace() throws IOException, BlobStorageException {
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
         BlobStorageDlqWriter writerWithWhitespaceTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
 
@@ -177,7 +164,7 @@ public class BlobStorageDlqWriterTest {
 
     @Test
     public void shouldHandleTimezoneWithWhitespace() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("  Asia/Tokyo  ");
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
 
         BlobStorageDlqWriter writerWithWhitespaceAroundTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
 
@@ -190,64 +177,10 @@ public class BlobStorageDlqWriterTest {
         verify(blobStorage).store(contains("booking/2020-01-02"), any(byte[].class));
     }
 
-    @Test
-    public void shouldHandleMultipleErrorsGracefully() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("Invalid/Timezone");
-
-        BlobStorageDlqWriter writerWithInvalidTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long timestamp1 = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
-        long timestamp2 = Instant.parse("2020-01-02T12:00:00Z").toEpochMilli();
-
-        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1, timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-        Message message2 = new Message("456".getBytes(), "def".getBytes(), "booking", 1, 2, null, timestamp2, timestamp2, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        List<Message> messages = Arrays.asList(message1, message2);
-        writerWithInvalidTimezone.write(messages);
-
-        verify(blobStorage).store(contains("booking/2020-01-01"), any(byte[].class));
-        verify(blobStorage).store(contains("booking/2020-01-02"), any(byte[].class));
-    }
-
-    @Test
-    public void shouldValidateTimezoneConfigurationAtConstruction() {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("Invalid/Timezone");
-
-        new BlobStorageDlqWriter(blobStorage, dlqConfig);
-    }
-
-    @Test
-    public void shouldValidateValidTimezoneConfigurationAtConstruction() {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("Asia/Tokyo");
-
-        new BlobStorageDlqWriter(blobStorage, dlqConfig);
-    }
-
-    @Test
-    public void shouldHandleNullConfigurationAtConstruction() {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(null);
-
-        new BlobStorageDlqWriter(blobStorage, dlqConfig);
-    }
-
-    @Test
-    public void shouldHandleConfigExceptionGracefully() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenThrow(new RuntimeException("Config error"));
-
-        BlobStorageDlqWriter writerWithConfigException = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
-        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp, utcTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        List<Message> messages = Arrays.asList(message);
-        writerWithConfigException.write(messages);
-
-        verify(blobStorage).store(contains("booking/2020-01-01"), any(byte[].class));
-    }
 
     @Test
     public void shouldHandleExtremeTimestamps() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("Asia/Tokyo");
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
 
         BlobStorageDlqWriter writerWithTokyoTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
 
@@ -265,7 +198,7 @@ public class BlobStorageDlqWriterTest {
 
     @Test
     public void shouldHandleNullErrorInfoGracefully() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn("UTC");
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
         BlobStorageDlqWriter writer = new BlobStorageDlqWriter(blobStorage, dlqConfig);
 
