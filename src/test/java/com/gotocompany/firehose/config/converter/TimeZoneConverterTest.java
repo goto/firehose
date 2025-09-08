@@ -72,6 +72,45 @@ public class TimeZoneConverterTest {
         converter.convert(method, "NotAValidTimezone");
     }
 
+    @Test
+    public void shouldConvertGMTTimezone() {
+        ZoneId result = converter.convert(method, "GMT");
+        assertEquals(ZoneId.of("GMT"), result);
+    }
+
+    @Test
+    public void shouldConvertZuluTimezone() {
+        ZoneId result = converter.convert(method, "Z");
+        assertEquals(ZoneId.of("Z"), result);
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void shouldRejectUnsupportedLegacyTimezoneIds() {
+        converter.convert(method, "EST");
+    }
+
+    @Test
+    public void shouldConvertNegativeOffsetTimezone() {
+        ZoneId result = converter.convert(method, "-08:00");
+        assertEquals(ZoneId.of("-08:00"), result);
+    }
+
+    @Test
+    public void shouldConvertUTCPlusOffsetTimezone() {
+        ZoneId result = converter.convert(method, "UTC+09:00");
+        assertEquals(ZoneId.of("UTC+09:00"), result);
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void shouldThrowConfigurationExceptionForInvalidOffsetFormat() {
+        converter.convert(method, "+25:00");
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void shouldThrowConfigurationExceptionForInvalidHourFormat() {
+        converter.convert(method, "+AB:00");
+    }
+
     public void dummyMethod() {
     }
 }
