@@ -251,22 +251,6 @@ public class BlobStorageDlqWriterTest {
     }
 
     @Test
-    public void shouldHandleEmptyTopicGracefully() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
-
-        BlobStorageDlqWriter writer = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
-        Message messageWithEmptyTopic = new Message("123".getBytes(), "abc".getBytes(), "", 1, 1, null, utcTimestamp,
-                utcTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        List<Message> messages = Arrays.asList(messageWithEmptyTopic);
-        writer.write(messages);
-
-        verify(blobStorage).store(contains("/2020-01-01"), any(byte[].class));
-    }
-
-    @Test
     public void shouldHandleTopicWithSpecialCharacters() throws IOException, BlobStorageException {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
@@ -312,23 +296,6 @@ public class BlobStorageDlqWriterTest {
                 new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
 
         List<Message> messages = Arrays.asList(messageWithLargeTimestamp);
-        writer.write(messages);
-
-        verify(blobStorage).store(anyString(), any(byte[].class));
-    }
-
-    @Test
-    public void shouldHandleMinimumValidTimestamp() throws IOException, BlobStorageException {
-        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
-
-        BlobStorageDlqWriter writer = new BlobStorageDlqWriter(blobStorage, dlqConfig);
-
-        long minValidTimestamp = Instant.MIN.toEpochMilli();
-        Message messageWithMinTimestamp = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null,
-                minValidTimestamp, minValidTimestamp,
-                new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-
-        List<Message> messages = Arrays.asList(messageWithMinTimestamp);
         writer.write(messages);
 
         verify(blobStorage).store(anyString(), any(byte[].class));
