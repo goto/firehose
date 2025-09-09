@@ -52,8 +52,8 @@ repositories {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/goto/depot")
             credentials {
-                username = project.findProperty("PACKAGE_GITHUB_USER") ?: System.getenv("PACKAGE_GITHUB_USER")
-                password = project.findProperty("PACKAGE_GITHUB_TOKEN") ?: System.getenv("PACKAGE_GITHUB_TOKEN")
+                username = System.getenv("PACKAGE_GITHUB_USER")
+                password = System.getenv("PACKAGE_GITHUB_TOKEN")
             }
         }
     }
