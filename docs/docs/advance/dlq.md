@@ -38,6 +38,35 @@ If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Curre
 * Type: `optional`
 * Default value: `GCS`
 
+## `DLQ_BLOB_FILE_PARTITION_TIMEZONE`
+
+Timezone to be used for date-based partitioning of DLQ files when using BLOB_STORAGE writer type. DLQ files are organized into directories based on the consume timestamp of the message converted to the specified timezone. The configuration accepts standard timezone identifiers and will fail application startup if an invalid timezone is provided.
+
+* Example value: `Asia/Tokyo`
+* Type: `optional`
+* Default value: `UTC`
+
+### Valid Timezone Formats
+
+#### 1. IANA Timezone Identifiers
+Handles daylight saving time transitions automatically.
+* Example: `Asia/Jakarta` - Western Indonesia Time (UTC+7)
+* Format: `Continent/City` pattern (e.g., `America/New_York`, `Europe/London`, `Australia/Sydney`)
+
+#### 2. UTC Offset Formats  
+Fixed offset from UTC.
+* Example: `+05:30` - 5 hours 30 minutes ahead of UTC
+* Format: `±HH:MM` or `UTC±H` (e.g., `-08:00`, `UTC+9`)
+
+#### 3. UTC Variants
+* Example: `UTC` - Coordinated Universal Time
+* Supported: `UTC`, `GMT`, `Z`
+
+#### 4. Legacy Timezone IDs
+* Example: `JST` - Japan Standard Time
+* Supported: `EST`, `PST`, `JST`
+
+
 ## `DLQ_GCS_GOOGLE_CLOUD_PROJECT_ID`
 
 * Example value: `my-project-id`

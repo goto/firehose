@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.dlq.blobstorage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gotocompany.firehose.config.DlqConfig;
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
@@ -27,15 +28,18 @@ import java.util.stream.Collectors;
 public class BlobStorageDlqWriter implements DlqWriter {
     private final BlobStorage blobStorage;
     private final ObjectMapper objectMapper;
+    private final DlqConfig dlqConfig;
 
-    public BlobStorageDlqWriter(BlobStorage blobStorage) {
+    public BlobStorageDlqWriter(BlobStorage blobStorage, DlqConfig dlqConfig) {
         this.blobStorage = blobStorage;
         this.objectMapper = new ObjectMapper();
+        this.dlqConfig = dlqConfig;
     }
 
     @Override
     public List<Message> write(List<Message> messages) throws IOException {
-        Map<Path, List<Message>> messagesByPartition = messages.stream().collect(Collectors.groupingBy(this::createPartition));
+        Map<Path, List<Message>> messagesByPartition = messages.stream()
+                .collect(Collectors.groupingBy(this::createPartition));
         List<Message> failedMessages = new LinkedList<>();
         messagesByPartition.forEach((path, partitionedMessages) -> {
             String data = partitionedMessages.stream().map(this::convertToString).collect(Collectors.joining("\n"));
@@ -53,15 +57,24 @@ public class BlobStorageDlqWriter implements DlqWriter {
 
     private String convertToString(Message message) {
         try {
+            String errorString = "";
+            String errorType = "";
+            if (message.getErrorInfo() != null) {
+                errorString = message.getErrorInfo().toString();
+                errorType = message.getErrorInfo().getErrorType().name();
+            }
+
             return objectMapper.writeValueAsString(new DlqMessage(
-                    Base64.getEncoder().encodeToString(message.getLogKey() == null ? "".getBytes() : message.getLogKey()),
-                    Base64.getEncoder().encodeToString(message.getLogMessage() == null ? "".getBytes() : message.getLogMessage()),
+                    Base64.getEncoder()
+                            .encodeToString(message.getLogKey() == null ? "".getBytes() : message.getLogKey()),
+                    Base64.getEncoder()
+                            .encodeToString(message.getLogMessage() == null ? "".getBytes() : message.getLogMessage()),
                     message.getTopic(),
                     message.getPartition(),
                     message.getOffset(),
                     message.getTimestamp(),
-                    message.getErrorInfo().toString(),
-                    message.getErrorInfo().getErrorType().name()));
+                    errorString,
+                    errorType));
         } catch (JsonProcessingException e) {
             log.warn("Not able to convert message into json", e);
             return "";
@@ -69,9 +82,11 @@ public class BlobStorageDlqWriter implements DlqWriter {
     }
 
     private Path createPartition(Message message) {
+        ZoneId zoneId = dlqConfig.getDlqBlobFilePartitionTimezone();
         LocalDate consumeLocalDate = LocalDate.from(Instant.ofEpochMilli(message.getConsumeTimestamp())
-                .atZone(ZoneId.of("UTC")));
+                .atZone(zoneId));
         String consumeDate = DateTimeFormatter.ISO_LOCAL_DATE.format(consumeLocalDate);
         return Paths.get(message.getTopic(), consumeDate);
     }
+
 }
