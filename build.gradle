@@ -47,12 +47,14 @@ repositories {
     maven {
         url "https://packages.confluent.io/maven"
     }
-    maven {
-        name = "GitHubPackages"
-        url = "https://maven.pkg.github.com/goto/depot"
-        credentials {
-            username = System.getenv("GITHUB_ACTOR")
-            password = System.getenv("GITHUB_TOKEN")
+    if (!project.hasProperty('local')) {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/goto/depot")
+            credentials {
+                username = project.findProperty("PACKAGE_GITHUB_USER") ?: System.getenv("PACKAGE_GITHUB_USER")
+                password = project.findProperty("PACKAGE_GITHUB_TOKEN") ?: System.getenv("PACKAGE_GITHUB_TOKEN")
+            }
         }
     }
 }
