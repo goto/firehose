@@ -21,7 +21,7 @@ jobs:
         run: chmod +x gradlew
       - name: Debug Environment Variables
         run: |
-          echo "DEBUG: The username Gradle will use is: $PACKAGE_GITHUB_USER"
+          echo "DEBUG: The username Gradle will use is: ${PACKAGE_GITHUB_USER}"
           echo "DEBUG: The user running this workflow is: ${{ github.actor }}"
           echo "DEBUG: The repository is: ${{ github.repository }}"
           echo "DEBUG: ${PACKAGE_GITHUB_TOKEN: -3}"
