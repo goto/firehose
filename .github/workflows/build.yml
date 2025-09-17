@@ -23,6 +23,11 @@ jobs:
         run: |
           echo "DEBUG: The username Gradle will use is: $PACKAGE_GITHUB_USER"
           echo "DEBUG: The user running this workflow is: ${{ github.actor }}"
+          echo "DEBUG: The repository is: ${{ github.repository }}"
+          echo "DEBUG: ${PACKAGE_GITHUB_TOKEN: -3}"
+        env:
+          PACKAGE_GITHUB_USER: ${{ secrets.PACKAGES_READ_USER }}
+          PACKAGE_GITHUB_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
       - name: Build
         run: ./gradlew build
         env:
