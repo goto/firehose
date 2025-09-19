@@ -22,5 +22,5 @@ jobs:
       - name: Build
         run: ./gradlew build
         env:
-          PACKAGE_GITHUB_USER: "akashgoto24"
-          PACKAGE_GITHUB_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN }}
+          PACKAGE_GITHUB_USER: ${{ secrets.PACKAGE_GITHUB_USER }}
+          PACKAGE_GITHUB_TOKEN: ${{ secrets.PACKAGE_GITHUB_TOKEN }}
