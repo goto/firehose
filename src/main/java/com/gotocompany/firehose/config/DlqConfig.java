@@ -2,8 +2,11 @@ package com.gotocompany.firehose.config;
 
 import com.gotocompany.firehose.config.converter.BlobStorageTypeConverter;
 import com.gotocompany.firehose.config.converter.DlqWriterTypeConverter;
+import com.gotocompany.firehose.config.converter.TimeZoneConverter;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageType;
 import com.gotocompany.firehose.sink.dlq.DLQWriterType;
+
+import java.time.ZoneId;
 
 public interface DlqConfig extends AppConfig {
 
@@ -28,5 +31,10 @@ public interface DlqConfig extends AppConfig {
     @Key("DLQ_SINK_ENABLE")
     @DefaultValue("false")
     boolean getDlqSinkEnable();
+
+    @Key("DLQ_BLOB_FILE_PARTITION_TIMEZONE")
+    @DefaultValue("UTC")
+    @ConverterClass(TimeZoneConverter.class)
+    ZoneId getDlqBlobFilePartitionTimezone();
 
 }

@@ -49,7 +49,7 @@ public class DlqWriterFactory {
                         throw new IllegalArgumentException("DLQ Blob Storage type " + dlqConfig.getBlobStorageType() + "is not supported");
                 }
                 BlobStorage blobStorage = BlobStorageFactory.createObjectStorage(dlqConfig.getBlobStorageType(), configuration);
-                return new BlobStorageDlqWriter(blobStorage);
+                return new BlobStorageDlqWriter(blobStorage, dlqConfig);
             case LOG:
                 return new LogDlqWriter(new FirehoseInstrumentation(client, LogDlqWriter.class));
 
