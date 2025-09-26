@@ -1,8 +1,3 @@
-ARG GITHUB_ACTOR
-ARG GITHUB_TOKEN
-
-# You can use them like:
-RUN echo "Building as $GITHUB_ACTOR"
 FROM adoptopenjdk:8-jdk-openj9 AS GRADLE_BUILD
 RUN mkdir -p ./build/libs/
 RUN curl -L http://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o ./jolokia-jvm-agent.jar
