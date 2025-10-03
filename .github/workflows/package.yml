@@ -51,8 +51,6 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
-          cache-from: type=registry,ref=gotocompany/firehose:buildcache
-          cache-to: type=registry,ref=gotocompany/firehose:buildcache
           build-args: |
             GITHUB_ACTOR=${{ github.actor }}
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
