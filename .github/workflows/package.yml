@@ -1,12 +1,9 @@
 name: Package
 
 on:
-  push:
-    branches:
-
-#  release:
-#    types: [published]
-#  workflow_dispatch:
+  release:
+    types: [published]
+  workflow_dispatch:
 
 jobs:
   build:
