@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gotocompany.firehose.config.DlqConfig;
 import com.gotocompany.firehose.message.Message;
+import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
+import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
 import com.gotocompany.firehose.sink.dlq.DlqWriter;
@@ -29,11 +31,13 @@ public class BlobStorageDlqWriter implements DlqWriter {
     private final BlobStorage blobStorage;
     private final ObjectMapper objectMapper;
     private final DlqConfig dlqConfig;
+    private final FirehoseInstrumentation firehoseInstrumentation;
 
-    public BlobStorageDlqWriter(BlobStorage blobStorage, DlqConfig dlqConfig) {
+    public BlobStorageDlqWriter(BlobStorage blobStorage, DlqConfig dlqConfig, FirehoseInstrumentation firehoseInstrumentation) {
         this.blobStorage = blobStorage;
         this.objectMapper = new ObjectMapper();
         this.dlqConfig = dlqConfig;
+        this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
     @Override
@@ -45,10 +49,13 @@ public class BlobStorageDlqWriter implements DlqWriter {
             String data = partitionedMessages.stream().map(this::convertToString).collect(Collectors.joining("\n"));
             String fileName = UUID.randomUUID().toString();
             String objectName = path.resolve(fileName).toString();
+            String partitionDate = extractDateFromPath(path);
             try {
                 blobStorage.store(objectName, data.getBytes(StandardCharsets.UTF_8));
+                captureSuccessMetrics(partitionedMessages, partitionDate);
             } catch (BlobStorageException e) {
                 log.warn("Failed to store into DLQ messages into blob storage", e);
+                captureFailureMetrics(partitionedMessages, partitionDate);
                 failedMessages.addAll(partitionedMessages);
             }
         });
@@ -87,6 +94,34 @@ public class BlobStorageDlqWriter implements DlqWriter {
                 .atZone(zoneId));
         String consumeDate = DateTimeFormatter.ISO_LOCAL_DATE.format(consumeLocalDate);
         return Paths.get(message.getTopic(), consumeDate);
+    }
+
+    private String extractDateFromPath(Path path) {
+        return path.getFileName().toString();
+    }
+
+    private void captureSuccessMetrics(List<Message> messages, String date) {
+        firehoseInstrumentation.captureDLQBlobStorageMetrics(
+                Metrics.DLQ_MESSAGES_TOTAL,
+                Metrics.MessageType.SUCCESS,
+                null,
+                date,
+                messages.size()
+        );
+    }
+
+    private void captureFailureMetrics(List<Message> messages, String date) {
+        messages.forEach(message -> {
+            if (message.getErrorInfo() != null) {
+                firehoseInstrumentation.captureDLQBlobStorageMetrics(
+                        Metrics.DLQ_MESSAGES_TOTAL,
+                        Metrics.MessageType.FAILURE,
+                        message.getErrorInfo().getErrorType(),
+                        date,
+                        1
+                );
+            }
+        });
     }
 
 }

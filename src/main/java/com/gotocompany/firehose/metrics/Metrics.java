@@ -83,6 +83,9 @@ public class Metrics {
     //ERROR TAGS
     public static final String ERROR_TYPE_TAG = "error_type=%s";
 
+    //DLQ TAGS
+    public static final String DLQ_DATE_TAG = "date=%s";
+
     // ERROR TAGS
     public static final String ERROR_MESSAGE_CLASS_TAG = "class";
     public static final String NON_FATAL_ERROR = "nonfatal";

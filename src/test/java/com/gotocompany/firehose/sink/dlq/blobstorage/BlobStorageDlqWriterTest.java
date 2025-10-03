@@ -5,6 +5,8 @@ import com.gotocompany.depot.error.ErrorType;
 import com.gotocompany.firehose.config.DlqConfig;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.gotocompany.firehose.message.Message;
+import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
+import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
 import org.junit.Assert;
@@ -32,12 +34,15 @@ public class BlobStorageDlqWriterTest {
     @Mock
     private DlqConfig dlqConfig;
 
+    @Mock
+    private FirehoseInstrumentation firehoseInstrumentation;
+
     private BlobStorageDlqWriter blobStorageDLQWriter;
 
     @Before
     public void setUp() throws Exception {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
-        blobStorageDLQWriter = new BlobStorageDlqWriter(blobStorage, dlqConfig);
+        blobStorageDLQWriter = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
     }
 
     @Test
@@ -122,7 +127,7 @@ public class BlobStorageDlqWriterTest {
     public void shouldUseConfiguredTimezoneForPartitioning() throws IOException, BlobStorageException {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
 
-        BlobStorageDlqWriter writerWithTokyoTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
+        BlobStorageDlqWriter writerWithTokyoTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
 
         long utcTimestamp = Instant.parse("2020-01-01T15:00:00Z").toEpochMilli();
         Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp,
@@ -138,7 +143,7 @@ public class BlobStorageDlqWriterTest {
     public void shouldUseUTCWhenTimezoneIsNull() throws IOException, BlobStorageException {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
-        BlobStorageDlqWriter writerWithNullTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
+        BlobStorageDlqWriter writerWithNullTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
 
         long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
         Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp,
@@ -154,7 +159,7 @@ public class BlobStorageDlqWriterTest {
     public void shouldUseUTCWhenTimezoneIsEmpty() throws IOException, BlobStorageException {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
-        BlobStorageDlqWriter writerWithEmptyTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
+        BlobStorageDlqWriter writerWithEmptyTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
 
         long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
         Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp,
@@ -170,7 +175,7 @@ public class BlobStorageDlqWriterTest {
     public void shouldUseUTCWhenTimezoneIsWhitespace() throws IOException, BlobStorageException {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
 
-        BlobStorageDlqWriter writerWithWhitespaceTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
+        BlobStorageDlqWriter writerWithWhitespaceTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
 
         long utcTimestamp = Instant.parse("2020-01-01T12:00:00Z").toEpochMilli();
         Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp,
@@ -186,7 +191,7 @@ public class BlobStorageDlqWriterTest {
     public void shouldHandleTimezoneWithWhitespace() throws IOException, BlobStorageException {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
 
-        BlobStorageDlqWriter writerWithWhitespaceAroundTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig);
+        BlobStorageDlqWriter writerWithWhitespaceAroundTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
 
         long utcTimestamp = Instant.parse("2020-01-01T15:00:00Z").toEpochMilli();
         Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp,
@@ -196,5 +201,139 @@ public class BlobStorageDlqWriterTest {
         writerWithWhitespaceAroundTimezone.write(messages);
 
         verify(blobStorage).store(contains("booking/2020-01-02"), any(byte[].class));
+    }
+
+    @Test
+    public void shouldCaptureSuccessMetricsWithDateTagWhenMessagesWrittenSuccessfully() throws IOException, BlobStorageException {
+        long timestamp1 = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Arrays.asList(message1, message2);
+        blobStorageDLQWriter.write(messages);
+
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.SUCCESS),
+                eq(null),
+                eq("2020-01-01"),
+                eq(2L)
+        );
+    }
+
+    @Test
+    public void shouldCaptureFailureMetricsWithDateTagAndErrorTypeWhenWriteFails() throws IOException, BlobStorageException {
+        long timestamp1 = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.SINK_UNKNOWN_ERROR));
+
+        doThrow(new BlobStorageException("", "", new IOException())).when(blobStorage).store(anyString(), any(byte[].class));
+
+        List<Message> messages = Arrays.asList(message1, message2);
+        blobStorageDLQWriter.write(messages);
+
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.FAILURE),
+                eq(ErrorType.DESERIALIZATION_ERROR),
+                eq("2020-01-01"),
+                eq(1L)
+        );
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.FAILURE),
+                eq(ErrorType.SINK_UNKNOWN_ERROR),
+                eq("2020-01-01"),
+                eq(1L)
+        );
+    }
+
+    @Test
+    public void shouldCaptureMetricsWithCorrectDateForDifferentPartitions() throws IOException, BlobStorageException {
+        long timestamp1 = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        long timestamp2 = Instant.parse("2020-01-02T00:00:00Z").toEpochMilli();
+        Message message3 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 3, null, timestamp2,
+                timestamp2, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Arrays.asList(message1, message2, message3);
+        blobStorageDLQWriter.write(messages);
+
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.SUCCESS),
+                eq(null),
+                eq("2020-01-01"),
+                eq(2L)
+        );
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.SUCCESS),
+                eq(null),
+                eq("2020-01-02"),
+                eq(1L)
+        );
+    }
+
+    @Test
+    public void shouldCaptureMetricsWithTimezoneAwareDateTag() throws IOException, BlobStorageException {
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
+
+        BlobStorageDlqWriter writerWithTokyoTimezone = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
+
+        long utcTimestamp = Instant.parse("2020-01-01T15:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp,
+                utcTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Arrays.asList(message);
+        writerWithTokyoTimezone.write(messages);
+
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.SUCCESS),
+                eq(null),
+                eq("2020-01-02"),
+                eq(1L)
+        );
+    }
+
+    @Test
+    public void shouldCaptureMetricsForBothSuccessAndFailureMessages() throws IOException, BlobStorageException {
+        long timestamp1 = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        long timestamp2 = Instant.parse("2020-01-02T00:00:00Z").toEpochMilli();
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp2,
+                timestamp2, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        doNothing().when(blobStorage).store(contains("2020-01-01"), any(byte[].class));
+        doThrow(new BlobStorageException("", "", new IOException())).when(blobStorage).store(contains("2020-01-02"), any(byte[].class));
+
+        List<Message> messages = Arrays.asList(message1, message2);
+        blobStorageDLQWriter.write(messages);
+
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.SUCCESS),
+                eq(null),
+                eq("2020-01-01"),
+                eq(1L)
+        );
+        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.FAILURE),
+                eq(ErrorType.DESERIALIZATION_ERROR),
+                eq("2020-01-02"),
+                eq(1L)
+        );
     }
 }
