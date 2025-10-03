@@ -134,6 +134,14 @@ public class FirehoseInstrumentation extends Instrumentation {
         captureMessageMetrics(metric, type, null, counter);
     }
 
+    public void captureDLQBlobStorageMetrics(String metric, MessageType type, ErrorType errorType, String date, long counter) {
+        if (errorType != null) {
+            captureCount(metric, counter, String.format(Metrics.MESSAGE_TYPE_TAG, type.name()), String.format(Metrics.ERROR_TYPE_TAG, errorType.name()), String.format(Metrics.DLQ_DATE_TAG, date));
+        } else {
+            captureCount(metric, counter, String.format(Metrics.MESSAGE_TYPE_TAG, type.name()), String.format(Metrics.DLQ_DATE_TAG, date));
+        }
+    }
+
     public void captureDLQErrors(Message message, Exception e) {
         captureNonFatalError("firehose_error_event", e, "Unable to send record with key {} and message {} to DLQ", message.getLogKey(), message.getLogMessage());
     }
