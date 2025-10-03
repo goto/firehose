@@ -2,6 +2,11 @@ FROM adoptopenjdk:8-jdk-openj9 AS GRADLE_BUILD
 RUN mkdir -p ./build/libs/
 RUN curl -L http://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o ./jolokia-jvm-agent.jar
 COPY ./ ./
+ARG GITHUB_ACTOR
+ARG GITHUB_TOKEN
+
+ENV GITHUB_ACTOR=$GITHUB_ACTOR
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
 RUN ./gradlew build
 
 FROM eclipse-temurin:8u412-b08-jre
