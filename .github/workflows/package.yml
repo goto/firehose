@@ -48,7 +48,6 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64
           build-args: |
             GITHUB_ACTOR=${{ github.actor }}
             GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
