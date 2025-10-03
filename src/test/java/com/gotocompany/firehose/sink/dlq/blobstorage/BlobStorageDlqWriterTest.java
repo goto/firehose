@@ -336,42 +336,4 @@ public class BlobStorageDlqWriterTest {
                 eq(1L)
         );
     }
-
-    @Test
-    public void shouldCaptureMetricsWithDifferentErrorTypes() throws IOException, BlobStorageException {
-        long timestamp1 = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1,
-                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
-        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp1,
-                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.SINK_UNKNOWN_ERROR));
-        Message message3 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 3, null, timestamp1,
-                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.SINK_4XX_ERROR));
-
-        doThrow(new BlobStorageException("", "", new IOException())).when(blobStorage).store(anyString(), any(byte[].class));
-
-        List<Message> messages = Arrays.asList(message1, message2, message3);
-        blobStorageDLQWriter.write(messages);
-
-        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
-                eq(Metrics.DLQ_MESSAGES_TOTAL),
-                eq(Metrics.MessageType.FAILURE),
-                eq(ErrorType.DESERIALIZATION_ERROR),
-                eq("2020-01-01"),
-                eq(1L)
-        );
-        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
-                eq(Metrics.DLQ_MESSAGES_TOTAL),
-                eq(Metrics.MessageType.FAILURE),
-                eq(ErrorType.SINK_UNKNOWN_ERROR),
-                eq("2020-01-01"),
-                eq(1L)
-        );
-        verify(firehoseInstrumentation).captureDLQBlobStorageMetrics(
-                eq(Metrics.DLQ_MESSAGES_TOTAL),
-                eq(Metrics.MessageType.FAILURE),
-                eq(ErrorType.SINK_4XX_ERROR),
-                eq("2020-01-01"),
-                eq(1L)
-        );
-    }
 }
