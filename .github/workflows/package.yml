@@ -3,9 +3,7 @@ name: Package
 on:
   push:
     branches:
-      - master
-      - main
-      - fix/imagepush
+
 #  release:
 #    types: [published]
 #  workflow_dispatch:
