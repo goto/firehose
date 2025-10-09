@@ -9,8 +9,8 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.Sink;
 import com.gotocompany.firehose.sink.dlq.DlqWriter;
-import com.gotocompany.firehose.sink.dlq.DlqDateUtils;
 import com.gotocompany.firehose.sink.dlq.blobstorage.BlobStorageDlqWriter;
+import com.gotocompany.firehose.sink.dlq.blobstorage.DlqDateUtils;
 
 import java.io.IOException;
 import java.util.LinkedList;

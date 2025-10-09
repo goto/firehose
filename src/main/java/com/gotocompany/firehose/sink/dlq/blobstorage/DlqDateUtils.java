@@ -1,4 +1,4 @@
-package com.gotocompany.firehose.sink.dlq;
+package com.gotocompany.firehose.sink.dlq.blobstorage;
 
 import com.gotocompany.firehose.message.Message;
 

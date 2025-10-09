@@ -9,7 +9,6 @@ import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
 import com.gotocompany.firehose.sink.dlq.DlqWriter;
-import com.gotocompany.firehose.sink.dlq.DlqDateUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
