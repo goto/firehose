@@ -7,6 +7,7 @@ import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.dlq.DlqWriter;
+import com.gotocompany.firehose.sink.dlq.blobstorage.BlobStorageDlqWriter;
 import com.gotocompany.depot.error.ErrorInfo;
 import com.gotocompany.depot.error.ErrorType;
 import org.aeonbits.owner.ConfigFactory;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -254,5 +256,143 @@ public class SinkWithDlqTest {
         verify(firehoseInstrumentation, times(2)).captureMessageMetrics(Metrics.DLQ_MESSAGES_TOTAL, Metrics.MessageType.FAILURE, ErrorType.DESERIALIZATION_ERROR, 1);
         verify(firehoseInstrumentation, times(10)).incrementCounter(Metrics.DLQ_RETRY_ATTEMPTS_TOTAL);
         verify(firehoseInstrumentation, times(1)).captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, 0);
+    }
+
+    @Test
+    public void shouldCaptureTotalMetricsWithDateTagWhenBlobStorageDlqWriter() throws Exception {
+        BlobStorageDlqWriter blobStorageDlqWriter = mock(BlobStorageDlqWriter.class);
+        when(blobStorageDlqWriter.write(anyList())).thenReturn(new LinkedList<>());
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
+
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
+
+        ArrayList<Message> messages = new ArrayList<>();
+        messages.add(message1);
+        messages.add(message2);
+        when(sinkWithRetry.pushMessage(anyList())).thenReturn(messages);
+
+        SinkWithDlq sinkWithDlq = new SinkWithDlq(sinkWithRetry, blobStorageDlqWriter, backOffProvider, dlqConfig, errorHandler, firehoseInstrumentation);
+
+        List<Message> pushResult = sinkWithDlq.pushMessage(messages);
+        verify(blobStorageDlqWriter, times(1)).write(messages);
+        assertEquals(0, pushResult.size());
+        verify(firehoseInstrumentation, times(2)).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.TOTAL),
+                eq(ErrorType.DESERIALIZATION_ERROR),
+                eq("2020-01-01"),
+                eq(1L)
+        );
+        verify(firehoseInstrumentation, times(1)).captureMessageMetrics(Metrics.DLQ_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, 2);
+        verify(firehoseInstrumentation, times(1)).incrementCounter(Metrics.DLQ_RETRY_ATTEMPTS_TOTAL);
+        verify(firehoseInstrumentation, times(1)).captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, 2);
+    }
+
+    @Test
+    public void shouldCaptureTotalMetricsWithDateTagForDifferentDatesWhenBlobStorageDlqWriter() throws Exception {
+        BlobStorageDlqWriter blobStorageDlqWriter = mock(BlobStorageDlqWriter.class);
+        when(blobStorageDlqWriter.write(anyList())).thenReturn(new LinkedList<>());
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
+
+        long timestamp1 = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1, timestamp1, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
+
+        long timestamp2 = Instant.parse("2020-01-02T00:00:00Z").toEpochMilli();
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp2, timestamp2, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
+
+        ArrayList<Message> messages = new ArrayList<>();
+        messages.add(message1);
+        messages.add(message2);
+        when(sinkWithRetry.pushMessage(anyList())).thenReturn(messages);
+
+        SinkWithDlq sinkWithDlq = new SinkWithDlq(sinkWithRetry, blobStorageDlqWriter, backOffProvider, dlqConfig, errorHandler, firehoseInstrumentation);
+
+        List<Message> pushResult = sinkWithDlq.pushMessage(messages);
+        verify(blobStorageDlqWriter, times(1)).write(messages);
+        assertEquals(0, pushResult.size());
+        verify(firehoseInstrumentation, times(1)).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.TOTAL),
+                eq(ErrorType.DESERIALIZATION_ERROR),
+                eq("2020-01-01"),
+                eq(1L)
+        );
+        verify(firehoseInstrumentation, times(1)).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.TOTAL),
+                eq(ErrorType.DESERIALIZATION_ERROR),
+                eq("2020-01-02"),
+                eq(1L)
+        );
+        verify(firehoseInstrumentation, times(1)).captureMessageMetrics(Metrics.DLQ_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, 2);
+        verify(firehoseInstrumentation, times(1)).incrementCounter(Metrics.DLQ_RETRY_ATTEMPTS_TOTAL);
+        verify(firehoseInstrumentation, times(1)).captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, 2);
+    }
+
+    @Test
+    public void shouldCaptureTotalMetricsWithTimezoneAwareDateTagWhenBlobStorageDlqWriter() throws Exception {
+        BlobStorageDlqWriter blobStorageDlqWriter = mock(BlobStorageDlqWriter.class);
+        when(blobStorageDlqWriter.write(anyList())).thenReturn(new LinkedList<>());
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("Asia/Tokyo"));
+
+        long utcTimestamp = Instant.parse("2020-01-01T15:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, utcTimestamp, utcTimestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
+
+        ArrayList<Message> messages = new ArrayList<>();
+        messages.add(message1);
+        when(sinkWithRetry.pushMessage(anyList())).thenReturn(messages);
+
+        SinkWithDlq sinkWithDlq = new SinkWithDlq(sinkWithRetry, blobStorageDlqWriter, backOffProvider, dlqConfig, errorHandler, firehoseInstrumentation);
+
+        List<Message> pushResult = sinkWithDlq.pushMessage(messages);
+        verify(blobStorageDlqWriter, times(1)).write(messages);
+        assertEquals(0, pushResult.size());
+        verify(firehoseInstrumentation, times(1)).captureDLQBlobStorageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.TOTAL),
+                eq(ErrorType.DESERIALIZATION_ERROR),
+                eq("2020-01-02"),
+                eq(1L)
+        );
+        verify(firehoseInstrumentation, times(1)).captureMessageMetrics(Metrics.DLQ_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, 1);
+        verify(firehoseInstrumentation, times(1)).incrementCounter(Metrics.DLQ_RETRY_ATTEMPTS_TOTAL);
+        verify(firehoseInstrumentation, times(1)).captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, 1);
+    }
+
+    @Test
+    public void shouldNotCaptureDateTagWhenNotBlobStorageDlqWriter() throws Exception {
+        when(dlqWriter.write(anyList())).thenReturn(new LinkedList<>());
+        when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
+
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp, timestamp, new ErrorInfo(new IOException(), ErrorType.DESERIALIZATION_ERROR));
+
+        ArrayList<Message> messages = new ArrayList<>();
+        messages.add(message1);
+        when(sinkWithRetry.pushMessage(anyList())).thenReturn(messages);
+
+        SinkWithDlq sinkWithDlq = new SinkWithDlq(sinkWithRetry, dlqWriter, backOffProvider, dlqConfig, errorHandler, firehoseInstrumentation);
+
+        List<Message> pushResult = sinkWithDlq.pushMessage(messages);
+        verify(dlqWriter, times(1)).write(messages);
+        assertEquals(0, pushResult.size());
+        verify(firehoseInstrumentation, times(1)).captureMessageMetrics(
+                eq(Metrics.DLQ_MESSAGES_TOTAL),
+                eq(Metrics.MessageType.TOTAL),
+                eq(ErrorType.DESERIALIZATION_ERROR),
+                eq(1L)
+        );
+        verify(firehoseInstrumentation, never()).captureDLQBlobStorageMetrics(
+                any(),
+                any(),
+                any(),
+                any(),
+                anyLong()
+        );
+        verify(firehoseInstrumentation, times(1)).captureMessageMetrics(Metrics.DLQ_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, 1);
+        verify(firehoseInstrumentation, times(1)).incrementCounter(Metrics.DLQ_RETRY_ATTEMPTS_TOTAL);
+        verify(firehoseInstrumentation, times(1)).captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, 1);
     }
 }
