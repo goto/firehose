@@ -15,10 +15,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,10 +85,7 @@ public class BlobStorageDlqWriter implements DlqWriter {
     }
 
     private Path createPartition(Message message) {
-        ZoneId zoneId = dlqConfig.getDlqBlobFilePartitionTimezone();
-        LocalDate consumeLocalDate = LocalDate.from(Instant.ofEpochMilli(message.getConsumeTimestamp())
-                .atZone(zoneId));
-        String consumeDate = DateTimeFormatter.ISO_LOCAL_DATE.format(consumeLocalDate);
+        String consumeDate = DlqDateUtils.getDateFromMessage(message, dlqConfig.getDlqBlobFilePartitionTimezone());
         return Paths.get(message.getTopic(), consumeDate);
     }
 

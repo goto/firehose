@@ -9,6 +9,8 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.Sink;
 import com.gotocompany.firehose.sink.dlq.DlqWriter;
+import com.gotocompany.firehose.sink.dlq.blobstorage.BlobStorageDlqWriter;
+import com.gotocompany.firehose.sink.dlq.blobstorage.DlqDateUtils;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -76,9 +78,16 @@ public class SinkWithDlq extends SinkDecorator {
 
     private List<Message> doDLQ(List<Message> messages) throws IOException {
         List<Message> retryQueueMessages = new LinkedList<>(messages);
+        boolean isBlobStorageDlq = writer instanceof BlobStorageDlqWriter;
+
         retryQueueMessages.forEach(m -> {
             m.setDefaultErrorIfNotPresent();
-            firehoseInstrumentation.captureMessageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.TOTAL, m.getErrorInfo().getErrorType(), 1);
+            if (isBlobStorageDlq) {
+                String date = calculateDateFromMessage(m);
+                firehoseInstrumentation.captureDLQBlobStorageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.TOTAL, m.getErrorInfo().getErrorType(), date, 1);
+            } else {
+                firehoseInstrumentation.captureMessageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.TOTAL, m.getErrorInfo().getErrorType(), 1);
+            }
         });
         int attemptCount = 1;
         while (attemptCount <= this.dlqConfig.getDlqRetryMaxAttempts() && !retryQueueMessages.isEmpty()) {
@@ -97,6 +106,10 @@ public class SinkWithDlq extends SinkDecorator {
         retryQueueMessages.forEach(m -> firehoseInstrumentation.captureMessageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.FAILURE, m.getErrorInfo().getErrorType(), 1));
         firehoseInstrumentation.captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, messages.size() - retryQueueMessages.size());
         return retryQueueMessages;
+    }
+
+    private String calculateDateFromMessage(Message message) {
+        return DlqDateUtils.getDateFromMessage(message, dlqConfig.getDlqBlobFilePartitionTimezone());
     }
 
     @Override
