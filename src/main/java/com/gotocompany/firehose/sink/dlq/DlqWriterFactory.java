@@ -23,7 +23,7 @@ public class DlqWriterFactory {
     public static DlqWriter create(Map<String, String> configuration, StatsDReporter client, Tracer tracer) {
         DlqConfig dlqConfig = ConfigFactory.create(DlqConfig.class, configuration);
         FirehoseInstrumentation instrumentation = new FirehoseInstrumentation(client, DlqWriterFactory.class);
-        
+
         instrumentation.logInfo("Creating DLQ writer of type: {}", dlqConfig.getDlqWriterType());
 
         switch (dlqConfig.getDlqWriterType()) {
@@ -36,7 +36,7 @@ public class DlqWriterFactory {
 
             case BLOB_STORAGE:
                 instrumentation.logInfo("DLQ blob storage type: {}", dlqConfig.getBlobStorageType());
-                
+
                 switch (dlqConfig.getBlobStorageType()) {
                     case GCS:
                         configuration.put("GCS_TYPE", "DLQ");
@@ -46,15 +46,15 @@ public class DlqWriterFactory {
                         break;
                     case OSS:
                         configuration.put("OSS_TYPE", "DLQ");
-                        instrumentation.logInfo("OSS DLQ Configuration - endpoint: {}, region: {}, bucket: {}, directoryPrefix: {}", 
+                        instrumentation.logInfo("OSS DLQ Configuration - endpoint: {}, region: {}, bucket: {}, directoryPrefix: {}",
                             configuration.get("DLQ_OSS_ENDPOINT"),
                             configuration.get("DLQ_OSS_REGION"),
                             configuration.get("DLQ_OSS_BUCKET_NAME"),
                             configuration.get("DLQ_OSS_DIRECTORY_PREFIX"));
-                        instrumentation.logInfo("OSS DLQ Retry Configuration - enabled: {}, maxAttempts: {}", 
+                        instrumentation.logInfo("OSS DLQ Retry Configuration - enabled: {}, maxAttempts: {}",
                             configuration.getOrDefault("DLQ_OSS_RETRY_ENABLED", "true"),
                             configuration.getOrDefault("DLQ_OSS_MAX_RETRY_ATTEMPTS", "3"));
-                        instrumentation.logDebug("OSS DLQ Timeout Configuration - socketTimeout: {}ms, connectionTimeout: {}ms, requestTimeout: {}ms", 
+                        instrumentation.logDebug("OSS DLQ Timeout Configuration - socketTimeout: {}ms, connectionTimeout: {}ms, requestTimeout: {}ms",
                             configuration.getOrDefault("DLQ_OSS_SOCKET_TIMEOUT_MS", "50000"),
                             configuration.getOrDefault("DLQ_OSS_CONNECTION_TIMEOUT_MS", "50000"),
                             configuration.getOrDefault("DLQ_OSS_REQUEST_TIMEOUT_MS", "300000"));
@@ -65,7 +65,7 @@ public class DlqWriterFactory {
                     default:
                         throw new IllegalArgumentException("DLQ Blob Storage type " + dlqConfig.getBlobStorageType() + "is not supported");
                 }
-                
+
                 instrumentation.logInfo("DLQ blob file partition timezone: {}", dlqConfig.getDlqBlobFilePartitionTimezone());
                 BlobStorage blobStorage = BlobStorageFactory.createObjectStorage(dlqConfig.getBlobStorageType(), configuration);
                 return new BlobStorageDlqWriter(blobStorage, dlqConfig, new FirehoseInstrumentation(client, BlobStorageDlqWriter.class));

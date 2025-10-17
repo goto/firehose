@@ -530,10 +530,10 @@ public class ObjectStorageServiceTest {
         BucketList bucketList = new BucketList();
         bucketList.setBucketList(Collections.singletonList(Mockito.mock(Bucket.class)));
         when(oss.listBuckets(Mockito.any())).thenReturn(bucketList);
-        
+
         OSSException ossException = new OSSException("Access denied");
         when(oss.putObject(any())).thenThrow(ossException);
-        
+
         ObjectStorageService service = new ObjectStorageService(config, oss);
         service.store("test.txt", "content".getBytes());
     }
@@ -548,10 +548,10 @@ public class ObjectStorageServiceTest {
         bucketList.setBucketList(Collections.singletonList(Mockito.mock(Bucket.class)));
         when(oss.listBuckets(Mockito.any())).thenReturn(bucketList);
         when(oss.putObject(any())).thenReturn(null);
-        
+
         ObjectStorageService service = new ObjectStorageService(config, oss);
         service.store("test.txt", "content".getBytes());
-        
+
         verify(oss).putObject(any(PutObjectRequest.class));
     }
 
@@ -566,10 +566,10 @@ public class ObjectStorageServiceTest {
         when(oss.listBuckets(Mockito.any())).thenReturn(bucketList);
         when(oss.putObject(any())).thenReturn(null);
         when(oss.doesObjectExist(anyString(), anyString())).thenReturn(true);
-        
+
         ObjectStorageService service = new ObjectStorageService(config, oss);
         service.store("test.txt", "content".getBytes());
-        
+
         verify(oss).putObject(any(PutObjectRequest.class));
     }
 
@@ -583,10 +583,10 @@ public class ObjectStorageServiceTest {
         bucketList.setBucketList(Collections.singletonList(Mockito.mock(Bucket.class)));
         when(oss.listBuckets(Mockito.any())).thenReturn(bucketList);
         when(oss.putObject(any())).thenReturn(null);
-        
+
         ObjectStorageService service = new ObjectStorageService(config, oss);
         service.store("test.txt", "content".getBytes());
-        
+
         ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
         verify(oss).putObject(captor.capture());
         assertEquals("test.txt", captor.getValue().getKey());

@@ -342,7 +342,7 @@ public class BlobStorageDlqWriterTest {
     public void shouldLogInfoForEmptyMessagesList() throws IOException {
         List<Message> messages = Collections.emptyList();
         List<Message> result = blobStorageDLQWriter.write(messages);
-        
+
         Assert.assertEquals(0, result.size());
         verify(firehoseInstrumentation, never()).logInfo(anyString(), anyInt());
     }
@@ -362,7 +362,7 @@ public class BlobStorageDlqWriterTest {
     @Test
     public void shouldDetectLargeBatch() throws IOException, BlobStorageException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        
+
         byte[] largeContent = new byte[11 * 1024 * 1024];
         Message message = new Message("key".getBytes(), largeContent, "booking", 1, 1, null, timestamp,
                 timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));

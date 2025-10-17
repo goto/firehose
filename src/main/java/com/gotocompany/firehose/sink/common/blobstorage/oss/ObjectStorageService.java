@@ -35,15 +35,15 @@ public class ObjectStorageService implements BlobStorage {
         this.oss = oss;
         this.ossBucketName = objectStorageServiceConfig.getOssBucketName();
         this.ossDirectoryPrefix = objectStorageServiceConfig.getOssDirectoryPrefix();
-        
-        log.info("Initializing OSS client - endpoint: {}, bucket: {}, directoryPrefix: {}", 
-            objectStorageServiceConfig.getOssEndpoint(), 
-            ossBucketName, 
+
+        log.info("Initializing OSS client - endpoint: {}, bucket: {}, directoryPrefix: {}",
+            objectStorageServiceConfig.getOssEndpoint(),
+            ossBucketName,
             ossDirectoryPrefix);
-        log.debug("OSS retry config - enabled: {}, maxAttempts: {}", 
-            objectStorageServiceConfig.isRetryEnabled(), 
+        log.debug("OSS retry config - enabled: {}, maxAttempts: {}",
+            objectStorageServiceConfig.isRetryEnabled(),
             objectStorageServiceConfig.getOssMaxRetryAttempts());
-        
+
         logOssConfiguration(objectStorageServiceConfig);
         checkBucket();
     }
@@ -74,10 +74,10 @@ public class ObjectStorageService implements BlobStorage {
         File file = new File(filePath);
         long fileSize = file.exists() ? file.length() : 0;
         String builtPath = buildObjectPath(objectName);
-        
+
         log.info("Starting OSS store operation - object: {}, filePath: {}, size: {} bytes", objectName, filePath, fileSize);
         log.debug("Built OSS object path: {}", builtPath);
-        
+
         PutObjectRequest putObjectRequest = new PutObjectRequest(
                 ossBucketName,
                 builtPath,
@@ -89,10 +89,10 @@ public class ObjectStorageService implements BlobStorage {
     @Override
     public void store(String objectName, byte[] content) throws BlobStorageException {
         String builtPath = buildObjectPath(objectName);
-        
+
         log.debug("Starting OSS store operation - object: {}, size: {} bytes", objectName, content.length);
         log.debug("Built OSS object path: {}", builtPath);
-        
+
         PutObjectRequest putObjectRequest = new PutObjectRequest(
                 ossBucketName,
                 builtPath,
@@ -108,27 +108,27 @@ public class ObjectStorageService implements BlobStorage {
             oss.putObject(putObjectRequest);
             long duration = System.currentTimeMillis() - startTime;
             String ossUrl = String.format("oss://%s/%s", ossBucketName, builtPath);
-            log.info("Successfully uploaded to OSS - url: {}, size: {} bytes, duration: {}ms", 
+            log.info("Successfully uploaded to OSS - url: {}, size: {} bytes, duration: {}ms",
                 ossUrl, contentSize, duration);
-            
+
             if (log.isDebugEnabled()) {
                 boolean exists = oss.doesObjectExist(ossBucketName, builtPath);
-                log.debug("OSS object existence verification - bucket: {}, key: {}, exists: {}", 
+                log.debug("OSS object existence verification - bucket: {}, key: {}, exists: {}",
                     ossBucketName, builtPath, exists);
                 if (!exists) {
-                    log.warn("ALERT: Object reported as uploaded but verification failed - bucket: {}, key: {}", 
+                    log.warn("ALERT: Object reported as uploaded but verification failed - bucket: {}, key: {}",
                         ossBucketName, builtPath);
                 }
             }
         } catch (ClientException e) {
             String failureType = classifyClientException(e);
             long elapsedTime = System.currentTimeMillis() - startTime;
-            log.error("Failed to put object to OSS (ClientException/{}) - bucket: {}, key: {}, object: {}, size: {} bytes, elapsedTime: {}ms, error: {}", 
+            log.error("Failed to put object to OSS (ClientException/{}) - bucket: {}, key: {}, object: {}, size: {} bytes, elapsedTime: {}ms, error: {}",
                 failureType, ossBucketName, builtPath, objectName, contentSize, elapsedTime, e.getMessage(), e);
             throw new BlobStorageException("client_error", e.getMessage(), e);
         } catch (OSSException e) {
             long elapsedTime = System.currentTimeMillis() - startTime;
-            log.error("Failed to put object to OSS (OSSException) - bucket: {}, key: {}, object: {}, size: {} bytes, errorCode: {}, errorMessage: {}, requestID: {}, hostID: {}, elapsedTime: {}ms", 
+            log.error("Failed to put object to OSS (OSSException) - bucket: {}, key: {}, object: {}, size: {} bytes, errorCode: {}, errorMessage: {}, requestID: {}, hostID: {}, elapsedTime: {}ms",
                 ossBucketName, builtPath, objectName, contentSize, e.getErrorCode(), e.getErrorMessage(), e.getRequestId(), e.getHostId(), elapsedTime, e);
             throw new BlobStorageException(e.getErrorCode(), e.getErrorMessage(), e);
         }
@@ -142,27 +142,27 @@ public class ObjectStorageService implements BlobStorage {
 
     private String classifyClientException(ClientException e) {
         String msg = e.getMessage().toLowerCase();
-        
+
         if (msg.contains("timeout") || msg.contains("timed out") || msg.contains("read timed out")) {
             return "TIMEOUT";
         }
-        
+
         if (msg.contains("connection refused") || msg.contains("connect timed out") || msg.contains("connection reset")) {
             return "CONNECTION_ERROR";
         }
-        
+
         if (msg.contains("socket") || msg.contains("broken pipe") || msg.contains("connection aborted")) {
             return "SOCKET_ERROR";
         }
-        
+
         if (msg.contains("ssl") || msg.contains("certificate") || msg.contains("handshake")) {
             return "SSL_ERROR";
         }
-        
+
         if (msg.contains("unknown host") || msg.contains("nodename nor servname provided") || msg.contains("name resolution")) {
             return "DNS_ERROR";
         }
-        
+
         return "UNKNOWN";
     }
 
@@ -176,14 +176,14 @@ public class ObjectStorageService implements BlobStorage {
         }
         log.info("Successfully validated OSS bucket: {}", ossBucketName);
     }
-    
+
     private void logOssConfiguration(ObjectStorageServiceConfig config) {
-        log.debug("OSS timeouts - socket: {}ms, connection: {}ms, connectionRequest: {}ms, request: {}ms", 
-            config.getOssSocketTimeoutMs(), 
-            config.getOssConnectionTimeoutMs(), 
-            config.getOssConnectionRequestTimeoutMs(), 
+        log.debug("OSS timeouts - socket: {}ms, connection: {}ms, connectionRequest: {}ms, request: {}ms",
+            config.getOssSocketTimeoutMs(),
+            config.getOssConnectionTimeoutMs(),
+            config.getOssConnectionRequestTimeoutMs(),
             config.getOssRequestTimeoutMs());
-        
+
         if (config.isRetryEnabled()) {
             log.debug("OSS retry strategy: ENABLED with maxRetryAttempts: {}", config.getOssMaxRetryAttempts());
         } else {
