@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.gotocompany.firehose.metrics.Metrics.DLQ_MESSAGES_TOTAL;
 import static com.gotocompany.firehose.metrics.Metrics.DLQ_RETRY_ATTEMPTS_TOTAL;
@@ -58,14 +59,22 @@ public class SinkWithDlq extends SinkDecorator {
             return messages;
         }
         Map<Boolean, List<Message>> splitLists = errorHandler.split(messages, ErrorScope.DLQ);
-        List<Message> returnedMessages = doDLQ(splitLists.get(Boolean.TRUE));
+        List<Message> dlqEligibleMessages = splitLists.get(Boolean.TRUE);
+        List<Message> filteredMessages = splitLists.get(Boolean.FALSE);
+        
+        firehoseInstrumentation.logDebug("DLQ eligibility split - eligible: {}, filtered: {}", 
+            dlqEligibleMessages != null ? dlqEligibleMessages.size() : 0, 
+            filteredMessages != null ? filteredMessages.size() : 0);
+        
+        List<Message> returnedMessages = doDLQ(dlqEligibleMessages);
         if (!returnedMessages.isEmpty() && dlqConfig.getDlqRetryFailAfterMaxAttemptEnable()) {
+            firehoseInstrumentation.logWarn("Exhausted maximum DLQ retry attempts - failing {} messages", returnedMessages.size());
             throw new IOException("exhausted maximum number of allowed retry attempts to write messages to DLQ");
         }
         if (super.canManageOffsets()) {
             super.addOffsetsAndSetCommittable(messages);
         }
-        returnedMessages.addAll(splitLists.get(Boolean.FALSE));
+        returnedMessages.addAll(filteredMessages);
         return returnedMessages;
     }
 
@@ -77,8 +86,15 @@ public class SinkWithDlq extends SinkDecorator {
     }
 
     private List<Message> doDLQ(List<Message> messages) throws IOException {
+        if (messages == null || messages.isEmpty()) {
+            return new LinkedList<>();
+        }
+        
         List<Message> retryQueueMessages = new LinkedList<>(messages);
         boolean isBlobStorageDlq = writer instanceof BlobStorageDlqWriter;
+        String writerType = isBlobStorageDlq ? "BLOB_STORAGE" : "KAFKA/LOG";
+        
+        firehoseInstrumentation.logInfo("Starting DLQ processing for {} messages using {} writer", messages.size(), writerType);
 
         retryQueueMessages.forEach(m -> {
             m.setDefaultErrorIfNotPresent();
@@ -89,22 +105,57 @@ public class SinkWithDlq extends SinkDecorator {
                 firehoseInstrumentation.captureMessageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.TOTAL, m.getErrorInfo().getErrorType(), 1);
             }
         });
+        
+        if (isBlobStorageDlq && firehoseInstrumentation.isDebugEnabled()) {
+            Map<String, Long> dateDistribution = retryQueueMessages.stream()
+                .collect(Collectors.groupingBy(this::calculateDateFromMessage, Collectors.counting()));
+            StringBuilder distribution = new StringBuilder("Message distribution by date - ");
+            dateDistribution.forEach((date, count) -> distribution.append(date).append(": ").append(count).append(" messages, "));
+            firehoseInstrumentation.logDebug(distribution.toString());
+        }
+        
         int attemptCount = 1;
-        while (attemptCount <= this.dlqConfig.getDlqRetryMaxAttempts() && !retryQueueMessages.isEmpty()) {
+        int maxAttempts = this.dlqConfig.getDlqRetryMaxAttempts();
+        
+        while (attemptCount <= maxAttempts && !retryQueueMessages.isEmpty()) {
+            firehoseInstrumentation.logInfo("DLQ write attempt {}/{} for {} messages", attemptCount, maxAttempts, retryQueueMessages.size());
             firehoseInstrumentation.incrementCounter(DLQ_RETRY_ATTEMPTS_TOTAL);
+            
             retryQueueMessages = writer.write(retryQueueMessages);
+            
             retryQueueMessages.forEach(message -> Optional.ofNullable(message.getErrorInfo())
                     .flatMap(errorInfo -> Optional.ofNullable(errorInfo.getException()))
                     .ifPresent(e -> firehoseInstrumentation.captureDLQErrors(message, e)));
+            
+            if (!retryQueueMessages.isEmpty() && attemptCount < maxAttempts) {
+                firehoseInstrumentation.logWarn("DLQ write attempt {}/{} failed for {} messages, will retry after backoff", 
+                    attemptCount, maxAttempts, retryQueueMessages.size());
+            }
+            
             backOff(retryQueueMessages, attemptCount);
             attemptCount++;
         }
+        
+        int successCount = messages.size() - retryQueueMessages.size();
+        int failureCount = retryQueueMessages.size();
+        
         if (!retryQueueMessages.isEmpty()) {
-            firehoseInstrumentation.logInfo("failed to be processed by DLQ messages: {}", retryQueueMessages.size());
+            Map<String, Long> errorTypeDistribution = retryQueueMessages.stream()
+                .filter(m -> m.getErrorInfo() != null)
+                .collect(Collectors.groupingBy(
+                    m -> m.getErrorInfo().getErrorType().name(), 
+                    Collectors.counting()));
+            
+            firehoseInstrumentation.logInfo("Failed to process {} DLQ messages after {} attempts. Error distribution: {}", 
+                failureCount, maxAttempts, errorTypeDistribution);
         }
-        firehoseInstrumentation.captureMessageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, messages.size() - retryQueueMessages.size());
+        
+        firehoseInstrumentation.logInfo("DLQ processing complete - total: {}, successful: {}, failed: {}", 
+            messages.size(), successCount, failureCount);
+        
+        firehoseInstrumentation.captureMessageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, successCount);
         retryQueueMessages.forEach(m -> firehoseInstrumentation.captureMessageMetrics(DLQ_MESSAGES_TOTAL, Metrics.MessageType.FAILURE, m.getErrorInfo().getErrorType(), 1));
-        firehoseInstrumentation.captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, messages.size() - retryQueueMessages.size());
+        firehoseInstrumentation.captureGlobalMessageMetrics(Metrics.MessageScope.DLQ, successCount);
         return retryQueueMessages;
     }
 

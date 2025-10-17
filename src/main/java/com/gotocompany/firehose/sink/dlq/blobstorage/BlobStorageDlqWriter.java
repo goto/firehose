@@ -38,23 +38,121 @@ public class BlobStorageDlqWriter implements DlqWriter {
 
     @Override
     public List<Message> write(List<Message> messages) throws IOException {
+        if (messages.isEmpty()) {
+            return messages;
+        }
+        
+        firehoseInstrumentation.logInfo("Starting DLQ blob storage write for {} messages", messages.size());
+        
         Map<Path, List<Message>> messagesByPartition = messages.stream()
                 .collect(Collectors.groupingBy(this::createPartition));
+        
+        if (log.isDebugEnabled()) {
+            messagesByPartition.forEach((path, partitionedMessages) -> {
+                String partitionDate = extractDateFromPath(path);
+                log.debug("Partition {} has {} messages", partitionDate, partitionedMessages.size());
+                partitionedMessages.forEach(msg -> 
+                    log.debug("Message - topic: {}, partition: {}, offset: {}, errorType: {}", 
+                        msg.getTopic(), msg.getPartition(), msg.getOffset(), 
+                        msg.getErrorInfo() != null ? msg.getErrorInfo().getErrorType() : "UNKNOWN"));
+            });
+            
+            Map<String, Long> errorDistribution = messages.stream()
+                .filter(m -> m.getErrorInfo() != null)
+                .collect(Collectors.groupingBy(
+                    m -> m.getErrorInfo().getErrorType().name(),
+                    Collectors.counting()));
+            
+            log.debug("Batch error distribution: {}", errorDistribution);
+        }
+        
         List<Message> failedMessages = new LinkedList<>();
-        messagesByPartition.forEach((path, partitionedMessages) -> {
-            String data = partitionedMessages.stream().map(this::convertToString).collect(Collectors.joining("\n"));
+        int successfulPartitions = 0;
+        int failedPartitions = 0;
+        
+        for (Map.Entry<Path, List<Message>> entry : messagesByPartition.entrySet()) {
+            Path path = entry.getKey();
+            List<Message> partitionedMessages = entry.getValue();
+            
+            // Track serialization failures
+            int[] serializationFailures = {0};
+            String data = partitionedMessages.stream()
+                .map(msg -> {
+                    String json = convertToString(msg);
+                    if (json.isEmpty()) serializationFailures[0]++;
+                    return json;
+                })
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("\n"));
+            
+            if (serializationFailures[0] > 0) {
+                log.warn("JSON serialization failed for {} messages in partition {}", 
+                    serializationFailures[0], extractDateFromPath(path));
+            }
+            
             String fileName = UUID.randomUUID().toString();
             String objectName = path.resolve(fileName).toString();
             String partitionDate = extractDateFromPath(path);
+            
+            // Path validation
+            if (objectName.contains("//") || objectName.contains("\\")) {
+                log.warn("Potentially invalid object path detected: {}", objectName);
+            }
+            
+            log.debug("Created DLQ object path - topic: {}, partition: {}, date: {}, object: {}", 
+                partitionedMessages.get(0).getTopic(), partitionedMessages.get(0).getPartition(), 
+                partitionDate, objectName);
+            
+            byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
+            
+            // Empty/large content warnings
+            if (dataBytes.length == 0) {
+                log.warn("Empty DLQ batch detected for partition {}, objectName: {}", partitionDate, objectName);
+            }
+            
+            if (dataBytes.length > 10 * 1024 * 1024) {
+                log.warn("Large DLQ batch detected - partition: {}, object: {}, size: {} bytes ({} messages)", 
+                    partitionDate, objectName, dataBytes.length, partitionedMessages.size());
+            }
+            
+            log.debug("Writing {} messages to blob storage partition {}, object: {}, size: {} bytes", 
+                partitionedMessages.size(), partitionDate, objectName, dataBytes.length);
+            
             try {
-                blobStorage.store(objectName, data.getBytes(StandardCharsets.UTF_8));
+                long startTime = System.currentTimeMillis();
+                blobStorage.store(objectName, dataBytes);
+                long duration = System.currentTimeMillis() - startTime;
+                
+                if (log.isDebugEnabled()) {
+                    log.debug("Successfully stored object to blob storage: {} ({} messages, {} bytes, {}ms)", 
+                        objectName, partitionedMessages.size(), dataBytes.length, duration);
+                }
                 captureSuccessMetrics(partitionedMessages, partitionDate);
+                successfulPartitions++;
             } catch (BlobStorageException e) {
-                log.warn("Failed to store into DLQ messages into blob storage", e);
+                log.warn("Failed to store DLQ messages into blob storage - object: {}, partition: {}, messages: {}, errorType: {}, errorMessage: {}", 
+                    objectName, partitionDate, partitionedMessages.size(), e.getErrorType(), e.getMessage(), e);
                 captureFailureMetrics(partitionedMessages, partitionDate);
                 failedMessages.addAll(partitionedMessages);
+                failedPartitions++;
             }
-        });
+        }
+        
+        firehoseInstrumentation.logInfo("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}", 
+            messages.size(), successfulPartitions, failedPartitions, messages.size() - failedMessages.size(), failedMessages.size());
+        
+        if (!failedMessages.isEmpty() && log.isDebugEnabled()) {
+            Map<String, List<Message>> failedByTopic = failedMessages.stream()
+                .collect(Collectors.groupingBy(Message::getTopic));
+            
+            failedByTopic.forEach((topic, msgs) -> {
+                long minOffset = msgs.stream().mapToLong(Message::getOffset).min().orElse(-1);
+                long maxOffset = msgs.stream().mapToLong(Message::getOffset).max().orElse(-1);
+                log.debug("Failed messages for topic {} - count: {}, offsetRange: {}-{}", 
+                    topic, msgs.size(), minOffset, maxOffset);
+            });
+        }
+        
         return failedMessages;
     }
 
@@ -79,7 +177,8 @@ public class BlobStorageDlqWriter implements DlqWriter {
                     errorString,
                     errorType));
         } catch (JsonProcessingException e) {
-            log.warn("Not able to convert message into json", e);
+            log.warn("Failed to convert message to JSON - topic: {}, partition: {}, offset: {}", 
+                message.getTopic(), message.getPartition(), message.getOffset(), e);
             return "";
         }
     }
