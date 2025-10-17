@@ -344,21 +344,18 @@ public class BlobStorageDlqWriterTest {
         List<Message> result = blobStorageDLQWriter.write(messages);
         
         Assert.assertEquals(0, result.size());
-        // Should return early without logging
         verify(firehoseInstrumentation, never()).logInfo(anyString(), anyInt());
     }
 
     @Test
     public void shouldDetectEmptyBatchContent() throws IOException, BlobStorageException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
-        // Create a message that will result in empty content after filtering
         Message message = new Message("".getBytes(), "".getBytes(), "booking", 1, 1, null, timestamp,
                 timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
 
         List<Message> messages = Collections.singletonList(message);
         blobStorageDLQWriter.write(messages);
 
-        // Verify store was called (even with empty content)
         verify(blobStorage).store(anyString(), any(byte[].class));
     }
 
@@ -366,15 +363,13 @@ public class BlobStorageDlqWriterTest {
     public void shouldDetectLargeBatch() throws IOException, BlobStorageException {
         long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
         
-        // Create a large message (>10MB when serialized)
-        byte[] largeContent = new byte[11 * 1024 * 1024]; // 11MB
+        byte[] largeContent = new byte[11 * 1024 * 1024];
         Message message = new Message("key".getBytes(), largeContent, "booking", 1, 1, null, timestamp,
                 timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
 
         List<Message> messages = Collections.singletonList(message);
         blobStorageDLQWriter.write(messages);
 
-        // Verify store was called
         verify(blobStorage).store(anyString(), any(byte[].class));
     }
 
@@ -387,7 +382,6 @@ public class BlobStorageDlqWriterTest {
         List<Message> messages = Collections.singletonList(message);
         blobStorageDLQWriter.write(messages);
 
-        // Verify store was called (path validation is just a warning)
         verify(blobStorage).store(anyString(), any(byte[].class));
     }
 
@@ -402,7 +396,6 @@ public class BlobStorageDlqWriterTest {
         List<Message> messages = Arrays.asList(message1, message2);
         blobStorageDLQWriter.write(messages);
 
-        // Verify logging methods were called
         verify(firehoseInstrumentation).logInfo(eq("Starting DLQ blob storage write for {} messages"), eq(2));
         verify(firehoseInstrumentation).logInfo(
             eq("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}"),
@@ -426,7 +419,6 @@ public class BlobStorageDlqWriterTest {
         List<Message> messages = Arrays.asList(message1, message2);
         List<Message> failedMessages = blobStorageDLQWriter.write(messages);
 
-        // Verify 1 successful partition and 1 failed partition
         Assert.assertEquals(1, failedMessages.size());
         verify(firehoseInstrumentation).logInfo(
             eq("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}"),
@@ -446,7 +438,6 @@ public class BlobStorageDlqWriterTest {
         List<Message> messages = Arrays.asList(message1, message2, message3);
         blobStorageDLQWriter.write(messages);
 
-        // Should write all 3 messages to the same partition (same date)
         verify(blobStorage, times(1)).store(anyString(), any(byte[].class));
         verify(firehoseInstrumentation).logInfo(
             eq("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}"),

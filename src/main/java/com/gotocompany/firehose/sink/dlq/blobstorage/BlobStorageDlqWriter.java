@@ -74,7 +74,6 @@ public class BlobStorageDlqWriter implements DlqWriter {
             Path path = entry.getKey();
             List<Message> partitionedMessages = entry.getValue();
             
-            // Track serialization failures
             int[] serializationFailures = {0};
             String data = partitionedMessages.stream()
                 .map(msg -> {
@@ -94,7 +93,6 @@ public class BlobStorageDlqWriter implements DlqWriter {
             String objectName = path.resolve(fileName).toString();
             String partitionDate = extractDateFromPath(path);
             
-            // Path validation
             if (objectName.contains("//") || objectName.contains("\\")) {
                 log.warn("Potentially invalid object path detected: {}", objectName);
             }
@@ -105,7 +103,6 @@ public class BlobStorageDlqWriter implements DlqWriter {
             
             byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
             
-            // Empty/large content warnings
             if (dataBytes.length == 0) {
                 log.warn("Empty DLQ batch detected for partition {}, objectName: {}", partitionDate, objectName);
             }

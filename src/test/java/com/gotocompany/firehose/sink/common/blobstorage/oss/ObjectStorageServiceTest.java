@@ -552,7 +552,6 @@ public class ObjectStorageServiceTest {
         ObjectStorageService service = new ObjectStorageService(config, oss);
         service.store("test.txt", "content".getBytes());
         
-        // Verify putObject was called
         verify(oss).putObject(any(PutObjectRequest.class));
     }
 
@@ -571,9 +570,7 @@ public class ObjectStorageServiceTest {
         ObjectStorageService service = new ObjectStorageService(config, oss);
         service.store("test.txt", "content".getBytes());
         
-        // Verify putObject was called
         verify(oss).putObject(any(PutObjectRequest.class));
-        // doesObjectExist is only called in debug mode, so we won't verify it in normal test mode
     }
 
     @Test

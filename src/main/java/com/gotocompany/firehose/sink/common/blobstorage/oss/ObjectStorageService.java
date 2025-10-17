@@ -143,27 +143,22 @@ public class ObjectStorageService implements BlobStorage {
     private String classifyClientException(ClientException e) {
         String msg = e.getMessage().toLowerCase();
         
-        // Timeout errors
         if (msg.contains("timeout") || msg.contains("timed out") || msg.contains("read timed out")) {
             return "TIMEOUT";
         }
         
-        // Connection errors
         if (msg.contains("connection refused") || msg.contains("connect timed out") || msg.contains("connection reset")) {
             return "CONNECTION_ERROR";
         }
         
-        // Socket errors
         if (msg.contains("socket") || msg.contains("broken pipe") || msg.contains("connection aborted")) {
             return "SOCKET_ERROR";
         }
         
-        // SSL/TLS errors
         if (msg.contains("ssl") || msg.contains("certificate") || msg.contains("handshake")) {
             return "SSL_ERROR";
         }
         
-        // DNS resolution errors
         if (msg.contains("unknown host") || msg.contains("nodename nor servname provided") || msg.contains("name resolution")) {
             return "DNS_ERROR";
         }

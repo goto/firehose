@@ -22,9 +22,6 @@ import java.util.stream.Collectors;
 import static com.gotocompany.firehose.metrics.Metrics.DLQ_MESSAGES_TOTAL;
 import static com.gotocompany.firehose.metrics.Metrics.DLQ_RETRY_ATTEMPTS_TOTAL;
 
-/**
- * This Sink pushes failed messages to kafka after retries are exhausted.
- */
 public class SinkWithDlq extends SinkDecorator {
 
     public static final String DLQ_BATCH_KEY = "dlq-batch-key";
@@ -44,14 +41,6 @@ public class SinkWithDlq extends SinkDecorator {
         this.dlqConfig = dlqConfig;
     }
 
-    /**
-     * Pushes all the failed messages to kafka as DLQ.
-     *
-     * @param inputMessages list of messages to push
-     * @return list of failed messaged
-     * @throws IOException
-     * @throws DeserializerException
-     */
     @Override
     public List<Message> pushMessage(List<Message> inputMessages) throws IOException, DeserializerException {
         List<Message> messages = super.pushMessage(inputMessages);
