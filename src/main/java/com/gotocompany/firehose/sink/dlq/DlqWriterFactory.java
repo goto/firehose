@@ -2,6 +2,7 @@ package com.gotocompany.firehose.sink.dlq;
 
 import com.gotocompany.firehose.config.DlqConfig;
 import com.gotocompany.firehose.config.DlqKafkaProducerConfig;
+import com.gotocompany.firehose.config.ObjectStorageServiceConfig;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageFactory;
@@ -46,18 +47,19 @@ public class DlqWriterFactory {
                         break;
                     case OSS:
                         configuration.put("OSS_TYPE", "DLQ");
-                        instrumentation.logInfo("OSS DLQ Configuration - endpoint: {}, region: {}, bucket: {}, directoryPrefix: {}",
-                            configuration.get("DLQ_OSS_ENDPOINT"),
-                            configuration.get("DLQ_OSS_REGION"),
-                            configuration.get("DLQ_OSS_BUCKET_NAME"),
-                            configuration.get("DLQ_OSS_DIRECTORY_PREFIX"));
-                        instrumentation.logInfo("OSS DLQ Retry Configuration - enabled: {}, maxAttempts: {}",
-                            configuration.getOrDefault("DLQ_OSS_RETRY_ENABLED", "true"),
-                            configuration.getOrDefault("DLQ_OSS_MAX_RETRY_ATTEMPTS", "3"));
+                        ObjectStorageServiceConfig ossConfig = ConfigFactory.create(ObjectStorageServiceConfig.class, configuration);
+                        instrumentation.logDebug("OSS DLQ Configuration - endpoint: {}, region: {}, bucket: {}, directoryPrefix: {}",
+                            ossConfig.getOssEndpoint(),
+                            ossConfig.getOssRegion(),
+                            ossConfig.getOssBucketName(),
+                            ossConfig.getOssDirectoryPrefix());
+                        instrumentation.logDebug("OSS DLQ Retry Configuration - enabled: {}, maxAttempts: {}",
+                            ossConfig.isRetryEnabled(),
+                            ossConfig.getOssMaxRetryAttempts());
                         instrumentation.logDebug("OSS DLQ Timeout Configuration - socketTimeout: {}ms, connectionTimeout: {}ms, requestTimeout: {}ms",
-                            configuration.getOrDefault("DLQ_OSS_SOCKET_TIMEOUT_MS", "50000"),
-                            configuration.getOrDefault("DLQ_OSS_CONNECTION_TIMEOUT_MS", "50000"),
-                            configuration.getOrDefault("DLQ_OSS_REQUEST_TIMEOUT_MS", "300000"));
+                            ossConfig.getOssSocketTimeoutMs(),
+                            ossConfig.getOssConnectionTimeoutMs(),
+                            ossConfig.getOssRequestTimeoutMs());
                         break;
                     case COS:
                         configuration.put("COS_TYPE", "DLQ");
