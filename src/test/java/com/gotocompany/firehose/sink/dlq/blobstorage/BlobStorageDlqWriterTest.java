@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -335,5 +336,111 @@ public class BlobStorageDlqWriterTest {
                 eq("2020-01-02"),
                 eq(1L)
         );
+    }
+
+    @Test
+    public void shouldLogInfoForEmptyMessagesList() throws IOException {
+        List<Message> messages = Collections.emptyList();
+        List<Message> result = blobStorageDLQWriter.write(messages);
+
+        Assert.assertEquals(0, result.size());
+        verify(firehoseInstrumentation, never()).logInfo(anyString(), anyInt());
+    }
+
+    @Test
+    public void shouldDetectEmptyBatchContent() throws IOException, BlobStorageException {
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message = new Message("".getBytes(), "".getBytes(), "booking", 1, 1, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Collections.singletonList(message);
+        blobStorageDLQWriter.write(messages);
+
+        verify(blobStorage).store(anyString(), any(byte[].class));
+    }
+
+    @Test
+    public void shouldDetectLargeBatch() throws IOException, BlobStorageException {
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+
+        byte[] largeContent = new byte[11 * 1024 * 1024];
+        Message message = new Message("key".getBytes(), largeContent, "booking", 1, 1, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Collections.singletonList(message);
+        blobStorageDLQWriter.write(messages);
+
+        verify(blobStorage).store(anyString(), any(byte[].class));
+    }
+
+    @Test
+    public void shouldHandlePathsWithDoubleSlashes() throws IOException, BlobStorageException {
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking//test", 1, 1, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Collections.singletonList(message);
+        blobStorageDLQWriter.write(messages);
+
+        verify(blobStorage).store(anyString(), any(byte[].class));
+    }
+
+    @Test
+    public void shouldLogStartAndCompleteForBatchProcessing() throws IOException, BlobStorageException {
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message2 = new Message("456".getBytes(), "def".getBytes(), "booking", 1, 2, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Arrays.asList(message1, message2);
+        blobStorageDLQWriter.write(messages);
+
+        verify(firehoseInstrumentation).logInfo(eq("Starting DLQ blob storage write for {} messages"), eq(2));
+        verify(firehoseInstrumentation).logInfo(
+            eq("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}"),
+            eq(2), anyInt(), anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    public void shouldTrackSuccessfulAndFailedPartitions() throws IOException, BlobStorageException {
+        long timestamp1 = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp1,
+                timestamp1, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        long timestamp2 = Instant.parse("2020-01-02T00:00:00Z").toEpochMilli();
+        Message message2 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 2, null, timestamp2,
+                timestamp2, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        doNothing().when(blobStorage).store(contains("2020-01-01"), any(byte[].class));
+        doThrow(new BlobStorageException("error", "Storage failed", new IOException())).when(blobStorage)
+                .store(contains("2020-01-02"), any(byte[].class));
+
+        List<Message> messages = Arrays.asList(message1, message2);
+        List<Message> failedMessages = blobStorageDLQWriter.write(messages);
+
+        Assert.assertEquals(1, failedMessages.size());
+        verify(firehoseInstrumentation).logInfo(
+            eq("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}"),
+            eq(2), eq(1), eq(1), eq(1), eq(1));
+    }
+
+    @Test
+    public void shouldHandleMultipleMessagesInSamePartition() throws IOException, BlobStorageException {
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message1 = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message2 = new Message("456".getBytes(), "def".getBytes(), "booking", 1, 2, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+        Message message3 = new Message("789".getBytes(), "ghi".getBytes(), "booking", 1, 3, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Arrays.asList(message1, message2, message3);
+        blobStorageDLQWriter.write(messages);
+
+        verify(blobStorage, times(1)).store(anyString(), any(byte[].class));
+        verify(firehoseInstrumentation).logInfo(
+            eq("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}"),
+            eq(3), eq(1), eq(0), eq(3), eq(0));
     }
 }

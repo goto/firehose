@@ -40,7 +40,7 @@ public class ExponentialBackOffProviderTest {
         exponentialBackOffProvider.backOff(100000000);
         verify(backOff).inMilliSeconds(maximumBackoffTimeInMS);
 
-        verify(firehoseInstrumentation, times(1)).logWarn("backing off for {} milliseconds ", (long) maximumBackoffTimeInMS);
+        verify(firehoseInstrumentation, times(1)).logDebug("Backing off for {} milliseconds before retry attempt {}", (long) maximumBackoffTimeInMS, 100000001);
         verify(firehoseInstrumentation, times(1)).captureSleepTime("firehose_retry_backoff_sleep_milliseconds", toIntExact(maximumBackoffTimeInMS));
     }
 
@@ -50,14 +50,14 @@ public class ExponentialBackOffProviderTest {
         long sleepTime1 = 20;
         verify(backOff).inMilliSeconds(sleepTime1);
 
-        verify(firehoseInstrumentation, times(1)).logWarn("backing off for {} milliseconds ", sleepTime1);
+        verify(firehoseInstrumentation, times(1)).logDebug("Backing off for {} milliseconds before retry attempt {}", sleepTime1, 2);
         verify(firehoseInstrumentation, times(1)).captureSleepTime("firehose_retry_backoff_sleep_milliseconds", toIntExact(sleepTime1));
 
         exponentialBackOffProvider.backOff(4);
         long sleepTime2 = 160;
         verify(backOff).inMilliSeconds(sleepTime2);
 
-        verify(firehoseInstrumentation, times(1)).logWarn("backing off for {} milliseconds ", sleepTime2);
+        verify(firehoseInstrumentation, times(1)).logDebug("Backing off for {} milliseconds before retry attempt {}", sleepTime2, 5);
         verify(firehoseInstrumentation, times(1)).captureSleepTime("firehose_retry_backoff_sleep_milliseconds", toIntExact(sleepTime2));
     }
 
@@ -72,7 +72,7 @@ public class ExponentialBackOffProviderTest {
     public void shouldRecordStatsForBackOffTime() {
         exponentialBackOffProvider.backOff(0);
 
-        verify(firehoseInstrumentation, times(1)).logWarn("backing off for {} milliseconds ", (long) initialExpiryTimeInMS);
+        verify(firehoseInstrumentation, times(1)).logDebug("Backing off for {} milliseconds before retry attempt {}", (long) initialExpiryTimeInMS, 1);
         verify(firehoseInstrumentation).captureSleepTime("firehose_retry_backoff_sleep_milliseconds", initialExpiryTimeInMS);
     }
 }

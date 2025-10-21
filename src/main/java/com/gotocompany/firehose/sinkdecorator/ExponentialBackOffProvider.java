@@ -41,7 +41,7 @@ public class ExponentialBackOffProvider implements BackOffProvider {
     @Override
     public void backOff(int attemptCount) {
         long sleepTime = this.calculateDelay(attemptCount);
-        firehoseInstrumentation.logWarn("backing off for {} milliseconds ", sleepTime);
+        firehoseInstrumentation.logDebug("Backing off for {} milliseconds before retry attempt {}", sleepTime, attemptCount + 1);
         firehoseInstrumentation.captureSleepTime(RETRY_SLEEP_TIME_MILLISECONDS, toIntExact(sleepTime));
         backOff.inMilliSeconds(sleepTime);
     }
