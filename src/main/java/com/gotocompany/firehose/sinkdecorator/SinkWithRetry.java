@@ -100,10 +100,11 @@ public class SinkWithRetry extends SinkDecorator {
     private List<Message> doRetry(List<Message> messages) throws IOException {
         List<Message> retryMessages = new LinkedList<>(messages);
         firehoseInstrumentation.logInfo("Maximum retry attempts: {}", appConfig.getRetryMaxAttempts());
-        retryMessages.forEach(m -> {
-            m.setDefaultErrorIfNotPresent();
-            firehoseInstrumentation.captureMessageMetrics(RETRY_MESSAGES_TOTAL, Metrics.MessageType.TOTAL, m.getErrorInfo().getErrorType(), 1);
-        });
+        retryMessages.forEach(m -> m.setDefaultErrorIfNotPresent());
+
+        if (appConfig.getRetryMaxAttempts() > 0 || appConfig.getRetryMaxAttempts() == Integer.MAX_VALUE) {
+            retryMessages.forEach(m -> firehoseInstrumentation.captureMessageMetrics(RETRY_MESSAGES_TOTAL, Metrics.MessageType.TOTAL, m.getErrorInfo().getErrorType(), 1));
+        }
 
         int attemptCount = 1;
         while ((attemptCount <= appConfig.getRetryMaxAttempts() && !retryMessages.isEmpty())
@@ -115,8 +116,11 @@ public class SinkWithRetry extends SinkDecorator {
             backOff(retryMessages, attemptCount);
             attemptCount++;
         }
-        firehoseInstrumentation.captureMessageMetrics(RETRY_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, messages.size() - retryMessages.size());
-        retryMessages.forEach(m -> firehoseInstrumentation.captureMessageMetrics(RETRY_MESSAGES_TOTAL, Metrics.MessageType.FAILURE, m.getErrorInfo().getErrorType(), 1));
+
+        if (appConfig.getRetryMaxAttempts() > 0 || appConfig.getRetryMaxAttempts() == Integer.MAX_VALUE) {
+            firehoseInstrumentation.captureMessageMetrics(RETRY_MESSAGES_TOTAL, Metrics.MessageType.SUCCESS, messages.size() - retryMessages.size());
+            retryMessages.forEach(m -> firehoseInstrumentation.captureMessageMetrics(RETRY_MESSAGES_TOTAL, Metrics.MessageType.FAILURE, m.getErrorInfo().getErrorType(), 1));
+        }
         return retryMessages;
     }
 
