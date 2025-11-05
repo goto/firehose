@@ -319,4 +319,21 @@ public class SinkWithRetryTest {
         verify(firehoseInstrumentation, times(1)).logInfo("Retrying messages attempt count: {}, Number of messages: {}", 1, 2);
     }
 
+    @Test
+    public void shouldNotCaptureRetryMetricsWhenRetryMaxAttemptsIsZero() throws IOException, DeserializerException {
+        when(appConfig.getRetryMaxAttempts()).thenReturn(0);
+        ArrayList<Message> messages = new ArrayList<>();
+        messages.add(message);
+        messages.add(message);
+        when(message.getErrorInfo()).thenReturn(new ErrorInfo(null, ErrorType.DESERIALIZATION_ERROR));
+        SinkWithRetry sinkWithRetry = new SinkWithRetry(sinkDecorator, backOffProvider, firehoseInstrumentation, appConfig, parser, errorHandler);
+        when(sinkDecorator.pushMessage(anyList())).thenReturn(messages);
+        List<Message> messageList = sinkWithRetry.pushMessage(Collections.singletonList(message));
+        assertFalse(messageList.isEmpty());
+        verify(firehoseInstrumentation, times(1)).logInfo("Maximum retry attempts: {}", 0);
+        verify(firehoseInstrumentation, never()).captureMessageMetrics(eq(RETRY_MESSAGES_TOTAL), any(), any(), anyInt());
+        verify(firehoseInstrumentation, never()).captureMessageMetrics(eq(RETRY_MESSAGES_TOTAL), any(), anyInt());
+        verify(firehoseInstrumentation, never()).incrementCounter(RETRY_ATTEMPTS_TOTAL);
+    }
+
 }
