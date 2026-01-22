@@ -1,10 +1,12 @@
 package com.gotocompany.firehose.config;
 
 import com.gotocompany.firehose.config.converter.BlobStorageTypeConverter;
+import com.gotocompany.firehose.config.converter.DlqPartitionKeyTypeConverter;
 import com.gotocompany.firehose.config.converter.DlqWriterTypeConverter;
 import com.gotocompany.firehose.config.converter.TimeZoneConverter;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageType;
 import com.gotocompany.firehose.sink.dlq.DLQWriterType;
+import com.gotocompany.firehose.sink.dlq.DlqPartitionKeyType;
 
 import java.time.ZoneId;
 
@@ -36,5 +38,10 @@ public interface DlqConfig extends AppConfig {
     @DefaultValue("UTC")
     @ConverterClass(TimeZoneConverter.class)
     ZoneId getDlqBlobFilePartitionTimezone();
+
+    @Key("DLQ_BLOB_FILE_PARTITION_KEY")
+    @DefaultValue("CONSUME_TIMESTAMP")
+    @ConverterClass(DlqPartitionKeyTypeConverter.class)
+    DlqPartitionKeyType getDlqBlobFilePartitionKey();
 
 }

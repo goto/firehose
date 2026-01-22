@@ -38,9 +38,17 @@ If the writer type is set to BLOB_STORAGE, we can choose any blob storage. Curre
 * Type: `optional`
 * Default value: `GCS`
 
+## `DLQ_BLOB_FILE_PARTITION_KEY`
+
+Partition key for date-based DLQ blob storage directories when using BLOB_STORAGE writer type. Determines whether the date partition uses the message consume timestamp or the Kafka produce timestamp from metadata.
+
+* Example value: `PRODUCE_TIMESTAMP`
+* Type: `optional`
+* Default value: `CONSUME_TIMESTAMP`
+
 ## `DLQ_BLOB_FILE_PARTITION_TIMEZONE`
 
-Timezone to be used for date-based partitioning of DLQ files when using BLOB_STORAGE writer type. DLQ files are organized into directories based on the consume timestamp of the message converted to the specified timezone. The configuration accepts standard timezone identifiers and will fail application startup if an invalid timezone is provided.
+Timezone to be used for date-based partitioning of DLQ files when using BLOB_STORAGE writer type. DLQ files are organized into directories based on the configured partition key timestamp converted to the specified timezone. The configuration accepts standard timezone identifiers and will fail application startup if an invalid timezone is provided.
 
 * Example value: `Asia/Tokyo`
 * Type: `optional`

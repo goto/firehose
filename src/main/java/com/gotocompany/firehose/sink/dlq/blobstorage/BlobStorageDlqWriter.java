@@ -8,6 +8,7 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
+import com.gotocompany.firehose.sink.dlq.DlqPartitionKeyType;
 import com.gotocompany.firehose.sink.dlq.DlqWriter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +48,8 @@ public class BlobStorageDlqWriter implements DlqWriter {
         }
 
         firehoseInstrumentation.logInfo("Starting DLQ blob storage write for {} messages", messages.size());
+        firehoseInstrumentation.logDebug("DLQ blob storage partition key type: {}, timezone: {}",
+            dlqConfig.getDlqBlobFilePartitionKey(), dlqConfig.getDlqBlobFilePartitionTimezone());
 
         Map<Path, List<Message>> messagesByPartition = messages.stream()
                 .collect(Collectors.groupingBy(this::createPartition));
@@ -187,8 +190,16 @@ public class BlobStorageDlqWriter implements DlqWriter {
     }
 
     private Path createPartition(Message message) {
-        String consumeDate = DlqDateUtils.getDateFromMessage(message, dlqConfig.getDlqBlobFilePartitionTimezone());
-        return Paths.get(message.getTopic(), consumeDate);
+        DlqPartitionKeyType partitionKeyType = dlqConfig.getDlqBlobFilePartitionKey();
+        if (partitionKeyType == DlqPartitionKeyType.PRODUCE_TIMESTAMP && message.getTimestamp() <= 0) {
+            firehoseInstrumentation.logInfo("DLQ partitioning fallback to consume timestamp for message topic: {}, partition: {}, offset: {}, timestamp: {}",
+                message.getTopic(), message.getPartition(), message.getOffset(), message.getTimestamp());
+        }
+        String partitionDate = DlqDateUtils.getDateFromMessage(
+                message,
+                dlqConfig.getDlqBlobFilePartitionTimezone(),
+                partitionKeyType);
+        return Paths.get(message.getTopic(), partitionDate);
     }
 
     private String extractDateFromPath(Path path) {
