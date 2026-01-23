@@ -191,10 +191,8 @@ public class BlobStorageDlqWriter implements DlqWriter {
 
     private Path createPartition(Message message) {
         DlqPartitionKeyType partitionKeyType = dlqConfig.getDlqBlobFilePartitionKey();
-        if (partitionKeyType == DlqPartitionKeyType.PRODUCE_TIMESTAMP && message.getTimestamp() <= 0) {
-            firehoseInstrumentation.logInfo("DLQ partitioning fallback to consume timestamp for message topic: {}, partition: {}, offset: {}, timestamp: {}",
-                message.getTopic(), message.getPartition(), message.getOffset(), message.getTimestamp());
-        }
+        firehoseInstrumentation.logDebug("DLQ partitioning message - topic: {}, partition: {}, offset: {}, produceTimestamp: {}, consumeTimestamp: {}",
+                message.getTopic(), message.getPartition(), message.getOffset(), message.getTimestamp(), message.getConsumeTimestamp());
         String partitionDate = DlqDateUtils.getDateFromMessage(
                 message,
                 dlqConfig.getDlqBlobFilePartitionTimezone(),

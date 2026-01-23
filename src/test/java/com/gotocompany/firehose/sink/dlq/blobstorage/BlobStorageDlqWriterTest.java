@@ -472,9 +472,9 @@ public class BlobStorageDlqWriterTest {
         blobStorageDLQWriter.write(messages);
 
         verify(blobStorage).store(contains("booking/2020-01-03"), any(byte[].class));
-        verify(firehoseInstrumentation).logInfo(
-                eq("DLQ partitioning fallback to consume timestamp for message topic: {}, partition: {}, offset: {}, timestamp: {}"),
-                eq("booking"), eq(1), eq(1L), eq(0L));
+        verify(firehoseInstrumentation).logDebug(
+                eq("DLQ partitioning message - topic: {}, partition: {}, offset: {}, produceTimestamp: {}, consumeTimestamp: {}"),
+                eq("booking"), eq(1), eq(1L), eq(0L), eq(consumeTimestamp));
     }
 
     @Test
