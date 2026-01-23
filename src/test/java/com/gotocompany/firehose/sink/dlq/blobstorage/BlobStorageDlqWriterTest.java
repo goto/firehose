@@ -9,6 +9,7 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.metrics.Metrics;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageException;
+import com.gotocompany.firehose.sink.dlq.DlqPartitionKeyType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,6 +44,7 @@ public class BlobStorageDlqWriterTest {
     @Before
     public void setUp() throws Exception {
         when(dlqConfig.getDlqBlobFilePartitionTimezone()).thenReturn(ZoneId.of("UTC"));
+        when(dlqConfig.getDlqBlobFilePartitionKey()).thenReturn(DlqPartitionKeyType.CONSUME_TIMESTAMP);
         blobStorageDLQWriter = new BlobStorageDlqWriter(blobStorage, dlqConfig, firehoseInstrumentation);
     }
 
@@ -442,5 +444,50 @@ public class BlobStorageDlqWriterTest {
         verify(firehoseInstrumentation).logInfo(
             eq("DLQ blob storage write complete - total: {}, successful partitions: {}, failed partitions: {}, successful messages: {}, failed messages: {}"),
             eq(3), eq(1), eq(0), eq(3), eq(0));
+    }
+
+    @Test
+    public void shouldUseProduceTimestampForPartitioningWhenConfigured() throws IOException, BlobStorageException {
+        when(dlqConfig.getDlqBlobFilePartitionKey()).thenReturn(DlqPartitionKeyType.PRODUCE_TIMESTAMP);
+        long produceTimestamp = Instant.parse("2020-01-02T00:00:00Z").toEpochMilli();
+        long consumeTimestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, produceTimestamp,
+                consumeTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Collections.singletonList(message);
+        blobStorageDLQWriter.write(messages);
+
+        verify(blobStorage).store(contains("booking/2020-01-02"), any(byte[].class));
+    }
+
+    @Test
+    public void shouldFallbackToConsumeTimestampWhenProduceTimestampInvalid() throws IOException, BlobStorageException {
+        when(dlqConfig.getDlqBlobFilePartitionKey()).thenReturn(DlqPartitionKeyType.PRODUCE_TIMESTAMP);
+        long produceTimestamp = 0L;
+        long consumeTimestamp = Instant.parse("2020-01-03T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, produceTimestamp,
+                consumeTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Collections.singletonList(message);
+        blobStorageDLQWriter.write(messages);
+
+        verify(blobStorage).store(contains("booking/2020-01-03"), any(byte[].class));
+        verify(firehoseInstrumentation).logDebug(
+                eq("DLQ partitioning message - topic: {}, partition: {}, offset: {}, produceTimestamp: {}, consumeTimestamp: {}"),
+                eq("booking"), eq(1), eq(1L), eq(0L), eq(consumeTimestamp));
+    }
+
+    @Test
+    public void shouldLogPartitionKeyTypeAndTimezone() throws IOException, BlobStorageException {
+        long timestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, timestamp,
+                timestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        List<Message> messages = Collections.singletonList(message);
+        blobStorageDLQWriter.write(messages);
+
+        verify(firehoseInstrumentation).logDebug(
+                eq("DLQ blob storage partition key type: {}, timezone: {}"),
+                eq(DlqPartitionKeyType.CONSUME_TIMESTAMP), eq(ZoneId.of("UTC")));
     }
 }

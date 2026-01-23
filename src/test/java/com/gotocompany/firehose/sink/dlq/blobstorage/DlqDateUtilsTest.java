@@ -3,6 +3,7 @@ package com.gotocompany.firehose.sink.dlq.blobstorage;
 import com.gotocompany.depot.error.ErrorInfo;
 import com.gotocompany.depot.error.ErrorType;
 import com.gotocompany.firehose.message.Message;
+import com.gotocompany.firehose.sink.dlq.DlqPartitionKeyType;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -66,6 +67,50 @@ public class DlqDateUtilsTest {
 
         assertEquals("2020-01-01", date1);
         assertEquals("2020-01-02", date2);
+    }
+
+    @Test
+    public void shouldUseProduceTimestampWhenConfigured() {
+        long produceTimestamp = Instant.parse("2020-01-02T00:00:00Z").toEpochMilli();
+        long consumeTimestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, produceTimestamp, consumeTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        String date = DlqDateUtils.getDateFromMessage(message, ZoneId.of("UTC"), DlqPartitionKeyType.PRODUCE_TIMESTAMP);
+
+        assertEquals("2020-01-02", date);
+    }
+
+    @Test
+    public void shouldUseConsumeTimestampWhenConfigured() {
+        long produceTimestamp = Instant.parse("2020-01-02T00:00:00Z").toEpochMilli();
+        long consumeTimestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, produceTimestamp, consumeTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        String date = DlqDateUtils.getDateFromMessage(message, ZoneId.of("UTC"), DlqPartitionKeyType.CONSUME_TIMESTAMP);
+
+        assertEquals("2020-01-01", date);
+    }
+
+    @Test
+    public void shouldFallbackToConsumeTimestampWhenProduceTimestampInvalid() {
+        long produceTimestamp = 0L;
+        long consumeTimestamp = Instant.parse("2020-01-03T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, produceTimestamp, consumeTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        String date = DlqDateUtils.getDateFromMessage(message, ZoneId.of("UTC"), DlqPartitionKeyType.PRODUCE_TIMESTAMP);
+
+        assertEquals("2020-01-03", date);
+    }
+
+    @Test
+    public void shouldApplyTimezoneToProduceTimestamp() {
+        long produceTimestamp = Instant.parse("2020-01-01T15:00:00Z").toEpochMilli();
+        long consumeTimestamp = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        Message message = new Message("123".getBytes(), "abc".getBytes(), "booking", 1, 1, null, produceTimestamp, consumeTimestamp, new ErrorInfo(new IOException("test"), ErrorType.DESERIALIZATION_ERROR));
+
+        String date = DlqDateUtils.getDateFromMessage(message, ZoneId.of("Asia/Tokyo"), DlqPartitionKeyType.PRODUCE_TIMESTAMP);
+
+        assertEquals("2020-01-02", date);
     }
 }
 
