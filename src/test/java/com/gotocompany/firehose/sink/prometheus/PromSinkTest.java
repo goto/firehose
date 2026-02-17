@@ -39,7 +39,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class PromSinkTest {
     @Mock
     private FirehoseInstrumentation firehoseInstrumentation;
