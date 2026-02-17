@@ -3,7 +3,7 @@ buildscript {
         maven { url 'https://plugins.gradle.org/m2/' }
     }
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.17'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.4'
         classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.33.1"
         classpath "org.ajoberstar:gradle-git:1.6.0"
     }
@@ -14,8 +14,8 @@ plugins {
     id 'idea'
     id 'checkstyle'
     id 'jacoco'
-    id "com.google.protobuf" version "0.8.17"
-    id 'nebula.ospackage' version '8.6.3'
+    id "com.google.protobuf" version "0.9.4"
+    id 'com.netflix.nebula.ospackage' version '11.11.0'
     id 'io.franzbecker.gradle-lombok' version '1.14'
     id 'maven-publish'
 }
@@ -28,7 +28,7 @@ configurations {
 }
 
 lombok {
-    version = '1.18.4'
+    version = '1.18.30'
     sha256 = ""
 }
 
@@ -38,8 +38,8 @@ version '0.12.28'
 
 def projName = "firehose"
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
 
 repositories {
     mavenLocal()
@@ -67,8 +67,8 @@ private Properties loadEnv() {
 def mainClassName = "com.gotocompany.firehose.launch.Main"
 
 dependencies {
-    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.1.0'
-    implementation group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.1.0'
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.21.12'
+    implementation group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.21.12'
     implementation group: 'com.datadoghq', name: 'java-dogstatsd-client', version: '2.13.0'
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2'
     implementation group: 'org.aeonbits.owner', name: 'owner', version: '1.0.9'
@@ -118,8 +118,8 @@ dependencies {
 
     testImplementation group: 'junit', name: 'junit', version: '4.11'
     testImplementation 'org.hamcrest:hamcrest-all:1.3'
-    testImplementation 'org.mockito:mockito-core:4.5.1'
-    testImplementation 'org.mockito:mockito-inline:4.5.1'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
     testImplementation "com.github.tomakehurst:wiremock:2.3.1"
     testImplementation group: 'io.opentracing', name: 'opentracing-mock', version: '0.33.0'
     testImplementation group: 'org.mock-server', name: 'mockserver-netty', version: '3.10.5'
@@ -130,11 +130,11 @@ dependencies {
 protobuf {
     generatedFilesBaseDir = "$projectDir/src/generated"
     protoc {
-        artifact = "com.google.protobuf:protoc:3.1.0"
+        artifact = "com.google.protobuf:protoc:3.21.12"
     }
     plugins {
         grpc {
-            artifact = "io.grpc:protoc-gen-grpc-java:1.0.3"
+            artifact = "io.grpc:protoc-gen-grpc-java:1.53.0"
         }
     }
     generateProtoTasks {
@@ -166,6 +166,11 @@ test {
     }
 
 }
+
+processTestResources {
+    dependsOn generateProto, generateTestProto
+}
+
 clean {
     delete "$projectDir/src/test/resources/__files"
 }
@@ -258,10 +263,10 @@ checkstyleTest {
 
 jacocoTestReport {
     reports {
-        xml.enabled true
-        csv.enabled false
-        html.enabled = true
-        html.destination file("${reportsDir}/jacoco/")
+        xml.required = true
+        csv.required = false
+        html.required = true
+        html.outputLocation = file("${reportsDir}/jacoco/")
     }
     afterEvaluate {
         getClassDirectories().setFrom(classDirectories.files.collect {
