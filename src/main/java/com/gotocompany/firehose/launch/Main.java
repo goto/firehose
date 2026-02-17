@@ -24,6 +24,7 @@ public class Main {
      * @throws InterruptedException the interrupted exception
      */
     public static void main(String[] args) throws InterruptedException {
+        BootupTimer.markProcessStart();
         KafkaConsumerConfig kafkaConsumerConfig = ConfigFactory.create(KafkaConsumerConfig.class, System.getenv());
         multiThreadedConsumers(kafkaConsumerConfig);
     }
