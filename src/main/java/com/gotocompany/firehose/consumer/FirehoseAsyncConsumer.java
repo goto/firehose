@@ -31,9 +31,6 @@ public class FirehoseAsyncConsumer implements FirehoseConsumer {
         Instant beforeCall = Instant.now();
         try {
             List<Message> messages = consumerAndOffsetManager.readMessages();
-            // TODO: remove this after we have a better way to measure bootup time for async consumer
-            com.gotocompany.firehose.launch.BootupTimer.markFirstConsumed(messages.size());
-
             List<Span> spans = tracer.startTrace(messages);
             FilteredMessages filteredMessages = firehoseFilter.applyFilter(messages);
             if (filteredMessages.sizeOfInvalidMessages() > 0) {

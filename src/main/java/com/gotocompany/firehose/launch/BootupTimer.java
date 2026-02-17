@@ -14,13 +14,13 @@ public final class BootupTimer {
         startNanos = System.nanoTime();
     }
 
-    public static void markFirstConsumed(int messageCount) {
+    public static void markFirstConsumed() {
         if (startNanos == 0L) {
             return;
         }
         if (FIRST_CONSUMED.compareAndSet(false, true)) {
             long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
-            System.out.println("Bootup time to first consumed batch: " + elapsedMs + " ms (messages=" + messageCount + ")");
+            System.out.println("Bootup time to first consumed batch: " + elapsedMs + " ms");
         }
     }
 }

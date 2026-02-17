@@ -52,6 +52,8 @@ public class Main {
                                 firehoseInstrumentation.logWarn("Consumer Thread interrupted, leaving the loop!");
                                 break;
                             }
+                            // remove this after we have a better way to measure bootup time for async consumer
+                            BootupTimer.markFirstConsumed();
                             firehoseConsumer.process();
                         }
                     } catch (Exception | Error e) {
