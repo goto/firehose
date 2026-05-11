@@ -119,6 +119,7 @@ public class SinkFactory {
                 kafkaSinkFactory = new KafkaSinkFactory(
                         ConfigFactory.create(KafkaSinkConfig.class, config),
                         statsDReporter,
+                        stencilClient,
                         config);
                 kafkaSinkFactory.init();
                 return;
