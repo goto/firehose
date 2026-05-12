@@ -20,5 +20,6 @@ public enum SinkType {
     BIGQUERY,
     BIGTABLE,
     MONGODB,
-    MAXCOMPUTE
+    MAXCOMPUTE,
+    KAFKA
 }
