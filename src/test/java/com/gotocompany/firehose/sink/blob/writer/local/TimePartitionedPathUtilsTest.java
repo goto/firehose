@@ -18,7 +18,7 @@ import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class TimePartitionedPathUtilsTest {
 
     private final String zone = "UTC";

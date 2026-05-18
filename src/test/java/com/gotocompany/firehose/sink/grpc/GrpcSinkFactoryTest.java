@@ -43,6 +43,7 @@ public class GrpcSinkFactoryTest {
     private ManagedChannelBuilder channelBuilder;
 
     private Server server;
+    private int port;
 
     @Before
     public void setUp() {
@@ -54,6 +55,11 @@ public class GrpcSinkFactoryTest {
     public void tearDown() {
         if (server != null) {
             server.shutdown();
+            try {
+                server.awaitTermination();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Failed to shutdown gRPC server", e);
+            }
         }
     }
 
@@ -63,15 +69,16 @@ public class GrpcSinkFactoryTest {
 
         when(testGrpcService.bindService()).thenCallRealMethod();
         server = ServerBuilder
-                .forPort(5000)
+                .forPort(0)
                 .addService(testGrpcService.bindService())
                 .build()
                 .start();
+        port = server.getPort();
 
         Map<String, String> config = new HashMap<>();
         config.put("SINK_GRPC_METHOD_URL", "com.gotocompany.firehose.consumer.TestServer/TestRpcMethod");
         config.put("SINK_GRPC_SERVICE_HOST", "localhost");
-        config.put("SINK_GRPC_SERVICE_PORT", "5000");
+        config.put("SINK_GRPC_SERVICE_PORT", String.valueOf(port));
         config.put("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS", TestGrpcResponse.class.getName());
         config.put("INPUT_SCHEMA_PROTO_CLASS", TestGrpcRequest.getDescriptor().getFullName());
 

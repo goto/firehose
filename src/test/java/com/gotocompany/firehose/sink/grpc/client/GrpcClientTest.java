@@ -34,6 +34,7 @@ import static org.mockito.Mockito.*;
 public class GrpcClientTest {
 
     private Server server;
+    private int port;
     private GrpcClient grpcClient;
     private TestServerGrpc.TestServerImplBase testGrpcService;
     private RecordHeaders headers;
@@ -54,13 +55,14 @@ public class GrpcClientTest {
         headerTestInterceptor = new HeaderTestInterceptor();
         headerTestInterceptor.setHeaderKeys(HEADER_KEYS);
         ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(testGrpcService.bindService(), Arrays.asList(headerTestInterceptor));
-        server = ServerBuilder.forPort(5000)
+        server = ServerBuilder.forPort(0)
                 .addService(serviceDefinition)
                 .build()
                 .start();
+        port = server.getPort();
         Map<String, String> config = new HashMap<>();
         config.put("SINK_GRPC_SERVICE_HOST", "localhost");
-        config.put("SINK_GRPC_SERVICE_PORT", "5000");
+        config.put("SINK_GRPC_SERVICE_PORT", String.valueOf(port));
         config.put("SINK_GRPC_METHOD_URL", "com.gotocompany.firehose.consumer.TestServer/TestRpcMethod");
         config.put("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS", "com.gotocompany.firehose.consumer.TestGrpcResponse");
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
@@ -78,7 +80,12 @@ public class GrpcClientTest {
     @After
     public void tearDown() {
         if (server != null) {
-            server.shutdown();
+            server.shutdownNow();
+            try {
+                server.awaitTermination();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Error while shutting down the server", e);
+            }
         }
     }
 
@@ -144,7 +151,7 @@ public class GrpcClientTest {
     public void shouldBuildConsolidatedMetadataFromHeaderAndStaticMetadata() {
         Map<String, String> config = new HashMap<>();
         config.put("SINK_GRPC_SERVICE_HOST", "localhost");
-        config.put("SINK_GRPC_SERVICE_PORT", "5000");
+        config.put("SINK_GRPC_SERVICE_PORT", String.valueOf(port));
         config.put("SINK_GRPC_METHOD_URL", "com.gotocompany.firehose.consumer.TestServer/TestRpcMethod");
         config.put("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS", "com.gotocompany.firehose.consumer.TestGrpcResponse");
         GrpcSinkConfig grpcSinkConfig = ConfigFactory.create(GrpcSinkConfig.class, config);
@@ -198,7 +205,7 @@ public class GrpcClientTest {
     public void shouldDecorateCallOptionsWithDeadline() {
         Map<String, String> config = new HashMap<>();
         config.put("SINK_GRPC_SERVICE_HOST", "localhost");
-        config.put("SINK_GRPC_SERVICE_PORT", "5000");
+        config.put("SINK_GRPC_SERVICE_PORT", String.valueOf(port));
         config.put("SINK_GRPC_METHOD_URL", "com.gotocompany.firehose.consumer.TestServer/TestRpcMethod");
         config.put("SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS", "com.gotocompany.firehose.consumer.TestGrpcResponse");
         config.put("SINK_GRPC_ARG_DEADLINE_MS", "1000");

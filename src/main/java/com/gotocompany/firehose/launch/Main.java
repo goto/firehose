@@ -24,6 +24,7 @@ public class Main {
      * @throws InterruptedException the interrupted exception
      */
     public static void main(String[] args) throws InterruptedException {
+        BootupTimer.markProcessStart();
         KafkaConsumerConfig kafkaConsumerConfig = ConfigFactory.create(KafkaConsumerConfig.class, System.getenv());
         multiThreadedConsumers(kafkaConsumerConfig);
     }
@@ -51,6 +52,8 @@ public class Main {
                                 firehoseInstrumentation.logWarn("Consumer Thread interrupted, leaving the loop!");
                                 break;
                             }
+                            // remove this after we have a better way to measure bootup time for async consumer
+                            BootupTimer.markFirstConsumed();
                             firehoseConsumer.process();
                         }
                     } catch (Exception | Error e) {
