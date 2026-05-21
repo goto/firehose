@@ -7,11 +7,7 @@ import lombok.AllArgsConstructor;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -25,14 +21,13 @@ public class TimePartitionedPathUtils {
 
     public static Path getTimePartitionedPath(Record record, BlobSinkConfig sinkConfig) {
         String topic = record.getTopic(sinkConfig.getOutputKafkaMetadataColumnName());
-        Instant timestamp = record.getTimestamp(sinkConfig.getFilePartitionProtoTimestampFieldName());
+        Path path = Paths.get(topic);
         if (sinkConfig.getFilePartitionTimeGranularityType() == Constants.FilePartitionType.NONE) {
-            return Paths.get(topic);
+            return path;
         }
-        LocalDate localDate = LocalDateTime.ofInstant(timestamp, ZoneId.of(sinkConfig.getFilePartitionProtoTimestampTimezone())).toLocalDate();
-        String datePart = DATE_FORMATTER.format(localDate);
-        LocalTime localTime = LocalDateTime.ofInstant(timestamp, ZoneId.of(sinkConfig.getFilePartitionProtoTimestampTimezone())).toLocalTime();
-        String hourPart = HOUR_FORMATTER.format(localTime);
+        LocalDateTime dateTime = record.getLocalDateTime(sinkConfig);
+        String datePart = DATE_FORMATTER.format(dateTime.toLocalDate());
+        String hourPart = HOUR_FORMATTER.format(dateTime.toLocalTime());
 
         String dateSegment = String.format("%s%s", sinkConfig.getFilePartitionTimeDatePrefix(), datePart);
         String hourSegment = String.format("%s%s", sinkConfig.getFilePartitionTimeHourPrefix(), hourPart);
@@ -40,7 +35,7 @@ public class TimePartitionedPathUtils {
         String dateTimePartition;
         switch (sinkConfig.getFilePartitionTimeGranularityType()) {
             case NONE:
-                return Paths.get(topic);
+                return path;
             case DAY:
                 dateTimePartition = String.format("%s", dateSegment);
                 break;

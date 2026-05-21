@@ -2,7 +2,9 @@ package com.gotocompany.firehose.sink.blob.writer.local.policy;
 
 import com.gotocompany.firehose.sink.blob.writer.local.LocalFileMetadata;
 
-public class SizeBasedRotatingPolicy implements WriterPolicy {
+import java.util.List;
+
+public class SizeBasedRotatingPolicy implements WriterPolicy, GlobalWriterPolicy {
 
     private final long maxSize;
 
@@ -16,5 +18,11 @@ public class SizeBasedRotatingPolicy implements WriterPolicy {
     @Override
     public boolean shouldRotate(LocalFileMetadata metadata) {
         return metadata.getSize() >= maxSize;
+    }
+
+    @Override
+    public boolean shouldRotate(List<LocalFileMetadata> metadataList) {
+        long totalSize = metadataList.stream().map(LocalFileMetadata::getSize).reduce(0L, Long::sum);
+        return totalSize >= maxSize;
     }
 }
