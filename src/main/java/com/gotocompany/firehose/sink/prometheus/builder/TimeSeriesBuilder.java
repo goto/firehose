@@ -19,9 +19,13 @@ import static com.gotocompany.firehose.sink.prometheus.PromSinkConstants.*;
  */
 public class TimeSeriesBuilder {
 
+    /** Mapping from proto field index to metric name; values may be nested {@link Properties}. */
     private final Properties metricNameProtoIndexMapping;
+    /** Mapping from proto field index to label name; values may be nested {@link Properties}. */
     private final Properties labelNameProtoIndexMapping;
+    /** Proto field index of the event timestamp used as the sample time. */
     private Integer timestampIndex;
+    /** Whether to use the event timestamp from the message instead of the current time. */
     private Boolean isEventTimestampEnabled;
 
     /**
@@ -35,6 +39,12 @@ public class TimeSeriesBuilder {
         timestampIndex = config.getSinkPromProtoEventTimestampIndex();
     }
 
+    /**
+     * Creates a time-series builder with the given index mappings, defaulting null mappings to empty.
+     *
+     * @param metricNameProtoIndexMapping the proto index to metric name mapping, or {@code null}
+     * @param labelNameProtoIndexMapping  the proto index to label name mapping, or {@code null}
+     */
     private TimeSeriesBuilder(Properties metricNameProtoIndexMapping, Properties labelNameProtoIndexMapping) {
         this.metricNameProtoIndexMapping = metricNameProtoIndexMapping == null ? new Properties() : metricNameProtoIndexMapping;
         this.labelNameProtoIndexMapping = labelNameProtoIndexMapping == null ? new Properties() : labelNameProtoIndexMapping;
@@ -66,16 +76,36 @@ public class TimeSeriesBuilder {
         }).collect(Collectors.toList());
     }
 
+    /**
+     * Ensures a metric name mapping is configured.
+     *
+     * @throws ConfigurationException if the metric name mapping is missing or empty
+     */
     private void checkValidity() {
         if (metricNameProtoIndexMapping == null || metricNameProtoIndexMapping.isEmpty()) {
             throw new ConfigurationException(FIELD_NAME_MAPPING_ERROR_MESSAGE);
         }
     }
 
+    /**
+     * Builds the reserved metric-name label for the given metric.
+     *
+     * @param metricName         the metric name
+     * @param cortexLabelBuilder the reusable label-pair builder
+     * @return the label pair holding the metric name
+     */
     private Cortex.LabelPair buildMetric(String metricName, Cortex.LabelPair.Builder cortexLabelBuilder) {
         return buildLabels(PROMETHEUS_LABEL_FOR_METRIC_NAME, metricName, cortexLabelBuilder);
     }
 
+    /**
+     * Builds a Cortex label pair from a name and value.
+     *
+     * @param labelName          the label name
+     * @param labelValue         the label value
+     * @param cortexLabelBuilder the reusable label-pair builder
+     * @return the built label pair
+     */
     private Cortex.LabelPair buildLabels(String labelName, String labelValue, Cortex.LabelPair.Builder cortexLabelBuilder) {
         cortexLabelBuilder.clear();
         return cortexLabelBuilder
@@ -84,6 +114,14 @@ public class TimeSeriesBuilder {
                 .build();
     }
 
+    /**
+     * Builds a Cortex sample from a timestamp and value.
+     *
+     * @param timestamp           the sample timestamp in milliseconds
+     * @param value               the sample value
+     * @param cortexSampleBuilder the reusable sample builder
+     * @return the built sample
+     */
     private Cortex.Sample buildSample(long timestamp, double value, Cortex.Sample.Builder cortexSampleBuilder) {
         cortexSampleBuilder.clear();
         return cortexSampleBuilder

@@ -20,9 +20,24 @@ import java.time.format.DateTimeFormatter;
 @AllArgsConstructor
 public class TimePartitionedPathUtils {
 
+    /** Formatter for the date segment, {@code yyyy-MM-dd}. */
     public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    /** Formatter for the hour segment, {@code HH}. */
     public static final DateTimeFormatter HOUR_FORMATTER = DateTimeFormatter.ofPattern("HH");
 
+    /**
+     * Builds the output path for a record according to the configured partitioning.
+     * <p>
+     * Reads the topic from the record's metadata and the partitioning timestamp from the configured
+     * payload field. For {@code NONE} granularity the path is just the topic; for {@code DAY} it
+     * appends a date segment; for {@code HOUR} it appends date and hour segments. Date and hour are
+     * computed in the configured timezone.
+     *
+     * @param record the record to derive the path from
+     * @param sinkConfig the blob sink configuration controlling granularity, prefixes and timezone
+     * @return the relative time-partitioned path for the record
+     * @throws IllegalArgumentException if the configured granularity is not recognised
+     */
     public static Path getTimePartitionedPath(Record record, BlobSinkConfig sinkConfig) {
         String topic = record.getTopic(sinkConfig.getOutputKafkaMetadataColumnName());
         Instant timestamp = record.getTimestamp(sinkConfig.getFilePartitionProtoTimestampFieldName());

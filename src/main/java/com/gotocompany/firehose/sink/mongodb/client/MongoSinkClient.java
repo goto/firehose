@@ -32,10 +32,15 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class MongoSinkClient implements Closeable {
 
+    /** Target collection bulk writes are applied to; assigned in {@link #prepare()}. */
     private MongoCollection<Document> mongoCollection;
+    /** Instrumentation used for logging bulk-write outcomes and emitting metrics. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Error status codes that must not be retried; matching errors are dropped, not returned. */
     private final List<Integer> mongoRetryStatusCodeBlacklist;
+    /** Underlying Mongo driver client, closed when this client is closed. */
     private final MongoClient mongoClient;
+    /** Sink configuration supplying database, collection and mode settings. */
     private final MongoSinkConfig mongoSinkConfig;
 
     /**
@@ -112,6 +117,16 @@ public class MongoSinkClient implements Closeable {
         }
     }
 
+    /**
+     * Logs the outcome of a bulk write and updates insert, update, modified and drop counters.
+     * <p>
+     * Derives success and failure counts from the {@code BulkWriteResult}, distinguishing update-only
+     * mode (where unmatched primary keys are reported as drops) from upsert mode, and records whether
+     * the write was acknowledged.
+     *
+     * @param writeResult  the result returned by the bulk write
+     * @param messageCount the number of write models submitted
+     */
     private void logResults(BulkWriteResult writeResult, int messageCount) {
 
         int totalWriteCount = writeResult.getInsertedCount() + writeResult.getModifiedCount() + writeResult.getUpserts().size();
@@ -189,6 +204,11 @@ public class MongoSinkClient implements Closeable {
         firehoseInstrumentation.logWarn("Bulk request failed count: {}", writeErrors.size());
     }
 
+    /**
+     * Closes the underlying Mongo client.
+     *
+     * @throws IOException declared by {@link Closeable}; not thrown by this implementation
+     */
     @Override
     public void close() throws IOException {
         mongoClient.close();

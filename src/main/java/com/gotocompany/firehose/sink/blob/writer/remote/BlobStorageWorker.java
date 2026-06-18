@@ -16,9 +16,17 @@ import java.util.concurrent.Callable;
 @AllArgsConstructor
 public class BlobStorageWorker implements Callable<Long> {
 
+    /** The blob storage backend the file is uploaded to. */
     private final BlobStorage blobStorage;
+    /** Metadata describing the local file to upload. */
     private final LocalFileMetadata metadata;
 
+    /**
+     * Uploads the file and returns how long the upload took.
+     *
+     * @return the upload duration in milliseconds
+     * @throws BlobStorageException if storing the file in blob storage fails
+     */
     @Override
     public Long call() throws BlobStorageException {
         Instant start = Instant.now();

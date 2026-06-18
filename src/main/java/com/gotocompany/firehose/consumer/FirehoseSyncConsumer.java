@@ -23,12 +23,28 @@ import static com.gotocompany.firehose.metrics.Metrics.SOURCE_KAFKA_PARTITIONS_P
 @AllArgsConstructor
 public class FirehoseSyncConsumer implements FirehoseConsumer {
 
+    /** Sink that every valid message in a batch is pushed to. */
     private final Sink sink;
+    /** Opens and closes tracing spans around each processed batch. */
     private final SinkTracer tracer;
+    /** Reads messages from Kafka and tracks the offsets eligible for commit. */
     private final ConsumerAndOffsetManager consumerAndOffsetManager;
+    /** Applies the configured filter and records filtered-message metrics. */
     private final FirehoseFilter firehoseFilter;
+    /** Emits logs and metrics for this consumer. */
     private final FirehoseInstrumentation firehoseInstrumentation;
 
+    /**
+     * Processes a single batch end to end: read, trace, filter, push valid messages, then commit.
+     *
+     * <p>Invalid (filtered-out) messages are force-added to the committable offsets so they are not
+     * re-consumed, while valid messages are pushed to the sink before their offsets are marked
+     * committable. The total processing time is always captured as a duration metric, even when the
+     * batch fails.
+     *
+     * @throws IOException if the sink fails while pushing the batch
+     * @throws FirehoseConsumerFailedException if filtering fails with a {@link FilterException}
+     */
     @Override
     public void process() throws IOException {
         Instant beforeCall = Instant.now();
@@ -53,6 +69,11 @@ public class FirehoseSyncConsumer implements FirehoseConsumer {
         }
     }
 
+    /**
+     * Closes the sink, tracer, offset manager, and instrumentation held by this consumer.
+     *
+     * @throws IOException if any of the underlying resources fail to close
+     */
     @Override
     public void close() throws IOException {
         sink.close();

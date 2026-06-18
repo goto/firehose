@@ -21,10 +21,15 @@ import java.util.Map;
  * Prometheus request create one HttpPost per batch messages.
  */
 public class PromRequest {
+    /** Instrumentation used for logging. */
     private FirehoseInstrumentation firehoseInstrumentation;
+    /** Builds the Cortex write request from the batch of messages. */
     private WriteRequestBuilder writeRequestBuilder;
+    /** Target Cortex remote-write endpoint URL. */
     private String url;
+    /** Compresses and wraps the write request as the HTTP entity. */
     private RequestEntityBuilder requestEntityBuilder;
+    /** Builds the HTTP headers required for remote write. */
     private HeaderBuilder headerBuilder;
 
 

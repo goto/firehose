@@ -39,17 +39,38 @@ import java.util.concurrent.TimeUnit;
  * After the file is written to blob storage, it adds to to flushedPath queue.
  */
 public class WriterOrchestrator implements Closeable {
+    /** Initial delay before the background checker threads first run, in seconds. */
     private static final int FILE_CHECKER_THREAD_INITIAL_DELAY_SECONDS = 10;
+    /** Interval between background checker thread runs, in seconds. */
     private static final int FILE_CHECKER_THREAD_FREQUENCY_SECONDS = 5;
+    /** Active local file writers keyed by their time-partition path. */
     private final Map<Path, LocalFileWriter> timePartitionWriterMap = new ConcurrentHashMap<>();
+    /** Scheduler running the {@link LocalFileChecker} that rotates local files. */
     private final ScheduledExecutorService localFileCheckerScheduler = Executors.newScheduledThreadPool(1);
+    /** Scheduler running the {@link BlobStorageChecker} that uploads files to blob storage. */
     private final ScheduledExecutorService objectStorageCheckerScheduler = Executors.newScheduledThreadPool(1);
+    /** Bounded pool that performs the actual remote uploads. */
     private final ExecutorService remoteUploadScheduler = Executors.newFixedThreadPool(10);
+    /** Paths successfully flushed to blob storage, awaiting offset commit and local cleanup. */
     private final BlockingQueue<String> flushedToRemotePaths = new LinkedBlockingQueue<>();
+    /** Local storage abstraction used to create writers and delete local files. */
     private final LocalStorage localStorage;
+    /** Tracks the health of the background checker threads. */
     private final WriterOrchestratorStatus writerOrchestratorStatus;
+    /** Blob sink configuration, used to compute time-partitioned paths. */
     private final BlobSinkConfig sinkConfig;
 
+    /**
+     * Creates the orchestrator and starts its local and remote background workers.
+     * <p>
+     * Schedules a {@link LocalFileChecker} to rotate local files and a {@link BlobStorageChecker} to
+     * upload closed files to the given blob storage, then begins monitoring their status.
+     *
+     * @param sinkConfig the blob sink configuration
+     * @param localStorage the local storage used to create writers and manage local files
+     * @param blobStorage the remote blob storage to upload files to
+     * @param statsDReporter the reporter used to publish metrics for the background workers
+     */
     public WriterOrchestrator(BlobSinkConfig sinkConfig, LocalStorage localStorage, BlobStorage blobStorage, StatsDReporter statsDReporter) {
         this.localStorage = localStorage;
         this.sinkConfig = sinkConfig;
@@ -91,6 +112,11 @@ public class WriterOrchestrator implements Closeable {
         return flushedPaths;
     }
 
+    /**
+     * Verifies that the background workers are still healthy.
+     *
+     * @throws Exception if a background worker has failed and the orchestrator is closed
+     */
     private void checkStatus() throws Exception {
         if (writerOrchestratorStatus.isClosed()) {
             throw new IOException(writerOrchestratorStatus.getThrowable());
@@ -128,6 +154,14 @@ public class WriterOrchestrator implements Closeable {
         return writer.getFullPath();
     }
 
+    /**
+     * Stops the background workers and releases all local writers.
+     * <p>
+     * Shuts down the local-file, object-storage and upload schedulers, marks the status closed,
+     * closes every open {@link LocalFileWriter} and deletes the remaining local files.
+     *
+     * @throws IOException if closing a writer fails
+     */
     @Override
     public void close() throws IOException {
         localFileCheckerScheduler.shutdown();

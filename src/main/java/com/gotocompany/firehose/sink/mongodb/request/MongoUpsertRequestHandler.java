@@ -23,7 +23,9 @@ import org.json.simple.JSONObject;
  */
 public class MongoUpsertRequestHandler extends MongoRequestHandler {
 
+    /** Resolved request type; this handler is active only for {@link MongoSinkRequestType#UPSERT}. */
     private final MongoSinkRequestType mongoSinkRequestType;
+    /** Primary key field used as the document {@code _id}; may be {@code null} for insert-only. */
     private final String mongoPrimaryKey;
 
     /**
@@ -41,11 +43,25 @@ public class MongoUpsertRequestHandler extends MongoRequestHandler {
         this.mongoPrimaryKey = mongoPrimaryKey;
     }
 
+    /**
+     * Indicates whether this handler applies to the configured request type.
+     *
+     * @return {@code true} when the configured request type is upsert
+     */
     @Override
     public boolean canCreate() {
         return mongoSinkRequestType == MongoSinkRequestType.UPSERT;
     }
 
+    /**
+     * Builds the upsert write model for the given message.
+     * <p>
+     * With no primary key configured an {@code InsertOneModel} is returned; otherwise a
+     * {@code ReplaceOneModel} keyed by {@code _id} with upsert enabled is returned.
+     *
+     * @param message the message to convert
+     * @return the MongoDB write model for the message
+     */
     @Override
     public WriteModel<Document> getRequest(Message message) {
         String logMessage = extractPayload(message);

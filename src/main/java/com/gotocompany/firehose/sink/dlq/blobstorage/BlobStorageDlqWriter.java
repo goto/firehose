@@ -23,17 +23,44 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * {@link DlqWriter} that stores undeliverable messages in blob storage as newline-delimited JSON.
+ * <p>
+ * Messages are grouped into partitions by topic and date (the date is derived from either the produce
+ * or consume timestamp according to configuration), serialized to JSON {@link DlqMessage} records, and
+ * uploaded as one object per partition under a random file name. Partitions that fail to upload have
+ * all their messages returned as failed; success and failure metrics are recorded per partition and
+ * error type.
+ *
+ * @see DlqWriter
+ * @see DlqMessage
+ * @see DlqDateUtils
+ */
 @Slf4j
 public class BlobStorageDlqWriter implements DlqWriter {
+    /** Threshold in megabytes above which a written batch is logged as unusually large. */
     private static final int LARGE_BATCH_THRESHOLD_MB = 10;
+    /** Number of bytes in a kilobyte, used to compute the large-batch threshold. */
     private static final int BYTES_PER_KB = 1024;
+    /** Number of kilobytes in a megabyte, used to compute the large-batch threshold. */
     private static final int KB_PER_MB = 1024;
 
+    /** The blob storage backend DLQ files are written to. */
     private final BlobStorage blobStorage;
+    /** Jackson mapper used to serialize messages to JSON. */
     private final ObjectMapper objectMapper;
+    /** Dead letter queue configuration controlling partitioning. */
     private final DlqConfig dlqConfig;
+    /** Instrumentation used to log and emit DLQ metrics. */
     private final FirehoseInstrumentation firehoseInstrumentation;
 
+    /**
+     * Creates a blob storage DLQ writer.
+     *
+     * @param blobStorage the blob storage backend to write to
+     * @param dlqConfig the dead letter queue configuration controlling partitioning
+     * @param firehoseInstrumentation the instrumentation used for logging and metrics
+     */
     public BlobStorageDlqWriter(BlobStorage blobStorage, DlqConfig dlqConfig, FirehoseInstrumentation firehoseInstrumentation) {
         this.blobStorage = blobStorage;
         this.objectMapper = new ObjectMapper();
@@ -41,6 +68,17 @@ public class BlobStorageDlqWriter implements DlqWriter {
         this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
+    /**
+     * Writes the given messages to blob storage, grouped into per-topic, per-date partitions.
+     * <p>
+     * Each partition's messages are serialized to newline-delimited JSON and uploaded as a single
+     * object. Messages that cannot be serialized are skipped; if a partition's upload fails all of its
+     * messages are returned as failed. Returns immediately when the batch is empty.
+     *
+     * @param messages the messages to write to the dead letter queue
+     * @return the messages whose partitions failed to upload, empty if all succeeded
+     * @throws IOException if a non-retryable error occurs while writing
+     */
     @Override
     public List<Message> write(List<Message> messages) throws IOException {
         if (messages.isEmpty()) {
@@ -162,6 +200,15 @@ public class BlobStorageDlqWriter implements DlqWriter {
         return failedMessages;
     }
 
+    /**
+     * Serializes a message to its JSON {@link DlqMessage} representation.
+     * <p>
+     * The key and value are Base64-encoded and any error information is included. Returns an empty
+     * string if serialization fails.
+     *
+     * @param message the message to serialize
+     * @return the JSON representation, or an empty string if serialization failed
+     */
     private String convertToString(Message message) {
         try {
             String errorString = "";
@@ -189,6 +236,15 @@ public class BlobStorageDlqWriter implements DlqWriter {
         }
     }
 
+    /**
+     * Computes the blob storage partition path for a message.
+     * <p>
+     * The path is the message topic followed by a date derived from the configured partition key type
+     * and timezone.
+     *
+     * @param message the message to partition
+     * @return the partition path (topic and date) for the message
+     */
     private Path createPartition(Message message) {
         DlqPartitionKeyType partitionKeyType = dlqConfig.getDlqBlobFilePartitionKey();
         firehoseInstrumentation.logDebug("DLQ partitioning message - topic: {}, partition: {}, offset: {}, produceTimestamp: {}, consumeTimestamp: {}",
@@ -200,10 +256,22 @@ public class BlobStorageDlqWriter implements DlqWriter {
         return Paths.get(message.getTopic(), partitionDate);
     }
 
+    /**
+     * Returns the date component, the final path segment, of a partition path.
+     *
+     * @param path the partition path
+     * @return the date segment as a string
+     */
     private String extractDateFromPath(Path path) {
         return path.getFileName().toString();
     }
 
+    /**
+     * Records DLQ success metrics for a partition's messages.
+     *
+     * @param messages the successfully written messages
+     * @param date the partition date
+     */
     private void captureSuccessMetrics(List<Message> messages, String date) {
         firehoseInstrumentation.captureDLQBlobStorageMetrics(
                 Metrics.DLQ_MESSAGES_TOTAL,
@@ -214,6 +282,12 @@ public class BlobStorageDlqWriter implements DlqWriter {
         );
     }
 
+    /**
+     * Records DLQ failure metrics, by error type, for a partition's messages.
+     *
+     * @param messages the messages that failed to be written
+     * @param date the partition date
+     */
     private void captureFailureMetrics(List<Message> messages, String date) {
         messages.forEach(message -> {
             if (message.getErrorInfo() != null) {

@@ -61,6 +61,14 @@ public class EsSinkFactory {
                 esSinkConfig.getSinkEsRequestTimeoutMs(), esSinkConfig.getSinkEsShardsActiveWaitCount(), getStatusCodesAsList(esSinkConfig.getSinkEsRetryStatusCodeBlacklist()));
     }
 
+    /**
+     * Parses the comma-separated connection URLs into an array of {@link HttpHost}.
+     *
+     * @param esConnectionUrls        the comma-separated {@code host:port} connection URLs
+     * @param firehoseInstrumentation the instrumentation used for logging
+     * @return the parsed Elasticsearch hosts
+     * @throws IllegalArgumentException if the URLs are empty or null, or any entry lacks a host and port
+     */
     protected static HttpHost[] getHttpHosts(String esConnectionUrls, FirehoseInstrumentation firehoseInstrumentation) {
         if (esConnectionUrls != null && !esConnectionUrls.isEmpty()) {
             String[] esNodes = esConnectionUrls.trim().split(",");
@@ -79,6 +87,14 @@ public class EsSinkFactory {
         }
     }
 
+    /**
+     * Parses the comma-separated retry status-code blacklist into a list.
+     * <p>
+     * Blank entries are ignored.
+     *
+     * @param esRetryStatusCodeBlacklist the comma-separated status codes from configuration
+     * @return the list of status codes, or an empty list when none are configured
+     */
     protected static List<String> getStatusCodesAsList(String esRetryStatusCodeBlacklist) {
         return Arrays
                 .stream(esRetryStatusCodeBlacklist.split(","))

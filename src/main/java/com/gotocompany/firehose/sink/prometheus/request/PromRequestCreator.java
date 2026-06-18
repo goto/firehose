@@ -14,8 +14,11 @@ import com.gotocompany.stencil.Parser;
  * Prometheus Request Creator.
  */
 public class PromRequestCreator {
+    /** Prometheus sink configuration supplying URLs, headers and proto index mappings. */
     private PromSinkConfig promSinkConfig;
+    /** Reporter used to back the instrumentation of the created request. */
     private StatsDReporter statsDReporter;
+    /** Stencil parser used to deserialize message payloads. */
     private Parser protoParser;
 
 

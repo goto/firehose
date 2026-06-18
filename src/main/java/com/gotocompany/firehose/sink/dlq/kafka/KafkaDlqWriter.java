@@ -13,18 +13,49 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * {@link DlqWriter} that republishes undeliverable messages to a Kafka retry topic.
+ * <p>
+ * Each message's key, value and headers are sent to the configured topic via a Kafka producer. Sends
+ * are asynchronous; the writer waits for all callbacks to complete and returns the messages whose
+ * sends failed so they can be retried.
+ *
+ * @see DlqWriter
+ * @see DlqWriterFactory
+ */
 public class KafkaDlqWriter implements DlqWriter {
 
+    /** Producer used to publish messages to the retry topic. */
     private Producer<byte[], byte[]> kafkaProducer;
+    /** The Kafka retry topic messages are republished to. */
     private final String topic;
+    /** Instrumentation used for logging and error metrics. */
     private FirehoseInstrumentation firehoseInstrumentation;
 
+    /**
+     * Creates a Kafka DLQ writer.
+     *
+     * @param kafkaProducer the producer used to publish to the retry topic
+     * @param topic the Kafka retry topic to publish to
+     * @param firehoseInstrumentation the instrumentation used for logging and metrics
+     */
     public KafkaDlqWriter(Producer<byte[], byte[]> kafkaProducer, String topic, FirehoseInstrumentation firehoseInstrumentation) {
         this.kafkaProducer = kafkaProducer;
         this.topic = topic;
         this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
+    /**
+     * Republishes the given messages to the Kafka retry topic.
+     * <p>
+     * Sends each message asynchronously, waits for every send to complete, and collects the ones that
+     * failed. Returns immediately with an empty list when the batch is empty. If the wait is
+     * interrupted the interruption is logged and recorded as a non-fatal error.
+     *
+     * @param messages the messages to republish
+     * @return the messages that failed to be sent, empty if all succeeded
+     * @throws IOException if a non-retryable error occurs while writing
+     */
     @Override
     public List<Message> write(List<Message> messages) throws IOException {
         if (messages.isEmpty()) {

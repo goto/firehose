@@ -25,12 +25,19 @@ import java.util.List;
  */
 public class ParameterizedUriRequest implements Request {
 
+    /** Reporter used to instrument the request creator. */
     private StatsDReporter statsDReporter;
+    /** Bound HTTP sink configuration. */
     private HttpSinkConfig httpSinkConfig;
+    /** Serializer that renders each message into the request body. */
     private JsonBody body;
+    /** HTTP method used for the requests. */
     private HttpSinkRequestMethodType method;
+    /** Builder that wraps the serialized body into an HTTP entity. */
     private RequestEntityBuilder requestEntityBuilder;
+    /** Creator that assembles one request per message. */
     private RequestCreator requestCreator;
+    /** Mapper that extracts the configured proto fields used as URI parameters. */
     private ProtoToFieldMapper protoToFieldMapper;
 
     /**
@@ -54,6 +61,14 @@ public class ParameterizedUriRequest implements Request {
         this.protoToFieldMapper = protoToFieldMapper;
     }
 
+    /**
+     * Builds one request per message, appending the extracted parameters to each URI.
+     *
+     * @param messages the messages to convert into requests
+     * @return the list of requests to send
+     * @throws URISyntaxException    if a service URL cannot be parsed into a URI
+     * @throws DeserializerException if a message body cannot be serialized
+     */
     @Override
     public List<HttpEntityEnclosingRequestBase> build(List<Message> messages) throws URISyntaxException, DeserializerException {
         return requestCreator.create(messages, requestEntityBuilder.setWrapping(!isTemplateBody(httpSinkConfig)));
@@ -77,6 +92,11 @@ public class ParameterizedUriRequest implements Request {
         return this;
     }
 
+    /**
+     * Reports whether this strategy applies to the current configuration.
+     *
+     * @return {@code true} when a parameter source is enabled and parameters are placed in the query string
+     */
     @Override
     public boolean canProcess() {
         return httpSinkConfig.getSinkHttpParameterSource() != HttpSinkParameterSourceType.DISABLED

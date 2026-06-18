@@ -22,15 +22,38 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
+/**
+ * Minimal OAuth2 client that obtains access tokens using the client-credentials grant.
+ *
+ * <p>Used by {@link OAuth2Credential} to fetch a token from the configured token endpoint. The client
+ * posts the client id, secret and scope as a form-encoded body, parses the JSON response and returns an
+ * {@link OAuth2AccessToken}. A short fixed timeout is applied to the token request, and any non-2xx
+ * response is surfaced as an {@link com.gotocompany.firehose.exception.OAuth2Exception}.
+ */
 public class OAuth2Client {
+    /** HTTP client dedicated to the token endpoint, configured with a short timeout. */
     private final HttpClient client;
+    /** OAuth2 client identifier sent with the token request. */
     private final String clientId;
+    /** OAuth2 client secret sent with the token request. */
     private final String clientSecret;
+    /** Space-delimited scopes requested for the token. */
     private final String scope;
+    /** URL of the OAuth2 token endpoint. */
     private final String accessTokenEndpoint;
+    /** Connect, socket and connection-request timeout, in milliseconds, for the token request. */
     private final int timeoutMs = 5000;
+    /** Regular expression matching 2xx HTTP status codes that denote a successful token response. */
     private static final String SUCCESS_CODE_PATTERN = "^2.*";
 
+    /**
+     * Creates a client bound to a token endpoint and the credentials used to authenticate against it.
+     *
+     * @param clientId            the OAuth2 client identifier
+     * @param clientSecret        the OAuth2 client secret
+     * @param scope               the space-delimited scopes to request
+     * @param accessTokenEndpoint the URL of the token endpoint
+     */
     public OAuth2Client(String clientId, String clientSecret, String scope, String accessTokenEndpoint) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
@@ -39,11 +62,26 @@ public class OAuth2Client {
         this.client = this.httpClient();
     }
 
+    /**
+     * Builds the closeable HTTP client used for token requests, applying the fixed request timeouts.
+     *
+     * @return a configured HTTP client
+     */
     private CloseableHttpClient httpClient() {
         RequestConfig config = RequestConfig.custom().setConnectTimeout(timeoutMs).setConnectionRequestTimeout(timeoutMs).setSocketTimeout(timeoutMs).build();
         return HttpClientBuilder.create().setDefaultRequestConfig(config).build();
     }
 
+    /**
+     * Requests a new access token from the endpoint using the client-credentials grant.
+     *
+     * <p>The client id, secret, scope and {@code grant_type} are posted as a form-encoded body and the
+     * JSON response is parsed into an {@link OAuth2AccessToken}.
+     *
+     * @return the access token returned by the endpoint
+     * @throws IOException     if the token request cannot be executed or its response read
+     * @throws OAuth2Exception if the endpoint returns a non-2xx response
+     */
     public OAuth2AccessToken requestClientCredentialsGrantAccessToken() throws IOException {
         HttpPost req = new HttpPost(this.accessTokenEndpoint);
         req.setHeader("Content-Type", "application/x-www-form-urlencoded");

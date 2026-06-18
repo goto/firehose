@@ -17,15 +17,40 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * {@link RequestCreator} that builds a single HTTP request for the whole batch.
+ *
+ * <p>It renders one URI and one set of headers, serializes all messages into a single JSON array body and
+ * returns a one-element list containing that request. The body is omitted for {@code DELETE} requests when
+ * delete bodies are disabled in the configuration. Used by
+ * {@link com.gotocompany.firehose.sink.http.request.types.SimpleRequest} when no JSON body template is
+ * configured.
+ */
 public class BatchRequestCreator implements RequestCreator {
 
+    /** Builder that produces the request URI shared by the batch. */
     private UriBuilder uriBuilder;
+    /** Builder that produces the headers shared by the batch. */
     private HeaderBuilder headerBuilder;
+    /** HTTP method used for the request. */
     private HttpSinkRequestMethodType method;
+    /** Serializer that renders the messages into the request body. */
     private JsonBody jsonBody;
+    /** Instrumentation used to log the request at debug level. */
     private FirehoseInstrumentation firehoseInstrumentation;
+    /** Bound HTTP sink configuration, consulted for delete-body handling. */
     private HttpSinkConfig httpSinkConfig;
 
+    /**
+     * Creates a batch request creator with the builders and configuration it needs.
+     *
+     * @param firehoseInstrumentation instrumentation used to log the request
+     * @param uriBuilder              builder that produces the request URI
+     * @param headerBuilder           builder that produces request headers
+     * @param method                  the HTTP method to use
+     * @param jsonBody                serializer that renders the messages into the request body
+     * @param httpSinkConfig          the bound HTTP sink configuration
+     */
     public BatchRequestCreator(FirehoseInstrumentation firehoseInstrumentation, UriBuilder uriBuilder, HeaderBuilder headerBuilder, HttpSinkRequestMethodType method, JsonBody jsonBody, HttpSinkConfig httpSinkConfig) {
         this.uriBuilder = uriBuilder;
         this.headerBuilder = headerBuilder;
@@ -35,6 +60,17 @@ public class BatchRequestCreator implements RequestCreator {
         this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
+    /**
+     * Builds a single request whose body is the serialized batch of messages.
+     *
+     * <p>The body is attached for every method except {@code DELETE} when delete bodies are disabled in the
+     * configuration, in which case the request is sent without an entity.
+     *
+     * @param messages             the messages serialized into the single request body
+     * @param requestEntityBuilder builder that wraps the serialized batch into an HTTP entity
+     * @return a single-element list containing the batch request
+     * @throws URISyntaxException if the request URI cannot be built
+     */
     @Override
     public List<HttpEntityEnclosingRequestBase> create(List<Message> messages, RequestEntityBuilder requestEntityBuilder) throws URISyntaxException {
         URI uri = uriBuilder.build();

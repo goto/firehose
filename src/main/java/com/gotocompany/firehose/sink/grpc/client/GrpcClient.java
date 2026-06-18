@@ -34,14 +34,30 @@ import java.util.concurrent.TimeUnit;
  */
 public class GrpcClient {
 
+    /** Instrumentation used to log calls and emit error metrics. */
     private FirehoseInstrumentation firehoseInstrumentation;
+    /** Bound gRPC sink configuration. */
     private final GrpcSinkConfig grpcSinkConfig;
+    /** Stencil client used to parse the gRPC response payload. */
     private StencilClient stencilClient;
+    /** Managed channel over which the unary calls are made. */
     private ManagedChannel managedChannel;
+    /** Descriptor of the unary method, using raw byte-array marshalling. */
     private final MethodDescriptor<byte[], byte[]> methodDescriptor;
+    /** Empty response returned when a call fails, signalling failure to the sink. */
     private final DynamicMessage emptyResponse;
+    /** Maps configured proto fields into additional gRPC metadata. */
     private final ProtoToMetadataMapper protoToMetadataMapper;
 
+    /**
+     * Creates a gRPC client and builds the unary method descriptor from configuration.
+     *
+     * @param firehoseInstrumentation instrumentation used to log calls and emit metrics
+     * @param grpcSinkConfig          the bound gRPC sink configuration
+     * @param managedChannel          the channel over which calls are made
+     * @param stencilClient           Stencil client used to parse responses
+     * @param protoToMetadataMapper   mapper that derives extra gRPC metadata from the payload
+     */
     public GrpcClient(FirehoseInstrumentation firehoseInstrumentation,
                       GrpcSinkConfig grpcSinkConfig,
                       ManagedChannel managedChannel,
@@ -60,6 +76,17 @@ public class GrpcClient {
         this.emptyResponse = DynamicMessage.newBuilder(this.stencilClient.get(this.grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass())).build();
     }
 
+    /**
+     * Performs the unary gRPC call for a single message.
+     *
+     * <p>Builds the request metadata from the Kafka headers and configured proto fields, applies any
+     * configured deadline and parses the response payload. On a transport error the failure is logged and
+     * counted and an empty response is returned.
+     *
+     * @param logMessage the raw protobuf payload sent as the request
+     * @param headers    the Kafka record headers forwarded as gRPC metadata
+     * @return the parsed response, or an empty response when the call fails
+     */
     public DynamicMessage execute(byte[] logMessage, Headers headers) {
         Metadata metadata = buildMetadata(headers, logMessage);
         try {
@@ -86,6 +113,13 @@ public class GrpcClient {
         return emptyResponse;
     }
 
+    /**
+     * Builds the gRPC metadata for a call from Kafka headers and configured proto fields.
+     *
+     * @param headers    the Kafka record headers to forward
+     * @param logMessage the payload from which configured metadata fields are extracted
+     * @return the combined gRPC metadata
+     */
     protected Metadata buildMetadata(Headers headers, byte[] logMessage) {
         Metadata metadata = new Metadata();
         for (Header header : headers) {
@@ -96,6 +130,11 @@ public class GrpcClient {
         return metadata;
     }
 
+    /**
+     * Returns the call options, applying a deadline when one is configured.
+     *
+     * @return the default call options, optionally with a deadline
+     */
     protected CallOptions decoratedDefaultCallOptions() {
         CallOptions defaultCallOption = CallOptions.DEFAULT;
         if (grpcSinkConfig.getSinkGrpcArgDeadlineMS() != null && grpcSinkConfig.getSinkGrpcArgDeadlineMS() > 0) {
@@ -104,6 +143,11 @@ public class GrpcClient {
         return defaultCallOption;
     }
 
+    /**
+     * Builds a marshaller that passes request and response bodies through as raw bytes.
+     *
+     * @return a byte-array marshaller
+     */
     private MethodDescriptor.Marshaller<byte[]> getMarshaller() {
         return new MethodDescriptor.Marshaller<byte[]>() {
             @Override

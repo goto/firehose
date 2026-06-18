@@ -19,17 +19,31 @@ import java.util.Base64;
 @EqualsAndHashCode
 @AllArgsConstructor
 public class Message {
+    /** Raw bytes of the record key. */
     private byte[] logKey;
+    /** Raw bytes of the record value (the message payload). */
     private byte[] logMessage;
+    /** Source Kafka topic. */
     private String topic;
+    /** Source Kafka partition. */
     private int partition;
+    /** Source Kafka offset. */
     private long offset;
+    /** Kafka record headers, used for trace-context propagation. */
     private Headers headers;
+    /** Producer/event timestamp of the record, in epoch milliseconds. */
     private long timestamp;
+    /** Time the record was consumed by Firehose, in epoch milliseconds. */
     private long consumeTimestamp;
+    /** Error attached to this message during processing, or {@code null} if none. */
     @Setter
     private ErrorInfo errorInfo;
 
+    /**
+     * Attaches a default {@link ErrorInfo} when none is already set.
+     *
+     * <p>Used before retry and DLQ handling so every failed message carries an error type.
+     */
     public void setDefaultErrorIfNotPresent() {
         if (errorInfo == null) {
             errorInfo = new ErrorInfo(new DefaultException("DEFAULT"), ErrorType.DEFAULT_ERROR);
@@ -69,6 +83,12 @@ public class Message {
         this(logKey, logMessage, topic, partition, offset, headers, timestamp, consumeTimestamp, null);
     }
 
+    /**
+     * Creates a copy of an existing message with the given error attached.
+     *
+     * @param message   the message to copy the record fields from
+     * @param errorInfo the error to attach to the new message
+     */
     public Message(Message message, ErrorInfo errorInfo) {
         this(message.getLogKey(),
                 message.getLogMessage(),
@@ -99,6 +119,12 @@ public class Message {
         return encodedSerializedStringFrom(logMessage);
     }
 
+    /**
+     * Base64-encodes the given bytes, returning an empty string for null or empty input.
+     *
+     * @param bytes the bytes to encode
+     * @return the base64 encoding, or an empty string when there is nothing to encode
+     */
     private static String encodedSerializedStringFrom(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             return "";

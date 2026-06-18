@@ -18,8 +18,32 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.util.Map;
 
+/**
+ * Factory that builds the {@link DlqWriter} selected by the dead letter queue configuration.
+ * <p>
+ * Reads {@link com.gotocompany.firehose.config.DlqConfig} and creates the matching writer: a
+ * {@link com.gotocompany.firehose.sink.dlq.kafka.KafkaDlqWriter} backed by a tracing Kafka producer, a
+ * {@link com.gotocompany.firehose.sink.dlq.blobstorage.BlobStorageDlqWriter} for the configured blob
+ * storage provider (GCS, S3, OSS or COS), or a
+ * {@link com.gotocompany.firehose.sink.dlq.log.LogDlqWriter} that logs the messages.
+ *
+ * @see DlqWriter
+ */
 public class DlqWriterFactory {
 
+    /**
+     * Builds a {@link DlqWriter} for the configured dead letter queue type.
+     * <p>
+     * For the Kafka type a tracing Kafka producer is created for the configured DLQ topic; for blob
+     * storage the provider-specific {@code *_TYPE} marker is set and a blob storage backend is created;
+     * for the log type a logging writer is returned.
+     *
+     * @param configuration the raw configuration key-value pairs
+     * @param client the reporter used to publish DLQ metrics
+     * @param tracer the OpenTracing tracer used to instrument the Kafka producer
+     * @return a dead letter queue writer for the configured type
+     * @throws IllegalArgumentException if the DLQ writer type or blob storage type is not supported
+     */
     public static DlqWriter create(Map<String, String> configuration, StatsDReporter client, Tracer tracer) {
         DlqConfig dlqConfig = ConfigFactory.create(DlqConfig.class, configuration);
 

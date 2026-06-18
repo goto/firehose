@@ -17,8 +17,11 @@ import java.util.Optional;
 @Slf4j
 public class TypecastedJsonSerializer implements MessageSerializer {
 
+    /** The inner serializer whose JSON output is post-processed. */
     private final MessageSerializer messageSerializer;
+    /** HTTP sink configuration supplying the JSON-path-to-type typecast mappings. */
     private final HttpSinkConfig httpSinkConfig;
+    /** JSON-path configuration that suppresses exceptions for missing paths. */
     private final Configuration jsonPathConfiguration;
 
     /**

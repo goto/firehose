@@ -15,7 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GrpcResponseCelPayloadEvaluator implements PayloadEvaluator<Message> {
 
+    /** Descriptor of the gRPC message type the expression is compiled and validated against. */
     private final Descriptors.Descriptor descriptor;
+    /** Compiled CEL program evaluated for each payload. */
     private CelRuntime.Program celProgram;
 
     /**

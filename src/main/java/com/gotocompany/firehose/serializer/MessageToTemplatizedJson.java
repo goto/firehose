@@ -27,16 +27,35 @@ import java.util.regex.Pattern;
  * Converts kafka messages into Templatized json.
  */
 public class MessageToTemplatizedJson implements MessageSerializer {
+    /** Regex matching quoted JSON-path placeholders such as {@code "$.field"} in the template. */
     private static final String TEMPLATE_PATH_REGEX = "\"\\$\\.[^\\s\\\\]*?\"";
+    /** Placeholder that expands to the entire message JSON. */
     private static final String ALL_FIELDS_FROM_TEMPLATE = "\"$._all_\"";
+    /** The JSON body template with JSON-path placeholders to fill in. */
     private final String httpSinkJsonBodyTemplate;
+    /** Gson used to render extracted values as JSON. */
     private final Gson gson;
+    /** Stencil parser used to decode the protobuf message. */
     private Parser protoParser;
+    /** The set of placeholder paths discovered in the template. */
     private HashSet<String> pathsToReplace;
+    /** Parser used to validate that the template is well-formed JSON. */
     private JSONParser jsonParser;
+    /** JSON-path configuration controlling missing-path behaviour. */
     private Configuration jsonPathConfig;
+    /** Records debug logs and warnings about missing paths. */
     private FirehoseInstrumentation firehoseInstrumentation;
 
+    /**
+     * Creates a templatized serializer and validates the template, pre-extracting its paths.
+     *
+     * @param firehoseInstrumentation  the instrumentation used for logging
+     * @param httpSinkJsonBodyTemplate the JSON body template containing JSON-path placeholders
+     * @param protoParser              the parser used to decode the protobuf message
+     * @param option                   an optional JSON-path option, or {@code null} for defaults
+     * @return a ready-to-use serializer
+     * @throws ConfigurationException if the template is not valid JSON
+     */
     public static MessageToTemplatizedJson create(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser, Option option) {
         MessageToTemplatizedJson messageToTemplatizedJson = new MessageToTemplatizedJson(firehoseInstrumentation, httpSinkJsonBodyTemplate, protoParser, option);
         if (messageToTemplatizedJson.isInvalidJson()) {
@@ -46,6 +65,16 @@ public class MessageToTemplatizedJson implements MessageSerializer {
         return messageToTemplatizedJson;
     }
 
+    /**
+     * Creates a templatized serializer without validating the template.
+     *
+     * <p>Prefer {@link #create} which also validates the template and extracts its placeholder paths.
+     *
+     * @param firehoseInstrumentation  the instrumentation used for logging
+     * @param httpSinkJsonBodyTemplate the JSON body template containing JSON-path placeholders
+     * @param protoParser              the parser used to decode the protobuf message
+     * @param option                   an optional JSON-path option, or {@code null} for defaults
+     */
     public MessageToTemplatizedJson(FirehoseInstrumentation firehoseInstrumentation, String httpSinkJsonBodyTemplate, Parser protoParser, Option option) {
         this.httpSinkJsonBodyTemplate = httpSinkJsonBodyTemplate;
         this.protoParser = protoParser;
@@ -57,6 +86,9 @@ public class MessageToTemplatizedJson implements MessageSerializer {
         this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
+    /**
+     * Scans the template for JSON-path placeholders and records them for substitution.
+     */
     private void setPathsFromTemplate() {
         HashSet<String> paths = new HashSet<>();
         Pattern pattern = Pattern.compile(TEMPLATE_PATH_REGEX);
@@ -108,6 +140,11 @@ public class MessageToTemplatizedJson implements MessageSerializer {
         }
     }
 
+    /**
+     * Returns whether the configured template fails to parse as JSON.
+     *
+     * @return {@code true} if the template is not valid JSON
+     */
     private boolean isInvalidJson() {
         try {
             jsonParser.parse(httpSinkJsonBodyTemplate);

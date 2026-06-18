@@ -5,8 +5,19 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 
 import java.util.List;
 
+/**
+ * {@link Filter} that performs no filtering and marks every message as valid.
+ *
+ * <p>Selected when filtering is disabled ({@code FILTER_ENGINE=NO_OP}); it forwards all consumed
+ * messages to the sink unchanged.
+ */
 public class NoOpFilter implements Filter {
 
+    /**
+     * Creates the no-op filter and logs that no filter is in effect.
+     *
+     * @param firehoseInstrumentation the instrumentation used to log the selection
+     */
     public NoOpFilter(FirehoseInstrumentation firehoseInstrumentation) {
         firehoseInstrumentation.logInfo("No filter is selected");
     }

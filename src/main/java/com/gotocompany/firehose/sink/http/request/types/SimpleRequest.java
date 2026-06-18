@@ -24,11 +24,17 @@ import java.util.List;
  */
 public class SimpleRequest implements Request {
 
+    /** Bound HTTP sink configuration. */
     private HttpSinkConfig httpSinkConfig;
+    /** Serializer that renders each message into the request body. */
     private JsonBody body;
+    /** HTTP method used for the requests. */
     private HttpSinkRequestMethodType method;
+    /** Builder that wraps the serialized body into an HTTP entity. */
     private RequestEntityBuilder requestEntityBuilder;
+    /** Creator that assembles the requests, chosen when the strategy is initialised. */
     private RequestCreator requestCreator;
+    /** Reporter used to instrument the request creator. */
     private StatsDReporter statsDReporter;
 
     /**
@@ -46,6 +52,14 @@ public class SimpleRequest implements Request {
         this.statsDReporter = statsDReporter;
     }
 
+    /**
+     * Builds the requests for the batch using the configured request creator.
+     *
+     * @param messages the messages to convert into requests
+     * @return the list of requests to send
+     * @throws DeserializerException if a message body cannot be serialized
+     * @throws URISyntaxException    if the service URL cannot be parsed into a URI
+     */
     public List<HttpEntityEnclosingRequestBase> build(List<Message> messages) throws DeserializerException, URISyntaxException {
         return requestCreator.create(messages, requestEntityBuilder);
     }
@@ -71,6 +85,11 @@ public class SimpleRequest implements Request {
         return this;
     }
 
+    /**
+     * Reports whether this strategy applies to the current configuration.
+     *
+     * @return {@code true} when no parameter source is configured and the service URL is static
+     */
     @Override
     public boolean canProcess() {
         boolean isDynamicUrl = httpSinkConfig.getSinkHttpServiceUrl().contains(",");

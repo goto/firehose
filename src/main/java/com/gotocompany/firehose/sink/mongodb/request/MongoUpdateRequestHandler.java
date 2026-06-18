@@ -15,7 +15,9 @@ import org.json.simple.JSONObject;
  */
 public class MongoUpdateRequestHandler extends MongoRequestHandler {
 
+    /** Resolved request type; this handler is active only for {@link MongoSinkRequestType#UPDATE_ONLY}. */
     private final MongoSinkRequestType mongoSinkRequestType;
+    /** Primary key field used to match the document to update. */
     private final String mongoPrimaryKey;
 
     /**
@@ -33,11 +35,25 @@ public class MongoUpdateRequestHandler extends MongoRequestHandler {
         this.mongoPrimaryKey = mongoPrimaryKey;
     }
 
+    /**
+     * Indicates whether this handler applies to the configured request type.
+     *
+     * @return {@code true} when the configured request type is update-only
+     */
     @Override
     public boolean canCreate() {
         return mongoSinkRequestType == MongoSinkRequestType.UPDATE_ONLY;
     }
 
+    /**
+     * Builds the update-only write model for the given message.
+     * <p>
+     * Returns a {@code ReplaceOneModel} keyed by {@code _id} without upsert, so the write only applies
+     * when a document with the primary key already exists.
+     *
+     * @param message the message to convert
+     * @return the MongoDB replace write model for the message
+     */
     @Override
     public ReplaceOneModel<Document> getRequest(Message message) {
         String logMessage = extractPayload(message);

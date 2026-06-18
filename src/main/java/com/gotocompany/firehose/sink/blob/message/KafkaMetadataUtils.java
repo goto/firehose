@@ -13,6 +13,19 @@ import java.time.Instant;
  */
 public class KafkaMetadataUtils {
 
+    /**
+     * Builds the Kafka metadata message for the given Kafka message.
+     * <p>
+     * Populates the load time (now), the message timestamp, and the offset, partition and topic from
+     * {@code message}. If {@code kafkaMetadataColumnName} is empty the flat metadata message is
+     * returned; otherwise it is nested inside a {@link NestedKafkaMetadataProtoMessage} under that
+     * column name.
+     *
+     * @param kafkaMetadataFileDescriptor the descriptor of the generated metadata proto file
+     * @param message the Kafka message whose metadata is captured
+     * @param kafkaMetadataColumnName the column name to nest the metadata under, or empty for flat metadata
+     * @return the metadata as a {@link com.google.protobuf.DynamicMessage}
+     */
     public static DynamicMessage createKafkaMetadata(Descriptors.FileDescriptor kafkaMetadataFileDescriptor, Message message, String kafkaMetadataColumnName) {
         Descriptors.Descriptor metadataDescriptor = kafkaMetadataFileDescriptor.findMessageTypeByName(KafkaMetadataProtoMessage.getTypeName());
 

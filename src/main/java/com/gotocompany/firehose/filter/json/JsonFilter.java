@@ -32,15 +32,24 @@ import static com.gotocompany.firehose.config.enums.FilterDataSourceType.KEY;
  */
 public class JsonFilter implements Filter {
 
+    /** Common prefix for this filter's StatsD metrics. */
     private static final String METRIC_PREFIX = "firehose_json_filter_";
+    /** Metric counting protobuf deserialization failures. */
     private static final String DESERIALIZATION_ERRORS = METRIC_PREFIX + "deserialization_errors_total";
 
+    /** Filter configuration (data source, schema, message format). */
     private final FilterConfig filterConfig;
+    /** Records logs and the deserialization-error metric. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Compiled JSON Schema (draft v7) used to validate each message. */
     private final JsonSchema schema;
+    /** Maps JSON text to a tree for validation. */
     private final ObjectMapper objectMapper = new ObjectMapper();
+    /** Prints parsed protobuf messages as JSON; only set for protobuf input. */
     private JsonFormat.Printer jsonPrinter;
+    /** Stencil parser for protobuf input; only set for protobuf input. */
     private Parser parser;
+    /** Whether deserialization errors are dropped (counted and filtered out) rather than thrown. */
     private final boolean dropDeserializationError;
 
     /**
@@ -83,6 +92,13 @@ public class JsonFilter implements Filter {
         return filteredMessages;
     }
 
+    /**
+     * Validates a JSON string against the configured schema.
+     *
+     * @param jsonMessage the JSON document to validate
+     * @return {@code true} if the document has no schema validation errors
+     * @throws FilterException if the JSON cannot be parsed
+     */
     private boolean evaluate(String jsonMessage) throws FilterException {
         try {
             JsonNode message = objectMapper.readTree(jsonMessage);
@@ -99,6 +115,17 @@ public class JsonFilter implements Filter {
         }
     }
 
+    /**
+     * Converts a record's raw bytes to a JSON string based on the configured message format.
+     *
+     * <p>For protobuf input the bytes are parsed and printed as JSON; for JSON input the bytes are
+     * decoded directly. Returns {@code null} when a droppable protobuf deserialization error occurs.
+     *
+     * @param data the raw key or value bytes
+     * @return the JSON representation, or {@code null} if a droppable deserialization error occurred
+     * @throws FilterException if deserialization fails and errors are not dropped, or the format is
+     *                         not supported
+     */
     private String deserialize(byte[] data) throws FilterException {
         switch (filterConfig.getFilterESBMessageFormat()) {
             case PROTOBUF:

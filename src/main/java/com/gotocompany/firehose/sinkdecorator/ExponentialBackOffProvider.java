@@ -14,10 +14,15 @@ import static java.lang.Math.toIntExact;
  */
 public class ExponentialBackOffProvider implements BackOffProvider {
 
+    /** Base delay applied before the first retry, in milliseconds. */
     private final int initialExpiryTimeInMs;
+    /** Multiplier applied per attempt to grow the delay exponentially. */
     private final int backoffRate;
+    /** Upper bound on the computed delay, in milliseconds. */
     private final int maximumExpiryTimeInMS;
+    /** Records the sleep-time metric and debug logs for each back-off. */
     private FirehoseInstrumentation firehoseInstrumentation;
+    /** Performs the actual thread sleep for the computed delay. */
     private final BackOff backOff;
 
     /**
@@ -38,6 +43,11 @@ public class ExponentialBackOffProvider implements BackOffProvider {
         this.backOff = backOff;
     }
 
+    /**
+     * Computes the delay for the given attempt, records it, and sleeps for that duration.
+     *
+     * @param attemptCount the current attempt count used to scale the delay
+     */
     @Override
     public void backOff(int attemptCount) {
         long sleepTime = this.calculateDelay(attemptCount);
@@ -46,6 +56,12 @@ public class ExponentialBackOffProvider implements BackOffProvider {
         backOff.inMilliSeconds(sleepTime);
     }
 
+    /**
+     * Computes the exponential delay for an attempt, capped at the configured maximum.
+     *
+     * @param attemptCount the current attempt count
+     * @return the delay to wait, in milliseconds
+     */
     private long calculateDelay(int attemptCount) {
         double exponentialBackOffTimeInMs = initialExpiryTimeInMs * Math.pow(backoffRate, attemptCount);
         return (long) Math.min(maximumExpiryTimeInMS, exponentialBackOffTimeInMs);

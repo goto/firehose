@@ -14,6 +14,7 @@ import java.util.Collection;
 @AllArgsConstructor
 public class ConsumerRebalancer implements ConsumerRebalanceListener {
 
+    /** Records the rebalance log messages. */
     private FirehoseInstrumentation firehoseInstrumentation;
 
     /**

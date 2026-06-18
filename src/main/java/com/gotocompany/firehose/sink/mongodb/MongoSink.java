@@ -23,9 +23,13 @@ import java.util.stream.Collectors;
  */
 public class MongoSink extends AbstractSink {
 
+    /** Builds a MongoDB {@code WriteModel} request for each message (update-only or upsert). */
     private final MongoRequestHandler mongoRequestHandler;
+    /** Per-batch write models submitted as a single bulk write; cleared on each prepare. */
     private final List<WriteModel<Document>> requests = new ArrayList<>();
+    /** Client that performs the bulk write and reports failures and metrics. */
     private final MongoSinkClient mongoSinkClient;
+    /** The current batch of messages, retained so failed writes can be mapped back by index. */
     private List<Message> messages;
 
     /**

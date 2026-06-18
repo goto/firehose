@@ -16,20 +16,43 @@ import java.util.List;
  * URI parser for http requests.
  */
 public class UriParser {
+    /** Stencil parser used to decode the message payload into a dynamic message. */
     private Parser protoParser;
+    /** Selects the payload source; {@code "key"} uses the message key, otherwise the message body. */
     private String parserMode;
 
+    /**
+     * Creates a URI parser bound to a proto parser and payload selection mode.
+     *
+     * @param protoParser the Stencil parser used to decode the payload
+     * @param parserMode  the payload source, {@code "key"} or {@code "message"}
+     */
     public UriParser(Parser protoParser, String parserMode) {
         this.protoParser = protoParser;
         this.parserMode = parserMode;
     }
 
+    /**
+     * Renders the service URL for a single message.
+     *
+     * @param message    the message whose payload supplies the substitution values
+     * @param serviceUrl the URL pattern, optionally followed by comma-separated proto field numbers
+     * @return the rendered URL
+     * @throws IllegalArgumentException if the payload cannot be parsed or the URL is invalid
+     */
     public String parse(Message message, String serviceUrl) {
         DynamicMessage parsedMessage = parseEsbMessage(message);
         return parseServiceUrl(parsedMessage, serviceUrl);
 
     }
 
+    /**
+     * Parses the message payload into a dynamic protobuf message.
+     *
+     * @param message the message to parse
+     * @return the parsed dynamic message
+     * @throws IllegalArgumentException if the payload is not valid protobuf
+     */
     private DynamicMessage parseEsbMessage(Message message) {
         DynamicMessage parsedMessage;
         try {
@@ -40,6 +63,14 @@ public class UriParser {
         return parsedMessage;
     }
 
+    /**
+     * Splits the service URL into its pattern and field-number variables and renders it.
+     *
+     * @param data       the parsed message supplying the substitution values
+     * @param serviceUrl the raw service URL configuration
+     * @return the rendered URL, or the pattern itself when no variables are present
+     * @throws IllegalArgumentException if the service URL is empty
+     */
     private String parseServiceUrl(DynamicMessage data, String serviceUrl) {
         if (StringUtils.isEmpty(serviceUrl)) {
             throw new IllegalArgumentException("Service URL '" + serviceUrl + "' is invalid");
@@ -61,6 +92,14 @@ public class UriParser {
                 : renderedUrl;
     }
 
+    /**
+     * Substitutes the proto field values into the URL pattern.
+     *
+     * @param parsedMessage    the parsed message supplying the values
+     * @param pattern          the URL format pattern
+     * @param patternVariables comma-separated proto field numbers to substitute
+     * @return the formatted URL, or the pattern unchanged when there are no variables
+     */
     private String renderStringUrl(DynamicMessage parsedMessage, String pattern, String patternVariables) {
         if (StringUtils.isEmpty(patternVariables)) {
             return pattern;
@@ -73,6 +112,14 @@ public class UriParser {
         return String.format(pattern, patternVariableData);
     }
 
+    /**
+     * Reads a single proto field value by its field number.
+     *
+     * @param parsedMessage the parsed message to read from
+     * @param fieldNumber   the proto field number as a string
+     * @return the field value
+     * @throws IllegalArgumentException if the field number is not numeric or no such field exists
+     */
     private Object getDataByFieldNumber(DynamicMessage parsedMessage, String fieldNumber) {
         int fieldNumberInt;
         try {
@@ -87,6 +134,12 @@ public class UriParser {
         return parsedMessage.getField(fieldDescriptor);
     }
 
+    /**
+     * Returns the raw payload bytes for the configured parser mode.
+     *
+     * @param message the message to read
+     * @return the message key when the mode is {@code "key"}, otherwise the message body
+     */
     private byte[] getPayload(Message message) {
         if (parserMode.equals("key")) {
             return message.getLogKey();

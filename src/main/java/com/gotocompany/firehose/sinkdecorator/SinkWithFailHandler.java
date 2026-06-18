@@ -16,6 +16,7 @@ import java.util.Optional;
  * This is intended to be used to trigger consumer failure based on configured error types
  */
 public class SinkWithFailHandler extends SinkDecorator {
+    /** Decides whether a message's error falls in the fail scope. */
     private final ErrorHandler errorHandler;
 
     /**
@@ -29,6 +30,15 @@ public class SinkWithFailHandler extends SinkDecorator {
         this.errorHandler = errorHandler;
     }
 
+    /**
+     * Pushes messages and throws if any returned failure matches the fail error scope.
+     *
+     * @param inputMessages the messages to push
+     * @return the messages returned by the wrapped sink when none match the fail scope
+     * @throws IOException           if the wrapped sink fails with an I/O error
+     * @throws DeserializerException if the wrapped sink fails to deserialize a message
+     * @throws SinkException         if a returned message's error is in {@link ErrorScope#FAIL}
+     */
     @Override
     public List<Message> pushMessage(List<Message> inputMessages) throws IOException, DeserializerException {
         List<Message> messages = super.pushMessage(inputMessages);

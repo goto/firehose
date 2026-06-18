@@ -12,14 +12,34 @@ import org.slf4j.LoggerFactory;
 
 import java.util.TreeMap;
 
+/**
+ * Generates temporary Tencent COS credentials via the STS (Security Token Service).
+ *
+ * <p>Builds an STS request from {@link CloudObjectStorageConfig} and a least-privilege access policy scoped
+ * to the configured bucket and directory prefix, then returns short-lived {@link COSSessionCredentials}. The
+ * response is validated before use.
+ */
 public class TencentSecurityTokenService {
+    /** Logger for credential generation failures. */
     private static final Logger LOGGER = LoggerFactory.getLogger(TencentSecurityTokenService.class);
+    /** Bound COS configuration supplying secrets, bucket, region and validity. */
     private final CloudObjectStorageConfig config;
 
+    /**
+     * Creates a security token service bound to the COS configuration.
+     *
+     * @param config the bound COS configuration
+     */
     public TencentSecurityTokenService(CloudObjectStorageConfig config) {
         this.config = config;
     }
 
+    /**
+     * Requests short-lived session credentials from the COS STS endpoint.
+     *
+     * @return temporary session credentials scoped by the access policy
+     * @throws IllegalStateException if the configuration is invalid or valid credentials cannot be obtained
+     */
     public COSSessionCredentials generateTemporaryCredentials() {
         validateConfig();
         TreeMap<String, Object> params = buildSecurityTokenParameters();
@@ -39,6 +59,11 @@ public class TencentSecurityTokenService {
         }
     }
 
+    /**
+     * Validates that the secret id, secret key, bucket and region are all present.
+     *
+     * @throws IllegalStateException if any required configuration value is missing
+     */
     private void validateConfig() {
         if (config.getCosSecretId() == null || config.getCosSecretId().trim().isEmpty()) {
             throw new IllegalStateException("COS Secret ID cannot be null or empty");
@@ -54,6 +79,12 @@ public class TencentSecurityTokenService {
         }
     }
 
+    /**
+     * Validates that an STS response carries non-empty credentials and a positive expiry.
+     *
+     * @param response the STS response to validate
+     * @throws IllegalStateException if the response or its credentials are missing, empty or expired
+     */
     private void validateResponse(Response response) {
         if (response == null) {
             throw new IllegalStateException("STS response cannot be null");
@@ -74,6 +105,11 @@ public class TencentSecurityTokenService {
         }
     }
 
+    /**
+     * Builds the request parameters for the STS credential call.
+     *
+     * @return the ordered map of STS request parameters
+     */
     private TreeMap<String, Object> buildSecurityTokenParameters() {
         TreeMap<String, Object> params = new TreeMap<>();
         params.put("secretId", config.getCosSecretId());
@@ -84,6 +120,11 @@ public class TencentSecurityTokenService {
         return params;
     }
 
+    /**
+     * Builds the least-privilege access policy granting object operations on the configured resource.
+     *
+     * @return the access policy for the temporary credentials
+     */
     private Policy createAccessPolicy() {
         Policy policy = new Policy();
         Statement statement = new Statement();
@@ -101,6 +142,11 @@ public class TencentSecurityTokenService {
         return policy;
     }
 
+    /**
+     * Builds the qualified COS resource identifier the policy applies to.
+     *
+     * @return the resource identifier covering the bucket and directory prefix
+     */
     private String buildResourceIdentifier() {
         String prefix = normalizeDirectoryPrefix();
         return String.format("qcs::cos:%s:uid/%s:%s%s/*",
@@ -110,6 +156,11 @@ public class TencentSecurityTokenService {
                 prefix);
     }
 
+    /**
+     * Normalises the configured directory prefix to a leading-slash, no-trailing-slash form.
+     *
+     * @return the normalised prefix, or {@code "/"} when none is configured
+     */
     private String normalizeDirectoryPrefix() {
         String prefix = config.getCosDirectoryPrefix();
         if (prefix == null || prefix.isEmpty()) {

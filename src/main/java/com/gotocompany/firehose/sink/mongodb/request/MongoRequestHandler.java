@@ -18,9 +18,13 @@ import java.nio.charset.Charset;
  * the consumed record and creating a WriteModel request for the message
  */
 public abstract class MongoRequestHandler {
+    /** Input message encoding (JSON or Protobuf), controlling how the payload is extracted. */
     private final MongoSinkMessageType messageType;
+    /** Serializer used to convert a protobuf message into JSON. */
     private final MessageToJson jsonSerializer;
+    /** Parser used to turn the extracted JSON string into a {@code JSONObject}. */
     private final JSONParser jsonParser;
+    /** Whether the payload is taken from the log key ({@code "key"}) or the log message. */
     private final String kafkaRecordParserMode;
 
     /**

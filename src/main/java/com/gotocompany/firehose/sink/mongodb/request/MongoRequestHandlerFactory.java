@@ -15,10 +15,15 @@ import java.util.ArrayList;
 @AllArgsConstructor
 public class MongoRequestHandlerFactory {
 
+    /** The MongoDB sink configuration driving the handler selection. */
     private final MongoSinkConfig mongoSinkConfig;
+    /** Instrumentation used to log the chosen request mode. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Primary key field name; required in update-only mode. */
     private final String mongoPrimaryKey;
+    /** Input message type (JSON or Protobuf) passed to the created handler. */
     private final MongoSinkMessageType messageType;
+    /** Serializer used by the created handler to convert messages to JSON. */
     private final MessageToJson jsonSerializer;
 
     /**

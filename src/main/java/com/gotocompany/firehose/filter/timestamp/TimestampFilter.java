@@ -21,27 +21,65 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * {@link Filter} that keeps only messages whose event timestamp falls within a configured window.
+ *
+ * <p>For each message the configured timestamp field (read from the key or value per
+ * {@link FilterConfig#getFilterDataSource()}) is parsed from the protobuf payload using a Stencil
+ * {@link Parser}. A message is valid when its timestamp is no older than
+ * {@code FILTER_TIMESTAMP_PAST_WINDOW_SECONDS} and no further ahead than
+ * {@code FILTER_TIMESTAMP_FUTURE_WINDOW_SECONDS} relative to now. The filter records detailed
+ * counters (processed, valid, invalid, deserialization errors, and typed timestamp errors) and the
+ * filter duration. Deserialization and processing errors are dropped (counted and filtered out) when
+ * {@code FILTER_DROP_DESERIALIZATION_ERROR} is set, otherwise they raise a {@link FilterException}.
+ */
 public class TimestampFilter implements Filter {
 
+    /** Common prefix for this filter's StatsD metrics. */
     private static final String METRIC_PREFIX = "firehose_timestamp_filter_";
+    /** Metric counting messages processed by this filter. */
     private static final String MESSAGES_PROCESSED = METRIC_PREFIX + "messages_processed_total";
+    /** Metric counting messages whose timestamp was within the window. */
     private static final String VALID_MESSAGES = METRIC_PREFIX + "valid_messages_total";
+    /** Metric counting messages filtered out by this filter. */
     private static final String INVALID_MESSAGES = METRIC_PREFIX + "invalid_messages_total";
+    /** Metric counting protobuf deserialization failures. */
     private static final String DESERIALIZATION_ERRORS = METRIC_PREFIX + "deserialization_errors_total";
+    /** Metric counting messages whose timestamp field is missing from the schema. */
     private static final String UNKNOWN_FIELD_ERRORS = METRIC_PREFIX + "unknown_field_errors_total";
+    /** Metric counting messages with missing, null, or out-of-window timestamps. */
     private static final String INVALID_TIMESTAMP_ERRORS = METRIC_PREFIX + "invalid_timestamp_errors_total";
+    /** Metric counting timestamp fields of an unsupported type. */
     private static final String UNSUPPORTED_TYPE_ERRORS = METRIC_PREFIX + "unsupported_type_errors_total";
+    /** Metric recording how long filtering a batch took, in milliseconds. */
     private static final String FILTER_DURATION_MS = METRIC_PREFIX + "duration_milliseconds";
 
+    /** Filter configuration (timestamp field, windows, data source, schema). */
     private final FilterConfig filterConfig;
+    /** Records logs, counters, and the duration metric. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Whether the key or the message value supplies the timestamp. */
     private final FilterDataSourceType filterDataSourceType;
+    /** Name of the protobuf field that holds the event timestamp. */
     private final String timestampFieldName;
+    /** Whether deserialization and processing errors are dropped rather than thrown. */
     private final boolean dropDeserializationError;
+    /** Allowed lag behind now, in seconds; older timestamps are filtered out. */
     private final long pastWindowSeconds;
+    /** Allowed lead ahead of now, in seconds; further-future timestamps are filtered out. */
     private final long futureWindowSeconds;
+    /** Stencil parser used to deserialize the protobuf payload. */
     private final Parser parser;
 
+    /**
+     * Builds a timestamp filter from configuration and creates the protobuf parser.
+     *
+     * @param stencilClient           the Stencil client used to obtain the protobuf parser
+     * @param filterConfig            the filter configuration (field name, windows, data source)
+     * @param firehoseInstrumentation the instrumentation used for logging and metrics
+     * @throws IllegalArgumentException if the proto schema class is not configured or the parser
+     *                                  cannot be created
+     */
     public TimestampFilter(StencilClient stencilClient, FilterConfig filterConfig,
             FirehoseInstrumentation firehoseInstrumentation) {
         this.filterConfig = filterConfig;
@@ -67,6 +105,9 @@ public class TimestampFilter implements Filter {
         logConfiguration();
     }
 
+    /**
+     * Logs the resolved timestamp-filter configuration at startup.
+     */
     private void logConfiguration() {
         firehoseInstrumentation.logInfo("\n\tFilter type: TIMESTAMP");
         firehoseInstrumentation.logInfo("\n\tFilter schema: {}", filterConfig.getFilterSchemaProtoClass());
@@ -77,6 +118,17 @@ public class TimestampFilter implements Filter {
         firehoseInstrumentation.logInfo("\n\tFilter data source: {}", filterDataSourceType);
     }
 
+    /**
+     * Partitions messages by whether their event timestamp falls within the configured window.
+     *
+     * <p>Null or empty inputs yield an empty result. Each message is parsed and validated; processed,
+     * valid, invalid, and duration metrics are recorded for the batch. A {@code null} message, or one
+     * with empty data, is treated as invalid.
+     *
+     * @param messages the consumed records, each wrapping the raw bytes in a {@link Message}
+     * @return the messages split into valid (in-window) and invalid lists
+     * @throws FilterException if parsing or validation fails and errors are not dropped
+     */
     @Override
     public FilteredMessages filter(List<Message> messages) throws FilterException {
         if (messages == null) {
@@ -169,6 +221,17 @@ public class TimestampFilter implements Filter {
         return filteredMessages;
     }
 
+    /**
+     * Returns whether the message's timestamp field is present and within the configured window.
+     *
+     * <p>Emits typed {@code INVALID_TIMESTAMP_ERRORS} counters for missing, null, too-old, or
+     * too-future timestamps, and counts an unknown-field error when the field is absent from the
+     * schema.
+     *
+     * @param message the parsed protobuf message to inspect
+     * @return {@code true} if the timestamp is within the past and future windows
+     * @throws FilterException if the timestamp field is missing from the schema or cannot be read
+     */
     private boolean isValidTimestamp(DynamicMessage message) throws FilterException {
         if (message == null) {
             firehoseInstrumentation.logWarn("Null message provided to timestamp validation");
@@ -236,6 +299,17 @@ public class TimestampFilter implements Filter {
         }
     }
 
+    /**
+     * Extracts an epoch-seconds value from a timestamp field of various supported types.
+     *
+     * <p>Supports {@code Long} and {@code Integer} (epoch seconds), {@link Date} (converted from
+     * milliseconds), numeric or ISO-8601 {@code String}, a {@code google.protobuf.Timestamp}
+     * {@link DynamicMessage}, and generated protobuf {@code Timestamp} types.
+     *
+     * @param fieldValue the raw timestamp field value
+     * @return the timestamp as epoch seconds
+     * @throws FilterException if the value's type is unsupported or it cannot be parsed
+     */
     private long extractTimestampValue(Object fieldValue) throws FilterException {
         if (fieldValue instanceof Long) {
             return (Long) fieldValue;
@@ -270,6 +344,13 @@ public class TimestampFilter implements Filter {
         }
     }
 
+    /**
+     * Heuristically determines whether an object is a generated protobuf {@code Timestamp}.
+     *
+     * @param obj the field value to test
+     * @return {@code true} if the object appears to be a protobuf {@code Timestamp} and not a
+     *         {@link DynamicMessage}
+     */
     private boolean isProtobufTimestamp(Object obj) {
         if (obj instanceof DynamicMessage) {
             return false;
@@ -278,6 +359,13 @@ public class TimestampFilter implements Filter {
                 || obj.getClass().getName().equals("com.google.protobuf.Timestamp");
     }
 
+    /**
+     * Reads the seconds value from a generated protobuf {@code Timestamp} via reflection.
+     *
+     * @param protoTimestamp the protobuf {@code Timestamp} object
+     * @return the timestamp's seconds component as epoch seconds
+     * @throws FilterException if the seconds value cannot be read reflectively
+     */
     private long extractFromProtobufTimestamp(Object protoTimestamp) throws FilterException {
         try {
             Method getSeconds = protoTimestamp.getClass().getMethod("getSeconds");
@@ -296,6 +384,13 @@ public class TimestampFilter implements Filter {
         }
     }
 
+    /**
+     * Reads the seconds value from a {@code google.protobuf.Timestamp} {@link DynamicMessage}.
+     *
+     * @param dynamicMsg the dynamic Timestamp message
+     * @return the timestamp's seconds component as epoch seconds
+     * @throws FilterException if the seconds field is missing, absent, or not a {@code Long}
+     */
     private long extractFromDynamicTimestamp(DynamicMessage dynamicMsg) throws FilterException {
         try {
             Descriptors.FieldDescriptor secondsField = dynamicMsg.getDescriptorForType().findFieldByName("seconds");

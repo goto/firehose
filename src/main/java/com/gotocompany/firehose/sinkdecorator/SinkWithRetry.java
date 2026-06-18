@@ -26,12 +26,27 @@ import static com.gotocompany.firehose.metrics.Metrics.RETRY_ATTEMPTS_TOTAL;
  */
 public class SinkWithRetry extends SinkDecorator {
 
+    /** Supplies the inter-attempt delay strategy. */
     private final BackOffProvider backOffProvider;
+    /** Records retry counters, per-message metrics, and debug logs. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Supplies retry limits and input-schema settings. */
     private final AppConfig appConfig;
+    /** Parses message bytes into protos for debug logging of retried messages. */
     private final KeyOrMessageParser parser;
+    /** Splits failed messages by error scope to decide what is retryable. */
     private final ErrorHandler errorHandler;
 
+    /**
+     * Creates a retry decorator around the given sink.
+     *
+     * @param sink                    the wrapped sink to retry pushes against
+     * @param backOffProvider         the strategy used to pause between attempts
+     * @param firehoseInstrumentation the instrumentation used for retry metrics and logs
+     * @param appConfig               the application config supplying retry limits
+     * @param parser                  the parser used to render messages for debug logs
+     * @param errorHandler            the handler that classifies which errors are retryable
+     */
     public SinkWithRetry(Sink sink, BackOffProvider backOffProvider, FirehoseInstrumentation firehoseInstrumentation, AppConfig appConfig, KeyOrMessageParser parser, ErrorHandler errorHandler) {
         super(sink);
         this.backOffProvider = backOffProvider;
@@ -64,6 +79,16 @@ public class SinkWithRetry extends SinkDecorator {
         return messagesAfterRetry;
     }
 
+    /**
+     * Logs the messages about to be retried, when debug logging is enabled.
+     *
+     * <p>Protobuf input is parsed into {@link DynamicMessage} form, while JSON input is rendered from
+     * the message key or body depending on the configured parser mode.
+     *
+     * @param messageList the messages that will be retried
+     * @throws IOException              if a protobuf message cannot be parsed
+     * @throws IllegalArgumentException if the configured input schema type is not supported
+     */
     private void logDebug(List<Message> messageList) throws IOException {
         if (firehoseInstrumentation.isDebugEnabled()) {
             switch (appConfig.getInputSchemaType()) {
@@ -90,6 +115,12 @@ public class SinkWithRetry extends SinkDecorator {
         }
     }
 
+    /**
+     * Pauses before the next retry attempt, unless there are no messages left to retry.
+     *
+     * @param messageList  the messages still pending retry
+     * @param attemptCount the current attempt count, used to size the delay
+     */
     private void backOff(List<Message> messageList, int attemptCount) {
         if (messageList.isEmpty()) {
             return;
@@ -97,6 +128,17 @@ public class SinkWithRetry extends SinkDecorator {
         backOffProvider.backOff(attemptCount);
     }
 
+    /**
+     * Repeatedly re-pushes the retryable messages until they succeed or attempts are exhausted.
+     *
+     * <p>Each round pushes the remaining messages, keeps only those whose errors are still in
+     * {@link ErrorScope#RETRY}, backs off, and increments the attempt count. Total, success, and
+     * failure message metrics are recorded around the loop.
+     *
+     * @param messages the retryable messages to attempt
+     * @return the messages that are still failing after all attempts
+     * @throws IOException if the wrapped sink fails during a retry push
+     */
     private List<Message> doRetry(List<Message> messages) throws IOException {
         List<Message> retryMessages = new LinkedList<>(messages);
         firehoseInstrumentation.logInfo("Maximum retry attempts: {}", appConfig.getRetryMaxAttempts());
@@ -124,6 +166,11 @@ public class SinkWithRetry extends SinkDecorator {
         return retryMessages;
     }
 
+    /**
+     * Closes the wrapped sink.
+     *
+     * @throws IOException if the wrapped sink fails to close
+     */
     @Override
     public void close() throws IOException {
         super.close();

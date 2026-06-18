@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class ErrorHandler {
 
+    /** Configuration listing which error types belong to each error scope. */
     private final ErrorConfig config;
 
     /**
@@ -42,6 +43,13 @@ public class ErrorHandler {
         }
     }
 
+    /**
+     * Partitions messages by whether their error falls within the given scope.
+     *
+     * @param messages the messages to partition
+     * @param scope    the error scope to match against
+     * @return a map whose {@code true} entry holds matching messages and {@code false} the rest
+     */
     public Map<Boolean, List<Message>> split(List<Message> messages, ErrorScope scope) {
         return messages.stream().collect(Collectors.partitioningBy(m -> filter(m, scope)));
     }
