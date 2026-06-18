@@ -26,11 +26,16 @@ import java.util.stream.Stream;
  */
 public class ProtoToMetadataMapper {
 
+    /** Matches values that are CEL expressions, that is, those beginning with {@code $}. */
     private static final Pattern CEL_EXPRESSION_MARKER = Pattern.compile("^\\$(.+)");
+    /** Regex group index that captures the CEL expression after the {@code $} marker. */
     private static final int EXACT_CEL_EXPRESSION_GROUP_INDEX = 1;
 
+    /** Compiled CEL programs keyed by the expression text they were built from. */
     private final Map<String, CelRuntime.Program> celExpressionToProgramMap;
+    /** Template of metadata keys and values, where {@code $}-prefixed entries are CEL expressions. */
     private final Map<String, String> metadataTemplate;
+    /** Proto descriptor of the message type, used to compile the CEL programs. */
     private final Descriptors.Descriptor descriptor;
 
     /**

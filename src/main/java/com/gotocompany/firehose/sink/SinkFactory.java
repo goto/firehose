@@ -36,20 +36,63 @@ import org.aeonbits.owner.ConfigFactory;
 
 import java.util.Map;
 
+/**
+ * Factory that builds the {@link Sink} implementation selected by the Firehose configuration.
+ * <p>
+ * Reads the configured {@link com.gotocompany.firehose.config.enums.SinkType} from
+ * {@link com.gotocompany.firehose.config.KafkaConsumerConfig} and, in {@link #init()}, eagerly
+ * initialises the underlying Depot sink factories that require it (for example log, Redis,
+ * BigQuery, BigTable, HTTP v2 and MaxCompute). {@link #getSink()} then returns a ready-to-use
+ * sink for that type, wrapping Depot-based sinks in a {@link GenericSink} and delegating to the
+ * native Firehose factories (HTTP, gRPC, JDBC, InfluxDB, Elasticsearch, Prometheus, blob and
+ * MongoDB) for the rest.
+ * <p>
+ * Configuration is sourced from the process environment and augmented by
+ * {@link SinkFactoryUtils#addAdditionalConfigsForSinkConnectors(java.util.Map)}. Metrics are
+ * reported through the supplied {@link com.gotocompany.depot.metrics.StatsDReporter}.
+ *
+ * @see Sink
+ * @see GenericSink
+ */
 public class SinkFactory {
+    /** Consumer configuration that determines which sink type to build. */
     private final KafkaConsumerConfig kafkaConsumerConfig;
+    /** Reporter used to publish metrics for the created sinks. */
     private final StatsDReporter statsDReporter;
+    /** Instrumentation for this factory's own logging. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Stencil client used for protobuf schema resolution. */
     private final StencilClient stencilClient;
+    /** Offset manager handed to sinks that commit Kafka offsets themselves, such as the blob sink. */
     private final OffsetManager offsetManager;
+    /** Connector configuration derived from the environment, shared by the Depot sink factories. */
     private final Map<String, String> config;
+    /** Depot BigQuery sink factory; created by {@link #init()} when the sink type is BIGQUERY. */
     private BigQuerySinkFactory bigQuerySinkFactory;
+    /** Depot BigTable sink factory; created by {@link #init()} when the sink type is BIGTABLE. */
     private BigTableSinkFactory bigTableSinkFactory;
+    /** Depot log sink factory; created by {@link #init()} when the sink type is LOG. */
     private LogSinkFactory logSinkFactory;
+    /** Depot Redis sink factory; created by {@link #init()} when the sink type is REDIS. */
     private RedisSinkFactory redisSinkFactory;
+    /** Depot HTTP sink factory backing the HTTPV2 sink type; created by {@link #init()}. */
     private com.gotocompany.depot.http.HttpSinkFactory httpv2SinkFactory;
+    /** Depot MaxCompute sink factory; created by {@link #init()} when the sink type is MAXCOMPUTE. */
     private MaxComputeSinkFactory maxComputeSinkFactory;
 
+    /**
+     * Creates a sink factory bound to the given configuration and collaborators.
+     * <p>
+     * Initialises this factory's own instrumentation and loads the connector configuration from
+     * the environment via
+     * {@link SinkFactoryUtils#addAdditionalConfigsForSinkConnectors(java.util.Map)}. Call
+     * {@link #init()} before {@link #getSink()}.
+     *
+     * @param kafkaConsumerConfig the consumer configuration that selects the sink type
+     * @param statsDReporter the reporter used to publish sink metrics
+     * @param stencilClient the Stencil client used for protobuf schema resolution
+     * @param offsetManager the offset manager passed to sinks that manage their own offsets
+     */
     public SinkFactory(KafkaConsumerConfig kafkaConsumerConfig,
                        StatsDReporter statsDReporter,
                        StencilClient stencilClient,
@@ -116,6 +159,17 @@ public class SinkFactory {
         }
     }
 
+    /**
+     * Builds and returns the {@link Sink} for the configured sink type.
+     * <p>
+     * Native Firehose sinks are created by their respective factories, while Depot-backed sinks
+     * are wrapped in a {@link GenericSink} that carries the appropriate instrumentation.
+     * {@link #init()} must have been called first for the sink types that rely on a
+     * pre-initialised Depot factory.
+     *
+     * @return a ready-to-use sink instance for the configured type
+     * @throws ConfigurationException if the configured sink type is not supported
+     */
     public Sink getSink() {
         SinkType sinkType = kafkaConsumerConfig.getSinkType();
         firehoseInstrumentation.logInfo("Sink Type: {}", sinkType);

@@ -15,13 +15,21 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
  */
 public class Task {
 
+    /** Pool that runs the parallel task threads. */
     private final ExecutorService executorService;
+    /** Number of threads (and the latch count) to run the task on. */
     private int parallelism;
+    /** Delay, in milliseconds, to wait after cancelling threads during {@link #stop()}. */
     private int threadCleanupDelay;
+    /** The work to run on each thread; receives the finish callback to invoke when done. */
     private Consumer<Runnable> task;
+    /** Callback that counts down the latch when a task thread finishes. */
     private Runnable taskFinishCallback;
+    /** Latch released once per thread, used to await completion of all threads. */
     private final CountDownLatch countDownLatch;
+    /** Futures of the submitted task threads, used to cancel them on stop. */
     private final List<Future<?>> fnFutures;
+    /** Records lifecycle logs for the task. */
     private FirehoseInstrumentation firehoseInstrumentation;
 
     /**
@@ -43,6 +51,11 @@ public class Task {
         this.firehoseInstrumentation = firehoseInstrumentation;
     }
 
+    /**
+     * Submits the task to run on all threads of the pool.
+     *
+     * @return this task, for chaining
+     */
     public Task run() {
         for (int i = 0; i < parallelism; i++) {
             fnFutures.add(executorService.submit(() -> {
@@ -52,11 +65,21 @@ public class Task {
         return this;
     }
 
+    /**
+     * Blocks until every task thread has signalled completion.
+     *
+     * @throws InterruptedException if the waiting thread is interrupted
+     */
     public void waitForCompletion() throws InterruptedException {
         firehoseInstrumentation.logInfo("waiting for completion");
         countDownLatch.await();
     }
 
+    /**
+     * Cancels all running task threads and waits the configured cleanup delay.
+     *
+     * @return this task, for chaining
+     */
     public Task stop() {
         try {
             firehoseInstrumentation.logInfo("Stopping task thread");

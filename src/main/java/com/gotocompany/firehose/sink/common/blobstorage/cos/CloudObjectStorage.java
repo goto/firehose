@@ -15,14 +15,33 @@ import com.qcloud.cos.region.Region;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * {@link BlobStorage} implementation backed by Tencent Cloud Object Storage (COS).
+ *
+ * <p>Wraps a {@link COSClient} authenticated through a {@link TencentCredentialManager} and configured from
+ * {@link CloudObjectStorageConfig} (region, retries and timeouts). On construction it verifies the bucket
+ * exists and logs any replication/retention rules. Upload operations are delegated to
+ * {@link TencentObjectOperations}, which performs retries and maps failures to {@link BlobStorageException}.
+ */
 public class CloudObjectStorage implements BlobStorage {
+    /** Logger for bucket checks, retention policy and store operations. */
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudObjectStorage.class);
 
+    /** Performs the actual upload operations with retry handling. */
     private final TencentObjectOperations tencentObjectOperations;
+    /** Supplies and refreshes the COS credentials. */
     private final TencentCredentialManager credentialManager;
+    /** Low-level COS client used for bucket checks and uploads. */
     private final COSClient cosClient;
+    /** Bound COS configuration. */
     private final CloudObjectStorageConfig config;
 
+    /**
+     * Creates a COS storage client from configuration, verifying the bucket and logging retention rules.
+     *
+     * @param config the bound COS configuration
+     * @throws IllegalArgumentException if the bucket or region is invalid or the bucket cannot be verified
+     */
     public CloudObjectStorage(CloudObjectStorageConfig config) {
         this.config = config;
         this.credentialManager = new TencentCredentialManager(config);
@@ -33,6 +52,14 @@ public class CloudObjectStorage implements BlobStorage {
         logRetentionPolicy();
     }
 
+    /**
+     * Creates a COS storage client with supplied collaborators, primarily for testing.
+     *
+     * @param config            the bound COS configuration
+     * @param credentialManager the credential provider to use
+     * @param cosClient         the COS client to use
+     * @throws IllegalArgumentException if the bucket cannot be verified
+     */
     CloudObjectStorage(CloudObjectStorageConfig config, TencentCredentialManager credentialManager, COSClient cosClient) {
         this.config = config;
         this.credentialManager = credentialManager;
@@ -42,6 +69,12 @@ public class CloudObjectStorage implements BlobStorage {
         logRetentionPolicy();
     }
 
+    /**
+     * Builds the COS client configuration (region, retries and timeouts) from the sink configuration.
+     *
+     * @param config the bound COS configuration
+     * @return the COS client configuration
+     */
     private static ClientConfig createDefaultClientConfig(CloudObjectStorageConfig config) {
         ClientConfig clientConfig = new ClientConfig(new Region(config.getCosRegion()));
         clientConfig.setMaxErrorRetry(config.getCosRetryMaxAttempts());
@@ -50,6 +83,11 @@ public class CloudObjectStorage implements BlobStorage {
         return clientConfig;
     }
 
+    /**
+     * Verifies that the configured bucket and region are set and that the bucket exists.
+     *
+     * @throws IllegalArgumentException if the bucket name or region is missing, or the bucket cannot be verified
+     */
     void checkBucket() {
         String bucketName = config.getCosBucketName();
         if (bucketName == null || bucketName.trim().isEmpty()) {
@@ -76,6 +114,9 @@ public class CloudObjectStorage implements BlobStorage {
         }
     }
 
+    /**
+     * Logs the bucket's replication rules, when any are configured.
+     */
     private void logRetentionPolicy() {
         String bucketName = config.getCosBucketName();
         try {
@@ -97,11 +138,26 @@ public class CloudObjectStorage implements BlobStorage {
         }
     }
 
+    /**
+     * Uploads a local file under the given object name.
+     *
+     * @param objectName the destination object name within the bucket
+     * @param filePath   the path of the local file to upload
+     * @throws BlobStorageException if the upload fails
+     */
     public void store(String objectName, String filePath) throws BlobStorageException {
         LOGGER.info("Storing file to COS: {} -> {}", filePath, objectName);
         tencentObjectOperations.uploadObject(objectName, filePath);
     }
 
+    /**
+     * Uploads the given bytes under the given object name.
+     *
+     * @param objectName the destination object name within the bucket
+     * @param content    the bytes to upload
+     * @throws BlobStorageException     if the upload fails
+     * @throws IllegalArgumentException if the content is {@code null}
+     */
     public void store(String objectName, byte[] content) throws BlobStorageException {
         if (content == null) {
             throw new IllegalArgumentException("Content cannot be null");

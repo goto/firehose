@@ -21,17 +21,45 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+/**
+ * {@link BlobStorage} implementation backed by Google Cloud Storage.
+ *
+ * <p>Wraps a GCS {@link Storage} client configured from {@link GCSConfig} (project, credentials and retry
+ * settings). On construction it verifies the target bucket exists and logs its retention policy. Objects are
+ * written under an optional directory prefix; upload failures are mapped to a {@link BlobStorageException}
+ * whose error type comes from {@link GCSErrorType}.
+ */
 public class GoogleCloudStorage implements BlobStorage {
+    /** Logger for bucket checks, retention policy and upload outcomes. */
     private static final Logger LOGGER = LoggerFactory.getLogger(GoogleCloudStorage.class);
+    /** Bound GCS configuration (project, bucket, prefix and retry settings). */
     private final GCSConfig gcsConfig;
+    /** GCS client used to perform the uploads. */
     private final Storage storage;
 
+    /**
+     * Creates a GCS storage client from configuration, verifying the bucket and logging its retention policy.
+     *
+     * <p>Loads service-account credentials from the path in the configuration.
+     *
+     * @param gcsConfig the bound GCS configuration
+     * @throws IOException              if the credentials file cannot be read
+     * @throws IllegalArgumentException if the configured bucket does not exist
+     */
     public GoogleCloudStorage(GCSConfig gcsConfig) throws IOException {
         this(gcsConfig, GoogleCredentials.fromStream(Files.newInputStream(Paths.get(gcsConfig.getGCSCredentialPath()))));
         checkBucket();
         logRetentionPolicy();
     }
 
+    /**
+     * Creates a GCS storage client from configuration and explicit credentials.
+     *
+     * <p>Builds a {@code Storage} service with the configured project id and retry settings.
+     *
+     * @param gcsConfig   the bound GCS configuration
+     * @param credentials the Google credentials used to authenticate
+     */
     public GoogleCloudStorage(GCSConfig gcsConfig, GoogleCredentials credentials) {
         this(gcsConfig, StorageOptions.newBuilder()
                 .setProjectId(gcsConfig.getGCloudProjectID())
@@ -49,11 +77,22 @@ public class GoogleCloudStorage implements BlobStorage {
                 .build().getService());
     }
 
+    /**
+     * Creates a GCS storage client using a caller-supplied {@code Storage}, primarily for testing.
+     *
+     * @param gcsConfig the bound GCS configuration
+     * @param storage   the GCS client to use
+     */
     public GoogleCloudStorage(GCSConfig gcsConfig, Storage storage) {
         this.gcsConfig = gcsConfig;
         this.storage = storage;
     }
 
+    /**
+     * Verifies that the configured bucket exists.
+     *
+     * @throws IllegalArgumentException if the bucket does not exist
+     */
     private void checkBucket() {
         String bucketName = gcsConfig.getGCSBucketName();
         Bucket bucket = storage.get(bucketName, Storage.BucketGetOption.userProject(gcsConfig.getGCloudProjectID()));
@@ -64,6 +103,9 @@ public class GoogleCloudStorage implements BlobStorage {
         }
     }
 
+    /**
+     * Logs the retention policy and period configured on the bucket.
+     */
     private void logRetentionPolicy() {
         String bucketName = gcsConfig.getGCSBucketName();
         Bucket bucket = storage.get(
@@ -77,6 +119,13 @@ public class GoogleCloudStorage implements BlobStorage {
         }
     }
 
+    /**
+     * Reads a local file and uploads its contents under the given object name.
+     *
+     * @param objectName the destination object name, before applying the directory prefix
+     * @param filePath   the path of the local file to upload
+     * @throws BlobStorageException if the file cannot be read or the upload fails
+     */
     @Override
     public void store(String objectName, String filePath) throws BlobStorageException {
         String finalPath = createPath(objectName);
@@ -89,12 +138,25 @@ public class GoogleCloudStorage implements BlobStorage {
         }
     }
 
+    /**
+     * Prepends the configured directory prefix to the object name, when set.
+     *
+     * @param objectName the base object name
+     * @return the full object name including any directory prefix
+     */
     private String createPath(String objectName) {
         String prefix = gcsConfig.getGCSDirectoryPrefix();
         return prefix == null || prefix.isEmpty()
                 ? objectName : Paths.get(prefix, objectName).toString();
     }
 
+    /**
+     * Uploads the given bytes under the given object name, applying the directory prefix.
+     *
+     * @param objectName the destination object name, before applying the directory prefix
+     * @param content    the bytes to upload
+     * @throws BlobStorageException if the upload fails; its error type reflects the GCS status code
+     */
     @Override
     public void store(String objectName, byte[] content) throws BlobStorageException {
         String finalPath = createPath(objectName);

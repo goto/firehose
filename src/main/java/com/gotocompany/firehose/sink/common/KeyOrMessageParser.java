@@ -16,7 +16,9 @@ import java.io.IOException;
 @AllArgsConstructor
 public class KeyOrMessageParser {
 
+    /** Stencil parser used to decode the selected payload. */
     private Parser protoParser;
+    /** Application configuration providing the record parser mode. */
     private AppConfig appConfig;
 
     /**
@@ -33,6 +35,13 @@ public class KeyOrMessageParser {
         return protoParse(message.getLogMessage());
     }
 
+    /**
+     * Parses raw bytes into a dynamic protobuf message.
+     *
+     * @param data the protobuf-encoded bytes
+     * @return the parsed dynamic message
+     * @throws IOException if the bytes are not valid protobuf
+     */
     private DynamicMessage protoParse(byte[] data) throws IOException {
         try {
             return protoParser.parse(data);

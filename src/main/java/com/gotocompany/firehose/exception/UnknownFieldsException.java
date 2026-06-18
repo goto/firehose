@@ -12,6 +12,11 @@ import com.google.protobuf.DynamicMessage;
  */
 public class UnknownFieldsException extends DeserializerException {
 
+    /**
+     * Creates the exception, embedding a textual rendering of the offending message.
+     *
+     * @param dynamicMessage the parsed proto message that contains unknown fields
+     */
     public UnknownFieldsException(DynamicMessage dynamicMessage) {
         super(String.format("unknown fields found, message : %s", dynamicMessage));
     }

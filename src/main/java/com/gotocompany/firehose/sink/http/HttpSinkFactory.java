@@ -49,6 +49,18 @@ public class HttpSinkFactory {
         return new HttpSink(new FirehoseInstrumentation(statsDReporter, HttpSink.class), request, closeableHttpClient, stencilClient, httpSinkConfig.getSinkHttpRetryStatusCodeRanges(), httpSinkConfig.getSinkHttpRequestLogStatusCodeRanges());
     }
 
+    /**
+     * Builds the pooled Apache HttpClient used by the sink.
+     *
+     * <p>Connection, socket and connection-request timeouts are taken from the configuration and
+     * applied to every request, the connection pool is capped by the configured maximum number of
+     * connections, and when OAuth2 is enabled an {@link OAuth2Credential} is attached so that each
+     * outgoing request carries a bearer token.
+     *
+     * @param httpSinkConfig the bound HTTP sink configuration
+     * @param statsDReporter reporter used to instrument the OAuth2 credential when enabled
+     * @return a configured, closeable HTTP client
+     */
     private static CloseableHttpClient newHttpClient(HttpSinkConfig httpSinkConfig, StatsDReporter statsDReporter) {
         Integer maxHttpConnections = httpSinkConfig.getSinkHttpMaxConnections();
         RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(httpSinkConfig.getSinkHttpRequestTimeoutMs())

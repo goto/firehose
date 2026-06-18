@@ -18,7 +18,9 @@ import java.util.Properties;
  */
 public class ProtoToFieldMapper {
 
+    /** Stencil parser used to decode the protobuf payload. */
     private final Parser protoParser;
+    /** Mapping from proto field index to target column name, including nested sub-mappings. */
     private final Properties protoIndexToFieldMapping;
 
     /**
@@ -51,6 +53,16 @@ public class ProtoToFieldMapper {
         return columnToValueMap;
     }
 
+    /**
+     * Recursively fills the column-to-value map from a message using the given mapping.
+     *
+     * <p>String-valued mappings are added directly, while nested {@link Properties} mappings recurse
+     * into the corresponding sub-message.
+     *
+     * @param message          the (possibly nested) message to read fields from
+     * @param protoToDbMapping the mapping applicable at this nesting level
+     * @param columnToValueMap the accumulating column-name-to-value map
+     */
     private void updateMapping(Message message, Properties protoToDbMapping, Map<String, Object> columnToValueMap) {
         Enumeration<Object> keys = protoToDbMapping.keys();
         while (keys.hasMoreElements()) {

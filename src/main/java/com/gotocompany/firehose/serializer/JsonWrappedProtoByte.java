@@ -18,6 +18,7 @@ import com.google.gson.GsonBuilder;
  */
 public class JsonWrappedProtoByte implements MessageSerializer {
 
+  /** Gson instance configured with the {@link MessageJsonSerializer} type adapter. */
   private Gson gson;
 
   /**

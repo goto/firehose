@@ -21,7 +21,14 @@ import java.util.List;
 @AllArgsConstructor
 public abstract class AbstractSink implements Closeable, Sink {
 
+    /**
+     * Instrumentation used to emit this sink's logs and metrics, such as batch size, latencies,
+     * and success and failure counts.
+     */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /**
+     * Human-readable sink type name used to tag execution telemetry.
+     */
     private final String sinkType;
 
     /**
@@ -63,6 +70,15 @@ public abstract class AbstractSink implements Closeable, Sink {
         return failedMessages;
     }
 
+    /**
+     * Records failure telemetry for the messages that could not be written.
+     * <p>
+     * For each failed message a default error is set when none is present, the failure is counted
+     * by error type, and a per-message error log is emitted. Does nothing when there are no
+     * failures.
+     *
+     * @param failedMessages the messages that failed to be delivered to the sink
+     */
     private void processFailedMessages(List<Message> failedMessages) {
         if (failedMessages.size() > 0) {
             firehoseInstrumentation.logError("Failed to Push {} messages to sink ", failedMessages.size());

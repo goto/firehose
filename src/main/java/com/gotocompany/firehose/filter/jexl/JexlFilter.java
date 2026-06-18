@@ -28,13 +28,20 @@ import java.util.List;
  */
 public class JexlFilter implements Filter {
 
+    /** Common prefix for this filter's StatsD metrics. */
     private static final String METRIC_PREFIX = "firehose_jexl_filter_";
+    /** Metric counting protobuf deserialization failures. */
     private static final String DESERIALIZATION_ERRORS = METRIC_PREFIX + "deserialization_errors_total";
 
+    /** Compiled JEXL expression evaluated per message. */
     private final Expression expression;
+    /** Whether the key or the message value is used as the filter input. */
     private final FilterDataSourceType filterDataSourceType;
+    /** Fully-qualified protobuf class used to parse the input bytes. */
     private final String protoSchema;
+    /** Whether deserialization errors are dropped (counted and filtered out) rather than thrown. */
     private final boolean dropDeserializationError;
+    /** Records logs and the deserialization-error metric. */
     private final FirehoseInstrumentation firehoseInstrumentation;
 
     /**
@@ -96,6 +103,13 @@ public class JexlFilter implements Filter {
 
     }
 
+    /**
+     * Evaluates the compiled expression against a single parsed message object.
+     *
+     * @param data the parsed protobuf object exposed to the expression
+     * @return the boolean result of the expression
+     * @throws FilterException if evaluation fails or the expression does not yield a boolean
+     */
     private boolean evaluate(Object data) throws FilterException {
         Object result;
         try {
@@ -110,12 +124,24 @@ public class JexlFilter implements Filter {
         }
     }
 
+    /**
+     * Wraps the parsed object in a JEXL context under an accessor named after the proto class.
+     *
+     * @param t the parsed object to expose to the expression
+     * @return a JEXL context containing the object
+     * @throws IllegalAccessException declared by this method; not thrown by the current implementation
+     */
     private JexlContext convertDataToContext(Object t) throws IllegalAccessException {
         JexlContext context = new MapContext();
         context.set(getObjectAccessor(), t);
         return context;
     }
 
+    /**
+     * Derives the JEXL variable name from the simple proto class name, lower-casing its first letter.
+     *
+     * @return the accessor name under which the parsed object is bound in the context
+     */
     private String getObjectAccessor() {
         String[] schemaNameSplit = protoSchema.split("\\.");
         String objectAccessor = schemaNameSplit[schemaNameSplit.length - 1];

@@ -22,16 +22,43 @@ import java.util.stream.Collectors;
 import static com.gotocompany.firehose.metrics.Metrics.DLQ_MESSAGES_TOTAL;
 import static com.gotocompany.firehose.metrics.Metrics.DLQ_RETRY_ATTEMPTS_TOTAL;
 
+/**
+ * {@link Sink} decorator that routes undeliverable messages to a dead-letter queue (DLQ).
+ *
+ * <p>After delegating a push, the failed messages are split by the {@link ErrorHandler} into those
+ * whose errors are in {@link ErrorScope#DLQ} and the rest. DLQ-eligible messages are written through
+ * a {@link DlqWriter} (Kafka, log, or blob storage), retried up to {@code DLQ_RETRY_MAX_ATTEMPTS}
+ * with a back-off between attempts, and instrumented with DLQ counters. If writes are exhausted and
+ * {@code DLQ_RETRY_FAIL_AFTER_MAX_ATTEMPT_ENABLE} is set, an {@link IOException} is thrown to fail
+ * the consumer; otherwise the remaining failures plus the non-DLQ messages are returned. When the
+ * underlying sink manages its own offsets, the processed messages are marked committable.
+ */
 public class SinkWithDlq extends SinkDecorator {
 
+    /** Batch key used to group messages handled by the DLQ for offset tracking. */
     public static final String DLQ_BATCH_KEY = "dlq-batch-key";
+    /** Writer that persists messages to the configured dead-letter destination. */
     private final DlqWriter writer;
+    /** Supplies the delay between DLQ write attempts. */
     private final BackOffProvider backOffProvider;
+    /** Supplies DLQ retry limits and partitioning settings. */
     private final DlqConfig dlqConfig;
+    /** Splits failed messages by error scope to decide what is DLQ-eligible. */
     private final ErrorHandler errorHandler;
 
+    /** Records DLQ counters, per-message errors, and logs. */
     private final FirehoseInstrumentation firehoseInstrumentation;
 
+    /**
+     * Creates a DLQ decorator around the given sink.
+     *
+     * @param sink                    the wrapped sink whose failures may be sent to the DLQ
+     * @param writer                  the writer that persists messages to the DLQ
+     * @param backOffProvider         the strategy used to pause between DLQ write attempts
+     * @param dlqConfig               the DLQ configuration (retry limits, partitioning)
+     * @param errorHandler            the handler that classifies which errors are DLQ-eligible
+     * @param firehoseInstrumentation the instrumentation used for DLQ metrics and logs
+     */
     public SinkWithDlq(Sink sink, DlqWriter writer, BackOffProvider backOffProvider, DlqConfig dlqConfig, ErrorHandler errorHandler, FirehoseInstrumentation firehoseInstrumentation) {
         super(sink);
         this.writer = writer;
@@ -41,6 +68,19 @@ public class SinkWithDlq extends SinkDecorator {
         this.dlqConfig = dlqConfig;
     }
 
+    /**
+     * Pushes messages and writes the DLQ-eligible failures to the dead-letter queue.
+     *
+     * <p>Failures are split into DLQ-eligible and non-eligible sets. Eligible messages are written
+     * (with retries); if any remain and fail-on-max is enabled an exception is thrown. When the
+     * underlying sink manages offsets, the processed messages are marked committable. The returned
+     * list contains any messages that still failed plus the non-eligible ones.
+     *
+     * @param inputMessages the messages to push
+     * @return the messages that could not be sent to the DLQ plus the non-DLQ failures
+     * @throws IOException           if the wrapped sink fails, or DLQ writes are exhausted with fail-on-max enabled
+     * @throws DeserializerException if the wrapped sink fails to deserialize a message
+     */
     @Override
     public List<Message> pushMessage(List<Message> inputMessages) throws IOException, DeserializerException {
         List<Message> messages = super.pushMessage(inputMessages);
@@ -67,6 +107,12 @@ public class SinkWithDlq extends SinkDecorator {
         return returnedMessages;
     }
 
+    /**
+     * Pauses before the next DLQ write attempt, unless there are no messages left to write.
+     *
+     * @param messageList  the messages still pending a DLQ write
+     * @param attemptCount the current attempt count, used to size the delay
+     */
     private void backOff(List<Message> messageList, int attemptCount) {
         if (messageList.isEmpty()) {
             return;
@@ -74,6 +120,17 @@ public class SinkWithDlq extends SinkDecorator {
         backOffProvider.backOff(attemptCount);
     }
 
+    /**
+     * Writes the given messages to the DLQ, retrying failed writes up to the configured maximum.
+     *
+     * <p>Records total, success, and failure DLQ metrics (using blob-storage-specific metrics when
+     * the writer targets blob storage) and captures per-message DLQ errors. Returns the messages that
+     * still could not be written after all attempts.
+     *
+     * @param messages the DLQ-eligible messages to write (may be {@code null} or empty)
+     * @return the messages that remain unwritten after all attempts
+     * @throws IOException if the DLQ writer fails irrecoverably
+     */
     private List<Message> doDLQ(List<Message> messages) throws IOException {
         if (messages == null || messages.isEmpty()) {
             return new LinkedList<>();
@@ -148,10 +205,21 @@ public class SinkWithDlq extends SinkDecorator {
         return retryQueueMessages;
     }
 
+    /**
+     * Derives the partition date for a message, used to bucket blob-storage DLQ metrics and paths.
+     *
+     * @param message the message to derive the date from
+     * @return the formatted date string in the configured DLQ partition timezone
+     */
     private String calculateDateFromMessage(Message message) {
         return DlqDateUtils.getDateFromMessage(message, dlqConfig.getDlqBlobFilePartitionTimezone());
     }
 
+    /**
+     * Closes the wrapped sink.
+     *
+     * @throws IOException if the wrapped sink fails to close
+     */
     @Override
     public void close() throws IOException {
         super.close();

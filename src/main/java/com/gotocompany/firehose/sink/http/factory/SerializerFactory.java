@@ -19,10 +19,22 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class SerializerFactory {
 
+    /** Bound HTTP sink configuration that drives serializer selection. */
     private HttpSinkConfig httpSinkConfig;
+    /** Stencil client used to resolve the protobuf parser for JSON conversion. */
     private StencilClient stencilClient;
+    /** Reporter used to instrument templatized JSON serialization. */
     private StatsDReporter statsDReporter;
 
+    /**
+     * Builds the serializer matching the configured data format and schema.
+     *
+     * <p>When no input proto schema is configured, or the data format is {@code PROTO}, a JSON-wrapped proto
+     * byte serializer is returned; when the data format is {@code JSON} the proto is converted to JSON,
+     * optionally through a body template, and wrapped so configured fields can be typecast.
+     *
+     * @return the serializer matching the configuration
+     */
     public MessageSerializer build() {
         FirehoseInstrumentation firehoseInstrumentation = new FirehoseInstrumentation(statsDReporter, SerializerFactory.class);
         if (isProtoSchemaEmpty() || httpSinkConfig.getSinkHttpDataFormat() == HttpSinkDataFormatType.PROTO) {
@@ -50,10 +62,21 @@ public class SerializerFactory {
         return new JsonWrappedProtoByte();
     }
 
+    /**
+     * Wraps a JSON serializer so that fields listed in the configuration are typecast.
+     *
+     * @param messageSerializer the JSON serializer to wrap
+     * @return the typecasting serializer
+     */
     private MessageSerializer getTypecastedJsonSerializer(MessageSerializer messageSerializer) {
         return new TypecastedJsonSerializer(messageSerializer, httpSinkConfig);
     }
 
+    /**
+     * Reports whether the input proto schema class is absent.
+     *
+     * @return {@code true} when no input proto schema class is configured
+     */
     private boolean isProtoSchemaEmpty() {
         return httpSinkConfig.getInputSchemaProtoClass() == null || httpSinkConfig.getInputSchemaProtoClass().equals("");
     }

@@ -11,6 +11,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Utility helpers for configuring a {@link MongoSinkClient}.
+ * <p>
+ * Provides parsing of the retry status-code blacklist and existence checks for the target database and
+ * collection. This is a Lombok {@code @UtilityClass}, so all members are static.
+ */
 @UtilityClass
 public class MongoSinkClientUtil {
 

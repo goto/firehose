@@ -23,14 +23,23 @@ import java.util.regex.Pattern;
  */
 public class KafkaUtils {
 
+    /** Kafka {@code bootstrap.servers} property key. */
     private static final String BOOTSTRAP_SERVERS = "bootstrap.servers";
+    /** Kafka {@code group.id} property key. */
     private static final String GROUP_ID = "group.id";
+    /** Kafka {@code enable.auto.commit} property key. */
     private static final String ENABLE_AUTO_COMMIT = "enable.auto.commit";
+    /** Kafka {@code key.deserializer} property key. */
     private static final String KEY_DESERIALIZER = "key.deserializer";
+    /** Kafka {@code value.deserializer} property key. */
     private static final String VALUE_DESERIALIZER = "value.deserializer";
+    /** Kafka {@code metadata.max.age.ms} property key. */
     private static final String METADATA_MAX_AGE_MS = "metadata.max.age.ms";
+    /** Kafka {@code max.poll.records} property key. */
     private static final String MAX_POLL_RECORDS = "max.poll.records";
+    /** Kafka {@code session.timeout.ms} property key. */
     private static final String SESSION_TIMEOUT_MS = "session.timeout.ms";
+    /** Kafka {@code partition.assignment.strategy} property key. */
     private static final String PARTITION_ASSIGNMENT_STRATEGY = "partition.assignment.strategy";
 
 
@@ -48,6 +57,13 @@ public class KafkaUtils {
         kafkaConsumer.subscribe(subscriptionTopicPattern, new ConsumerRebalancer(new FirehoseInstrumentation(statsdReporter, ConsumerRebalancer.class)));
     }
 
+    /**
+     * Builds the Kafka consumer property map from configuration and extra parameters.
+     *
+     * @param config          the Kafka consumer configuration
+     * @param extraParameters extra Kafka settings, parsed and merged over the defaults
+     * @return the assembled consumer configuration map
+     */
     public static Map<String, Object> getConfig(KafkaConsumerConfig config, Map<String, String> extraParameters) {
         HashMap<String, Object> consumerConfigurationMap = new HashMap<String, Object>() {{
             put(BOOTSTRAP_SERVERS, config.getSourceKafkaBrokers());
@@ -64,6 +80,13 @@ public class KafkaUtils {
         return merge(consumerConfigurationMap, KafkaEnvironmentVariables.parse(extraParameters));
     }
 
+    /**
+     * Merges extra parameters into the consumer configuration map, overriding existing keys.
+     *
+     * @param consumerConfigurationMap the base configuration map
+     * @param extraParameters          the parameters to merge in
+     * @return the merged configuration map
+     */
     private static Map<String, Object> merge(HashMap<String, Object> consumerConfigurationMap, Map<String, String> extraParameters) {
         consumerConfigurationMap.putAll(extraParameters);
         return consumerConfigurationMap;
@@ -113,6 +136,16 @@ public class KafkaUtils {
         return new KafkaProducer<>(props);
     }
 
+    /**
+     * Extracts producer overrides from the given settings whose keys match the type's prefix.
+     *
+     * <p>Matching keys have their prefix stripped and the remainder converted from underscore form to
+     * dotted, lower-case Kafka property names.
+     *
+     * @param kafkaProducerTypesMetadata the producer type whose prefix selects relevant keys
+     * @param configurations             the dynamic settings to scan
+     * @return the extracted Kafka producer properties
+     */
     private static Properties getAdditionalKafkaConfiguration(KafkaProducerTypesMetadata kafkaProducerTypesMetadata, Map<String, String> configurations) {
         Properties additionalProperties = new Properties();
         configurations.forEach((key, value) -> {

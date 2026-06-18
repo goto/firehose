@@ -26,9 +26,13 @@ import static com.gotocompany.firehose.metrics.Metrics.SUCCESS_TAG;
  */
 public class FirehoseKafkaConsumer implements AutoCloseable {
 
+    /** Underlying Kafka consumer of byte-array keys and values. */
     private final Consumer<byte[], byte[]> kafkaConsumer;
+    /** Resolved Kafka consumer configuration (poll timeout, async-commit flag, and so on). */
     private final KafkaConsumerConfig consumerConfig;
+    /** Instrumentation for pull and commit logging and metrics. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Cache of the highest committed offset per partition, used to skip redundant commits. */
     private final Map<TopicPartition, OffsetAndMetadata> committedOffsets = new ConcurrentHashMap<>();
 
     /**
@@ -63,6 +67,9 @@ public class FirehoseKafkaConsumer implements AutoCloseable {
         return messages;
     }
 
+    /**
+     * Closes the underlying Kafka consumer, recording any failure as a non-fatal error.
+     */
     public void close() {
         try {
             firehoseInstrumentation.logInfo("Consumer is closing");
@@ -72,6 +79,13 @@ public class FirehoseKafkaConsumer implements AutoCloseable {
         }
     }
 
+    /**
+     * Commits the current consumer position for all assigned partitions.
+     *
+     * <p>Uses an asynchronous commit when {@code SOURCE_KAFKA_ASYNC_COMMIT_ENABLE} is set, recording
+     * success or failure under {@code SOURCE_KAFKA_MESSAGES_COMMIT_TOTAL}; otherwise it commits
+     * synchronously.
+     */
     public void commit() {
         if (consumerConfig.isSourceKafkaAsyncCommitEnable()) {
             kafkaConsumer.commitAsync((offsets, exception) -> {
@@ -86,6 +100,16 @@ public class FirehoseKafkaConsumer implements AutoCloseable {
         }
     }
 
+    /**
+     * Commits the given per-partition offsets, skipping any that do not advance the last commit.
+     *
+     * <p>Only offsets greater than the cached committed offset for their partition are sent to Kafka,
+     * which avoids redundant commits. The commit is asynchronous or synchronous depending on
+     * {@code SOURCE_KAFKA_ASYNC_COMMIT_ENABLE}, and the cache of committed offsets is updated on
+     * success.
+     *
+     * @param offsets the candidate offsets to commit, keyed by topic-partition
+     */
     public void commit(Map<TopicPartition, OffsetAndMetadata> offsets) {
         Map<TopicPartition, OffsetAndMetadata> latestOffsets =
                 offsets.entrySet()
@@ -106,10 +130,22 @@ public class FirehoseKafkaConsumer implements AutoCloseable {
         committedOffsets.putAll(latestOffsets);
     }
 
+    /**
+     * Performs an asynchronous commit of the given offsets, reporting the result via
+     * {@link #onComplete}.
+     *
+     * @param offsets the offsets to commit, keyed by topic-partition
+     */
     private void commitAsync(Map<TopicPartition, OffsetAndMetadata> offsets) {
         kafkaConsumer.commitAsync(offsets, this::onComplete);
     }
 
+    /**
+     * Callback that records whether an asynchronous commit succeeded or failed.
+     *
+     * @param offsets   the offsets that were the subject of the commit
+     * @param exception the failure if the commit did not succeed, otherwise {@code null}
+     */
     private void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception exception) {
         if (exception != null) {
             firehoseInstrumentation.incrementCounter(SOURCE_KAFKA_MESSAGES_COMMIT_TOTAL, FAILURE_TAG);

@@ -29,10 +29,15 @@ import java.util.List;
  */
 public class RequestFactory {
 
+    /** Bound HTTP sink configuration that drives strategy selection. */
     private HttpSinkConfig httpSinkConfig;
+    /** Parser used to render service URLs from message contents. */
     private UriParser uriParser;
+    /** Stencil client used to resolve protobuf parsers for templating. */
     private StencilClient stencilClient;
+    /** Reporter passed to the strategies and their request creators for instrumentation. */
     private StatsDReporter statsDReporter;
+    /** Instrumentation used to log the selected request type. */
     private FirehoseInstrumentation firehoseInstrumentation;
 
     /**
@@ -51,6 +56,16 @@ public class RequestFactory {
         firehoseInstrumentation = new FirehoseInstrumentation(this.statsDReporter, RequestFactory.class);
     }
 
+    /**
+     * Builds the request strategy that matches the current configuration.
+     *
+     * <p>Evaluates the candidate strategies ({@link SimpleRequest}, {@link DynamicUrlRequest},
+     * {@link ParameterizedHeaderRequest} and {@link ParameterizedUriRequest}) in priority order and returns
+     * the first that can process the configuration, defaulting to a {@link SimpleRequest}; the chosen strategy
+     * is initialised with the header, URI and request-entity builders before being returned.
+     *
+     * @return the configured request strategy
+     */
     public Request createRequest() {
         JsonBody body = createBody();
         HttpSinkRequestMethodType httpSinkRequestMethodType = httpSinkConfig.getSinkHttpRequestMethod();
@@ -73,11 +88,21 @@ public class RequestFactory {
         return request.setRequestStrategy(headerBuilder, uriBuilder, requestEntityBuilder);
     }
 
+    /**
+     * Builds the mapper that extracts configured proto fields for parameterized URIs and headers.
+     *
+     * @return a proto-to-field mapper for the parameter source schema
+     */
     private ProtoToFieldMapper getProtoToFieldMapper() {
         Parser protoParser = stencilClient.getParser(httpSinkConfig.getSinkHttpParameterSchemaProtoClass());
         return new ProtoToFieldMapper(protoParser, httpSinkConfig.getInputSchemaProtoToColumnMapping());
     }
 
+    /**
+     * Builds the JSON body serializer wrapper used by the request strategies.
+     *
+     * @return the request body serializer
+     */
     private JsonBody createBody() {
         MessageSerializer messageSerializer = new SerializerFactory(
                 httpSinkConfig,

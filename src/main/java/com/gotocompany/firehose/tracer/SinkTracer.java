@@ -21,10 +21,19 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Getter
 public class SinkTracer implements Traceable, Closeable {
+    /** Underlying OpenTracing tracer used to build and report spans. */
     private Tracer tracer;
+    /** Span operation name and component tag, derived from the sink type. */
     private String name;
+    /** Whether tracing is active; when false, tracing methods are no-ops. */
     private boolean enabled;
 
+    /**
+     * Starts a span for each message when tracing is enabled.
+     *
+     * @param messages the batch of messages to trace
+     * @return a span per message, or an empty list when tracing is disabled
+     */
     @Override
     public List<Span> startTrace(List<Message> messages) {
         if (enabled) {
@@ -34,6 +43,15 @@ public class SinkTracer implements Traceable, Closeable {
         }
     }
 
+    /**
+     * Builds and starts a single consumer span for a message.
+     *
+     * <p>If the record headers carry a parent span context, the new span is linked to it with a
+     * {@code FOLLOWS_FROM} reference.
+     *
+     * @param message the message to trace
+     * @return the started span
+     */
     private Span traceMessage(Message message) {
         SpanContext parentContext = null;
         if (message.getHeaders() != null) {
@@ -52,6 +70,9 @@ public class SinkTracer implements Traceable, Closeable {
 
     }
 
+    /**
+     * Closes the underlying tracer.
+     */
     @Override
     public void close() {
         tracer.close();

@@ -12,6 +12,7 @@ import static com.gotocompany.firehose.sink.prometheus.PromSinkConstants.*;
  */
 public class HeaderBuilder {
 
+    /** Headers parsed from configuration, applied to every request. */
     private final Map<String, String> baseHeaders;
 
     /**

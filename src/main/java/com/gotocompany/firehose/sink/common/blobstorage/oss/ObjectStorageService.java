@@ -20,17 +20,39 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.Optional;
 
+/**
+ * {@link BlobStorage} implementation backed by Alibaba Cloud Object Storage Service (OSS).
+ *
+ * <p>Wraps an OSS {@link OSS} client configured from {@link ObjectStorageServiceConfig} (endpoint, region,
+ * credentials, timeouts and optional retries). On construction it validates that the target bucket exists.
+ * Objects are written under an optional directory prefix, with detailed logging and client-error
+ * classification; failures are translated into {@link BlobStorageException}.
+ */
 @Slf4j
 public class ObjectStorageService implements BlobStorage {
 
+    /** OSS client used to perform the uploads. */
     private final OSS oss;
+    /** Target OSS bucket name. */
     private final String ossBucketName;
+    /** Optional directory prefix prepended to every object name. */
     private final String ossDirectoryPrefix;
 
+    /**
+     * Creates an OSS storage client from configuration and validates the bucket.
+     *
+     * @param objectStorageServiceConfig the bound OSS configuration
+     */
     public ObjectStorageService(ObjectStorageServiceConfig objectStorageServiceConfig) {
         this(objectStorageServiceConfig, initializeOss(objectStorageServiceConfig));
     }
 
+    /**
+     * Creates an OSS storage client using a caller-supplied client, primarily for testing.
+     *
+     * @param objectStorageServiceConfig the bound OSS configuration
+     * @param oss                        the OSS client to use
+     */
     public ObjectStorageService(ObjectStorageServiceConfig objectStorageServiceConfig, OSS oss) {
         this.oss = oss;
         this.ossBucketName = objectStorageServiceConfig.getOssBucketName();
@@ -48,6 +70,12 @@ public class ObjectStorageService implements BlobStorage {
         checkBucket();
     }
 
+    /**
+     * Builds an OSS client from configuration, applying timeouts and the retry strategy.
+     *
+     * @param objectStorageServiceConfig the bound OSS configuration
+     * @return a configured OSS client
+     */
     protected static OSS initializeOss(ObjectStorageServiceConfig objectStorageServiceConfig) {
         ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
         clientBuilderConfiguration.setSignatureVersion(SignVersion.V4);
@@ -69,6 +97,13 @@ public class ObjectStorageService implements BlobStorage {
                 .build();
     }
 
+    /**
+     * Uploads a local file under the given object name.
+     *
+     * @param objectName the destination object name, before applying the directory prefix
+     * @param filePath   the path of the local file to upload
+     * @throws BlobStorageException if the upload fails
+     */
     @Override
     public void store(String objectName, String filePath) throws BlobStorageException {
         File file = new File(filePath);
@@ -86,6 +121,13 @@ public class ObjectStorageService implements BlobStorage {
         putObject(putObjectRequest, objectName, fileSize);
     }
 
+    /**
+     * Uploads the given bytes under the given object name.
+     *
+     * @param objectName the destination object name, before applying the directory prefix
+     * @param content    the bytes to upload
+     * @throws BlobStorageException if the upload fails
+     */
     @Override
     public void store(String objectName, byte[] content) throws BlobStorageException {
         String builtPath = buildObjectPath(objectName);
@@ -101,6 +143,14 @@ public class ObjectStorageService implements BlobStorage {
         putObject(putObjectRequest, objectName, content.length);
     }
 
+    /**
+     * Executes the OSS put-object request and records timing, success and failure details.
+     *
+     * @param putObjectRequest the prepared put-object request
+     * @param objectName       the original object name, used for logging
+     * @param contentSize      the size of the uploaded content in bytes, used for logging
+     * @throws BlobStorageException if the upload fails, classified from the underlying OSS error
+     */
     private void putObject(PutObjectRequest putObjectRequest, String objectName, long contentSize) throws BlobStorageException {
         String builtPath = putObjectRequest.getKey();
         long startTime = System.currentTimeMillis();
@@ -134,12 +184,24 @@ public class ObjectStorageService implements BlobStorage {
         }
     }
 
+    /**
+     * Prepends the configured directory prefix to the object name, when set.
+     *
+     * @param objectName the base object name
+     * @return the full object key including any directory prefix
+     */
     private String buildObjectPath(String objectName) {
         return Optional.ofNullable(ossDirectoryPrefix)
                 .map(prefix -> prefix + "/" + objectName)
                 .orElse(objectName);
     }
 
+    /**
+     * Classifies an OSS client exception into a coarse failure category from its message.
+     *
+     * @param e the client exception to classify
+     * @return a short label such as {@code TIMEOUT}, {@code CONNECTION_ERROR} or {@code UNKNOWN}
+     */
     private String classifyClientException(ClientException e) {
         String msg = e.getMessage().toLowerCase();
 
@@ -166,6 +228,11 @@ public class ObjectStorageService implements BlobStorage {
         return "UNKNOWN";
     }
 
+    /**
+     * Validates that the configured bucket exists.
+     *
+     * @throws IllegalArgumentException if the bucket does not exist
+     */
     private void checkBucket() {
         BucketList bucketList = oss.listBuckets(new ListBucketsRequest(ossBucketName,
                 null, 1));
@@ -177,6 +244,11 @@ public class ObjectStorageService implements BlobStorage {
         log.info("Successfully validated OSS bucket: {}", ossBucketName);
     }
 
+    /**
+     * Logs the configured OSS timeouts and retry strategy at debug level.
+     *
+     * @param config the bound OSS configuration
+     */
     private void logOssConfiguration(ObjectStorageServiceConfig config) {
         log.debug("OSS timeouts - socket: {}ms, connection: {}ms, connectionRequest: {}ms, request: {}ms",
             config.getOssSocketTimeoutMs(),

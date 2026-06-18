@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
  */
 public class KafkaEnvironmentVariables {
 
+    /** Prefix marking environment variables that configure the Kafka consumer. */
     private static final String KAFKA_PREFIX = "source_kafka_consumer_config_";
 
     /**
@@ -28,6 +29,12 @@ public class KafkaEnvironmentVariables {
         return kafkaEnvVars;
     }
 
+    /**
+     * Converts a prefixed variable name into a dotted Kafka property key.
+     *
+     * @param varName the raw environment-variable name
+     * @return the corresponding dotted, lower-case Kafka property key
+     */
     private static String parseVarName(String varName) {
         String[] names = varName.toLowerCase().replaceAll(KAFKA_PREFIX, "").split("_");
         return String.join(".", names);

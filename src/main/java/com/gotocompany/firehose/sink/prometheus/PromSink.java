@@ -29,6 +29,7 @@ import java.util.Map;
  */
 public class PromSink extends AbstractHttpSink {
 
+    /** Builder that turns a batch of messages into the Prometheus remote-write HTTP request. */
     private final PromRequest request;
 
     /**
@@ -63,6 +64,12 @@ public class PromSink extends AbstractHttpSink {
         }
     }
 
+    /**
+     * Records dropped messages and the causing status code when a response is not retried.
+     *
+     * @param response          the HTTP response whose status code caused the drop
+     * @param contentStringList the request bodies that were dropped
+     */
     protected void captureMessageDropCount(HttpResponse response, List<String> contentStringList) {
         getFirehoseInstrumentation().captureCount(Metrics.SINK_MESSAGES_DROP_TOTAL, (long) contentStringList.size(), "cause= " + statusCode(response));
         getFirehoseInstrumentation().logInfo("Message dropped because of status code: " + statusCode(response));

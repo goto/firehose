@@ -46,6 +46,16 @@ public class JdbcSinkFactory {
         return new JdbcSink(new FirehoseInstrumentation(statsDReporter, JdbcSink.class), "db", connectionPool, queryTemplate, client);
     }
 
+    /**
+     * Creates the {@link QueryTemplate} for the configured input schema.
+     * <p>
+     * Resolves the protobuf parser for the configured input class and wires it into a
+     * {@link ProtoToFieldMapper} that maps proto fields to database columns.
+     *
+     * @param jdbcSinkConfig the bound JDBC sink configuration
+     * @param stencilClient  the Stencil client used to obtain the protobuf parser
+     * @return the query template used to render messages into SQL statements
+     */
     private static QueryTemplate createQueryTemplate(JdbcSinkConfig jdbcSinkConfig, StencilClient stencilClient) {
         Parser protoParser = stencilClient.getParser(jdbcSinkConfig.getInputSchemaProtoClass());
         ProtoToFieldMapper protoToFieldMapper = new ProtoToFieldMapper(protoParser, jdbcSinkConfig.getInputSchemaProtoToColumnMapping());

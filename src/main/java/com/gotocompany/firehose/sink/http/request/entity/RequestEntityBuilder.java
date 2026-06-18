@@ -10,6 +10,7 @@ import java.util.Collections;
  * Request entity builder.
  */
 public class RequestEntityBuilder {
+    /** Whether the body should be wrapped in a single-element JSON array. */
     private boolean wrapArray;
 
     /**
@@ -19,6 +20,12 @@ public class RequestEntityBuilder {
         this.wrapArray = false;
     }
 
+    /**
+     * Sets whether the body should be wrapped in a single-element JSON array.
+     *
+     * @param isArrayWrap {@code true} to array-wrap the body
+     * @return this builder
+     */
     public RequestEntityBuilder setWrapping(boolean isArrayWrap) {
         this.wrapArray = isArrayWrap;
         return this;

@@ -39,6 +39,18 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class GrpcSinkFactory {
 
+    /**
+     * Builds a gRPC sink from the supplied configuration.
+     *
+     * <p>Binds the configuration to {@link GrpcSinkConfig}, builds a Netty-based managed channel (optionally
+     * secured with TLS using a base64-encoded root CA), wires a {@link GrpcClient} with metadata mapping and
+     * assembles the CEL-based retry evaluator.
+     *
+     * @param configuration  the raw key-value configuration the sink is bound from
+     * @param statsDReporter reporter used to publish StatsD metrics for the sink and its collaborators
+     * @param stencilClient  Stencil client used to resolve request, response and metadata schemas
+     * @return a fully wired {@link GrpcSink} instance ready to receive messages
+     */
     public static AbstractSink create(Map<String, String> configuration, StatsDReporter statsDReporter, StencilClient stencilClient) {
         GrpcSinkConfig grpcConfig = ConfigFactory.create(GrpcSinkConfig.class, configuration);
         FirehoseInstrumentation firehoseInstrumentation = new FirehoseInstrumentation(statsDReporter, GrpcSinkFactory.class);
@@ -70,6 +82,13 @@ public class GrpcSinkFactory {
         return new GrpcSink(new FirehoseInstrumentation(statsDReporter, GrpcSink.class), grpcClient, stencilClient, grpcConfig, grpcResponseRetryEvaluator);
     }
 
+    /**
+     * Builds the client SSL context from a base64-encoded root CA certificate.
+     *
+     * @param base64Cert the base64-encoded PEM root CA certificate
+     * @return the configured SSL context
+     * @throws RuntimeException if the certificate cannot be decoded or the context cannot be built
+     */
     private static SslContext buildClientSslContext(String base64Cert) {
         try {
             byte[] decodedBytes = Base64.getDecoder().decode(base64Cert);
@@ -81,6 +100,13 @@ public class GrpcSinkFactory {
         }
     }
 
+    /**
+     * Builds the CEL payload evaluator that decides whether a gRPC response is retryable.
+     *
+     * @param grpcSinkConfig the bound gRPC sink configuration supplying the response schema and CEL expression
+     * @param stencilClient  Stencil client used to resolve the response schema
+     * @return the retry evaluator
+     */
     private static PayloadEvaluator<Message> instantiatePayloadEvaluator(GrpcSinkConfig grpcSinkConfig, StencilClient stencilClient) {
         return new GrpcResponseCelPayloadEvaluator(
                 stencilClient.get(grpcSinkConfig.getSinkGrpcResponseSchemaProtoClass()),

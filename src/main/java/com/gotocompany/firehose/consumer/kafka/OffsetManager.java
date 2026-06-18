@@ -21,7 +21,9 @@ import java.util.stream.Collectors;
  * This class is thread safe. Multiple sinks can use the same object.
  */
 public class OffsetManager {
+    /** Offsets grouped by batch key; entries become committable when their batch is released. */
     private final Map<Object, Set<OffsetNode>> toBeCommittableBatchOffsets = new HashMap<>();
+    /** Per-partition offsets kept sorted by offset for compaction and committable lookups. */
     private final Map<TopicPartition, TreeSet<OffsetNode>> sortedOffsets = new HashMap<>();
 
     /**
@@ -31,12 +33,26 @@ public class OffsetManager {
         offsetKeyToMessagesMap.forEach(this::addOffsetToBatch);
     }
 
+    /**
+     * Registers the offsets for a list of messages and immediately marks them committable.
+     *
+     * <p>Used by the synchronous flow, where a batch is fully processed before its offsets are
+     * recorded; the messages are tracked under a fixed internal key and released in one step.
+     *
+     * @param messageList the messages whose offsets are ready to commit
+     */
     public synchronized void addOffsetsAndSetCommittable(List<Message> messageList) {
         String syncBatchKey = "sync_batch_key";
         addOffsetToBatch(syncBatchKey, messageList);
         setCommittable(syncBatchKey);
     }
 
+    /**
+     * Registers the offsets for every message in the list under the given batch key.
+     *
+     * @param batch       the key that groups these offsets
+     * @param messageList the messages whose offsets to track
+     */
     public synchronized void addOffsetToBatch(Object batch, List<Message> messageList) {
         messageList.forEach(m -> addOffsetToBatch(batch, m));
     }
@@ -52,6 +68,12 @@ public class OffsetManager {
         addOffsetToBatch(batch, currentNode);
     }
 
+    /**
+     * Adds an offset node to both the batch map and the per-partition sorted set.
+     *
+     * @param batch the key that groups this offset
+     * @param node  the offset node to register
+     */
     private synchronized void addOffsetToBatch(Object batch, OffsetNode node) {
         toBeCommittableBatchOffsets.computeIfAbsent(batch, x -> new HashSet<>()).add(node);
         sortedOffsets.computeIfAbsent(
@@ -115,10 +137,22 @@ public class OffsetManager {
         return nodes.first().isCommittable() ? Optional.of(nodes.first()) : Optional.empty();
     }
 
+    /**
+     * Returns the sorted offset set currently tracked for the given partition.
+     *
+     * @param topicPartition the partition to look up
+     * @return the partition's sorted offsets, or {@code null} if none are tracked
+     */
     protected TreeSet<OffsetNode> getOffsetsForTopicPartition(TopicPartition topicPartition) {
         return sortedOffsets.get(topicPartition);
     }
 
+    /**
+     * Returns the offsets registered under the given batch key.
+     *
+     * @param key the batch key to look up
+     * @return the offsets registered for the batch, or {@code null} if the batch is unknown
+     */
     protected Set<OffsetNode> getOffsetsForBatch(Object key) {
         return toBeCommittableBatchOffsets.get(key);
     }

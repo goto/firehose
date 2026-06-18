@@ -13,8 +13,25 @@ import org.aeonbits.owner.ConfigFactory;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Creates the {@link BlobStorage} implementation for a configured provider.
+ *
+ * <p>Binds the supplied configuration map to the provider-specific config class and constructs the matching
+ * client ({@link com.gotocompany.firehose.sink.common.blobstorage.gcs.GoogleCloudStorage},
+ * {@link com.gotocompany.firehose.sink.common.blobstorage.s3.S3},
+ * {@link com.gotocompany.firehose.sink.common.blobstorage.oss.ObjectStorageService} or
+ * {@link com.gotocompany.firehose.sink.common.blobstorage.cos.CloudObjectStorage}).
+ */
 public class BlobStorageFactory {
 
+    /**
+     * Builds the blob storage client for the requested provider.
+     *
+     * @param storageType the provider to instantiate
+     * @param config      the raw configuration bound to the provider-specific config class
+     * @return a ready-to-use blob storage client
+     * @throws IllegalArgumentException if the provider is unsupported or its client cannot be created
+     */
     public static BlobStorage createObjectStorage(BlobStorageType storageType, Map<String, String> config) {
         switch (storageType) {
             case GCS:

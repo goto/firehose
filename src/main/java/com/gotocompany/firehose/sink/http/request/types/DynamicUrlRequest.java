@@ -23,11 +23,17 @@ import java.util.List;
  */
 public class DynamicUrlRequest implements Request {
 
+    /** Reporter used to instrument the request creator. */
     private StatsDReporter statsDReporter;
+    /** Bound HTTP sink configuration. */
     private HttpSinkConfig httpSinkConfig;
+    /** Serializer that renders each message into the request body. */
     private JsonBody body;
+    /** HTTP method used for the requests. */
     private HttpSinkRequestMethodType method;
+    /** Builder that wraps the serialized body into an HTTP entity. */
     private RequestEntityBuilder requestEntityBuilder;
+    /** Creator that assembles one request per message. */
     private RequestCreator requestCreator;
 
     /**
@@ -45,6 +51,14 @@ public class DynamicUrlRequest implements Request {
         this.method = method;
     }
 
+    /**
+     * Builds one request per message, each targeting the URL rendered from that message.
+     *
+     * @param messages the messages to convert into requests
+     * @return the list of requests to send
+     * @throws DeserializerException if a message body cannot be serialized
+     * @throws URISyntaxException    if a rendered URL cannot be parsed into a URI
+     */
     public List<HttpEntityEnclosingRequestBase> build(List<Message> messages) throws DeserializerException, URISyntaxException {
         return requestCreator.create(messages, requestEntityBuilder.setWrapping(!isTemplateBody(httpSinkConfig)));
     }
@@ -65,6 +79,11 @@ public class DynamicUrlRequest implements Request {
         return this;
     }
 
+    /**
+     * Reports whether this strategy applies to the current configuration.
+     *
+     * @return {@code true} when no parameter source is configured and the service URL is a comma-separated template
+     */
     @Override
     public boolean canProcess() {
         boolean isDynamicUrl = httpSinkConfig.getSinkHttpServiceUrl().contains(",");

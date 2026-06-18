@@ -13,6 +13,7 @@ import com.gotocompany.firehose.serializer.MessageSerializer;
  */
 public class JsonBody {
 
+  /** Serializer used to convert each message into its JSON representation. */
   private MessageSerializer jsonSerializer;
 
   /**

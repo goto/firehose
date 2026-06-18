@@ -5,6 +5,19 @@ import com.gotocompany.firehose.message.Message;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Contract for writing messages that Firehose could not deliver to a dead letter queue (DLQ).
+ * <p>
+ * A DLQ writer is the fallback destination for messages a sink failed to process. Firehose supports
+ * several implementations, selected by configuration: a Kafka retry topic, blob storage, or the
+ * application log. Each {@link #write(List)} call returns the messages that even the DLQ failed to
+ * accept.
+ *
+ * @see DlqWriterFactory
+ * @see com.gotocompany.firehose.sink.dlq.kafka.KafkaDlqWriter
+ * @see com.gotocompany.firehose.sink.dlq.blobstorage.BlobStorageDlqWriter
+ * @see com.gotocompany.firehose.sink.dlq.log.LogDlqWriter
+ */
 public interface DlqWriter {
 
     /**

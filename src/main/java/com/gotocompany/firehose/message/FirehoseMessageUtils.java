@@ -5,8 +5,21 @@ import com.gotocompany.depot.common.Tuple;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Adapts Firehose {@link Message} instances to depot's message model.
+ *
+ * <p>Sinks built on the depot library consume {@code com.gotocompany.depot.message.Message}; this
+ * helper converts a batch of Firehose messages into that form, mapping the topic, partition, offset,
+ * headers, event timestamp, and consume time onto depot metadata tuples.
+ */
 public class FirehoseMessageUtils {
 
+    /**
+     * Converts Firehose messages into depot messages for depot-based sinks.
+     *
+     * @param messages the Firehose messages to convert
+     * @return the equivalent depot messages, preserving key, value, and metadata
+     */
     public static List<com.gotocompany.depot.message.Message> convertToDepotMessage(List<Message> messages) {
         return messages.stream().map(message ->
                         new com.gotocompany.depot.message.Message(

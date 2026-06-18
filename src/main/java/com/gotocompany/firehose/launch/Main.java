@@ -28,6 +28,16 @@ public class Main {
         multiThreadedConsumers(kafkaConsumerConfig);
     }
 
+    /**
+     * Starts the configured number of consumer threads and waits for them to finish.
+     *
+     * <p>Builds the StatsD reporter and a {@link Task}; each thread builds a fresh consumer and
+     * processes batches in a loop until interrupted. A shutdown hook stops the task, and a fatal
+     * error in any thread closes the consumer and exits the JVM.
+     *
+     * @param kafkaConsumerConfig the resolved Kafka consumer configuration
+     * @throws InterruptedException if the main thread is interrupted while awaiting completion
+     */
     private static void multiThreadedConsumers(KafkaConsumerConfig kafkaConsumerConfig) throws InterruptedException {
         MetricsConfig config = ConfigFactory.create(MetricsConfig.class, System.getenv());
         StatsDReporter statsDReporter = StatsDReporterBuilder.builder().withMetricConfig(config)
@@ -73,6 +83,12 @@ public class Main {
         firehoseInstrumentation.logInfo("Exiting main thread");
     }
 
+    /**
+     * Closes the consumer if present, logging any failure as a fatal error.
+     *
+     * @param firehoseConsumer        the consumer to close, may be {@code null}
+     * @param firehoseInstrumentation the instrumentation used to log a close failure
+     */
     private static void ensureThreadInterruptStateIsClearedAndClose(FirehoseConsumer firehoseConsumer, FirehoseInstrumentation firehoseInstrumentation) {
         try {
             if (firehoseConsumer != null) {

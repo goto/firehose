@@ -55,12 +55,19 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class FirehoseConsumerFactory {
 
+    /** Resolved Kafka consumer configuration driving this factory. */
     private final KafkaConsumerConfig kafkaConsumerConfig;
+    /** Process environment used as the source of all Owner-based configuration. */
     private final Map<String, String> config = System.getenv();
+    /** StatsD reporter shared by all instrumentation created here. */
     private final StatsDReporter statsDReporter;
+    /** Stencil schema-registry client used to obtain proto parsers. */
     private final StencilClient stencilClient;
+    /** Instrumentation for this factory's own logging. */
     private final FirehoseInstrumentation firehoseInstrumentation;
+    /** Parses a record's key or message bytes into a proto for retry and DLQ handling. */
     private final KeyOrMessageParser parser;
+    /** Single offset manager shared between the consumer and every sink instance. */
     private final OffsetManager offsetManager = new OffsetManager();
 
     /**
@@ -88,6 +95,17 @@ public class FirehoseConsumerFactory {
         parser = new KeyOrMessageParser(stencilClient.getParser(kafkaConsumerConfig.getInputSchemaProtoClass()), kafkaConsumerConfig);
     }
 
+    /**
+     * Builds the {@link FirehoseFilter} for the configured filter engine.
+     *
+     * <p>Selects the implementation based on {@code FILTER_ENGINE}: a {@link JsonFilter} (whose
+     * configuration is additionally logged and validated), a {@link JexlFilter}, a
+     * {@link TimestampFilter}, or a {@link NoOpFilter} when filtering is disabled.
+     *
+     * @param filterConfig the resolved filter configuration
+     * @return a Firehose filter wrapping the selected engine
+     * @throws IllegalArgumentException if the configured filter engine is not supported
+     */
     private FirehoseFilter buildFilter(FilterConfig filterConfig) {
         firehoseInstrumentation.logInfo("Filter Engine: {}", filterConfig.getFilterEngine());
         Filter filter;
@@ -161,6 +179,17 @@ public class FirehoseConsumerFactory {
         }
     }
 
+    /**
+     * Creates a single base sink and wraps it in the standard decorator stack.
+     *
+     * <p>From innermost to outermost the order is: the base sink from {@link SinkFactory}, a
+     * {@link SinkWithFailHandler}, a retry decorator (see {@link #withRetry}), a DLQ decorator (see
+     * {@link #withDlq}), and finally a {@link SinkFinal} that records the per-message outcome.
+     *
+     * @param tracer      the tracer used by the DLQ decorator
+     * @param sinkFactory the factory that produces the base sink
+     * @return the fully decorated sink
+     */
     private Sink createSink(Tracer tracer, SinkFactory sinkFactory) {
         ErrorHandler errorHandler = new ErrorHandler(ConfigFactory.create(ErrorConfig.class, config));
         Sink baseSink = sinkFactory.getSink();
@@ -170,6 +199,19 @@ public class FirehoseConsumerFactory {
         return new SinkFinal(sinkWithDLQ, new FirehoseInstrumentation(statsDReporter, SinkFinal.class));
     }
 
+    /**
+     * Wraps the given sink with a dead-letter-queue decorator when DLQ is enabled.
+     *
+     * <p>When {@code DLQ_SINK_ENABLE} is false the sink is returned unchanged. Otherwise a
+     * {@link SinkWithDlq} is created with a {@link DlqWriter} (built by {@link DlqWriterFactory}) and
+     * an exponential back-off provider, so that messages which exhaust their retries are written to
+     * the DLQ instead of failing the consumer.
+     *
+     * @param sink         the sink to wrap
+     * @param tracer       the tracer passed to the DLQ writer factory
+     * @param errorHandler the error handler used to classify failures
+     * @return the original sink, or a DLQ-decorated sink when DLQ is enabled
+     */
     public Sink withDlq(Sink sink, Tracer tracer, ErrorHandler errorHandler) {
         DlqConfig dlqConfig = ConfigFactory.create(DlqConfig.class, config);
         if (!dlqConfig.getDlqSinkEnable()) {
@@ -199,6 +241,14 @@ public class FirehoseConsumerFactory {
         return new SinkWithRetry(sink, backOffProvider, new FirehoseInstrumentation(statsDReporter, SinkWithRetry.class), appConfig, parser, errorHandler);
     }
 
+    /**
+     * Builds an {@link ExponentialBackOffProvider} from the retry back-off settings.
+     *
+     * <p>The provider uses the configured initial delay, multiplier, and maximum delay to compute the
+     * increasing sleep intervals applied between retry attempts.
+     *
+     * @return an exponential back-off provider for the retry and DLQ decorators
+     */
     private BackOffProvider getBackOffProvider() {
         AppConfig appConfig = ConfigFactory.create(AppConfig.class, config);
         return new ExponentialBackOffProvider(

@@ -16,8 +16,11 @@ import java.util.List;
  */
 public class WriteRequestBuilder {
 
+    /** Reusable Cortex write-request builder, cleared on each build. */
     private Cortex.WriteRequest.Builder writeRequestBuilder = Cortex.WriteRequest.newBuilder();
+    /** Builds the Cortex time series for each message. */
     private TimeSeriesBuilder timeSeriesBuilder;
+    /** Stencil parser used to deserialize each message's log payload. */
     private Parser protoParser;
 
     /**
