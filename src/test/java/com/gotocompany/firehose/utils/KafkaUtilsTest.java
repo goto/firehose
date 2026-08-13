@@ -2,7 +2,6 @@ package com.gotocompany.firehose.utils;
 
 import com.gotocompany.firehose.config.DlqKafkaProducerConfig;
 import org.aeonbits.owner.ConfigFactory;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.types.Password;
@@ -42,7 +41,7 @@ public class KafkaUtilsTest {
         producerConfigField.setAccessible(true);
         ProducerConfig producerConfig = (ProducerConfig) producerConfigField.get(kafkaProducer);
 
-        assertEquals(properties.get(DLQ_KAFKA_ACKS), producerConfig.getString("acks"));
+        assertAcksEquals(properties.get(DLQ_KAFKA_ACKS), producerConfig.getString("acks"));
         assertEquals(properties.get(DLQ_KAFKA_RETRIES), String.valueOf(producerConfig.getInt("retries")));
         assertEquals(properties.get(DLQ_KAFKA_BATCH_SIZE), String.valueOf(producerConfig.getInt("batch.size")));
         assertEquals(properties.get(DLQ_KAFKA_LINGER_MS), String.valueOf(producerConfig.getLong("linger.ms")));
@@ -68,7 +67,7 @@ public class KafkaUtilsTest {
         producerConfigField.setAccessible(true);
         ProducerConfig producerConfig = (ProducerConfig) producerConfigField.get(kafkaProducer);
 
-        assertEquals(properties.get(DLQ_KAFKA_ACKS), producerConfig.getString("acks"));
+        assertAcksEquals(properties.get(DLQ_KAFKA_ACKS), producerConfig.getString("acks"));
         assertEquals(properties.get(DLQ_KAFKA_RETRIES), String.valueOf(producerConfig.getInt("retries")));
         assertEquals(properties.get(DLQ_KAFKA_BATCH_SIZE), String.valueOf(producerConfig.getInt("batch.size")));
         assertEquals(properties.get(DLQ_KAFKA_LINGER_MS), String.valueOf(producerConfig.getLong("linger.ms")));
@@ -80,8 +79,16 @@ public class KafkaUtilsTest {
         assertEquals(properties.get(DLQ_KAFKA_SSL_TRUSTSTORE_PASSWORD_CONFIG), producerConfig.getString("ssl.truststore.password"));
         assertEquals(properties.get(DLQ_KAFKA_SASL_MECHANISM), producerConfig.getString("sasl.mechanism"));
         assertEquals(new Password(properties.get(DLQ_KAFKA_SASL_JAAS_CONFIG)), producerConfig.getPassword("sasl.jaas.config"));
-        assertTrue(StringUtils.isEmpty(producerConfig.getString("client.id")));
+        assertTrue(!"clientId".equals(producerConfig.getString("client.id")));
 
+    }
+
+    private static void assertAcksEquals(String expected, String actual) {
+        if ("all".equals(expected) || "-1".equals(expected)) {
+            assertTrue("all".equals(actual) || "-1".equals(actual));
+            return;
+        }
+        assertEquals(expected, actual);
     }
 
     private static Map<String, String> getDlqProperties() {

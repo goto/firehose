@@ -7,8 +7,11 @@ import com.gotocompany.depot.bigtable.BigTableSinkFactory;
 import com.gotocompany.depot.config.BigQuerySinkConfig;
 import com.gotocompany.depot.config.BigTableSinkConfig;
 import com.gotocompany.depot.config.HttpSinkConfig;
+import com.gotocompany.depot.config.KafkaSinkConfig;
 import com.gotocompany.depot.config.RedisSinkConfig;
 import com.gotocompany.depot.http.HttpSink;
+import com.gotocompany.depot.kafka.KafkaSink;
+import com.gotocompany.depot.kafka.KafkaSinkFactory;
 import com.gotocompany.depot.log.LogSink;
 import com.gotocompany.depot.log.LogSinkFactory;
 import com.gotocompany.depot.maxcompute.MaxComputeSink;
@@ -49,6 +52,7 @@ public class SinkFactory {
     private RedisSinkFactory redisSinkFactory;
     private com.gotocompany.depot.http.HttpSinkFactory httpv2SinkFactory;
     private MaxComputeSinkFactory maxComputeSinkFactory;
+    private KafkaSinkFactory kafkaSinkFactory;
 
     public SinkFactory(KafkaConsumerConfig kafkaConsumerConfig,
                        StatsDReporter statsDReporter,
@@ -111,6 +115,12 @@ public class SinkFactory {
                 maxComputeSinkFactory = new MaxComputeSinkFactory(statsDReporter, stencilClient, config);
                 maxComputeSinkFactory.init();
                 return;
+            case KAFKA:
+                kafkaSinkFactory = new KafkaSinkFactory(
+                        ConfigFactory.create(KafkaSinkConfig.class, config),
+                        statsDReporter);
+                kafkaSinkFactory.init();
+                return;
             default:
                 throw new ConfigurationException("Invalid Firehose SINK_TYPE");
         }
@@ -148,6 +158,8 @@ public class SinkFactory {
                 return new GenericSink(new FirehoseInstrumentation(statsDReporter, HttpSink.class), sinkType.name(), httpv2SinkFactory.create());
             case MAXCOMPUTE:
                 return new GenericSink(new FirehoseInstrumentation(statsDReporter, MaxComputeSink.class), sinkType.name(), maxComputeSinkFactory.create());
+            case KAFKA:
+                return new GenericSink(new FirehoseInstrumentation(statsDReporter, KafkaSink.class), sinkType.name(), kafkaSinkFactory.create());
             default:
                 throw new ConfigurationException("Invalid Firehose SINK_TYPE");
         }
