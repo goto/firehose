@@ -52,7 +52,7 @@ public class SinkFactory {
     private RedisSinkFactory redisSinkFactory;
     private com.gotocompany.depot.http.HttpSinkFactory httpv2SinkFactory;
     private MaxComputeSinkFactory maxComputeSinkFactory;
-    private com.gotocompany.depot.kafka.KafkaSinkFactory kafkaSinkFactory;
+    private KafkaSinkFactory kafkaSinkFactory;
 
     public SinkFactory(KafkaConsumerConfig kafkaConsumerConfig,
                        StatsDReporter statsDReporter,
@@ -116,7 +116,9 @@ public class SinkFactory {
                 maxComputeSinkFactory.init();
                 return;
             case KAFKA:
-                kafkaSinkFactory = new com.gotocompany.depot.kafka.KafkaSinkFactory(config, statsDReporter);
+                kafkaSinkFactory = new KafkaSinkFactory(
+                        ConfigFactory.create(KafkaSinkConfig.class, config),
+                        statsDReporter);
                 kafkaSinkFactory.init();
                 return;
             default:
