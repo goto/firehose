@@ -4,6 +4,7 @@ import com.google.protobuf.Descriptors;
 import com.gotocompany.firehose.config.BlobSinkConfig;
 import com.gotocompany.firehose.exception.ConfigurationException;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
+import com.gotocompany.firehose.sink.blob.writer.local.policy.GlobalWriterPolicy;
 import com.gotocompany.firehose.sink.blob.writer.local.policy.WriterPolicy;
 import lombok.AllArgsConstructor;
 
@@ -11,8 +12,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class LocalStorage {
@@ -21,6 +24,7 @@ public class LocalStorage {
     private final Descriptors.Descriptor messageDescriptor;
     private final List<Descriptors.FieldDescriptor> metadataFieldDescriptor;
     private final List<WriterPolicy> policies;
+    private final List<GlobalWriterPolicy> globalPolicies;
     private final FirehoseInstrumentation firehoseInstrumentation;
 
     public LocalFileWriter createLocalFileWriter(Path partitionPath) {
@@ -31,7 +35,7 @@ public class LocalStorage {
         return createWriter(basePath, fullPath);
     }
 
-    private LocalParquetFileWriter createWriter(Path basePath, Path fullPath) {
+    private LocalFileWriter createWriter(Path basePath, Path fullPath) {
         switch (sinkConfig.getLocalFileWriterType()) {
             case PARQUET:
                 try {
@@ -77,5 +81,11 @@ public class LocalStorage {
 
     public Boolean shouldRotate(LocalFileWriter writer) {
         return policies.stream().anyMatch(writerPolicy -> writerPolicy.shouldRotate(writer.getMetadata()));
+    }
+
+    public Boolean shouldRotate(Collection<LocalFileWriter> writers) {
+        return globalPolicies.stream().anyMatch(policy -> policy.shouldRotate(
+                writers.stream().map(LocalFileWriter::getMetadata).collect(Collectors.toList())
+        ));
     }
 }

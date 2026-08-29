@@ -5,6 +5,7 @@ import com.google.protobuf.Descriptors;
 import com.gotocompany.firehose.config.BlobSinkConfig;
 import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.sink.blob.Constants;
+import com.gotocompany.firehose.sink.blob.writer.local.policy.GlobalWriterPolicy;
 import com.gotocompany.firehose.sink.blob.writer.local.policy.WriterPolicy;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -20,8 +21,9 @@ public class LocalStorageTest {
         BlobSinkConfig sinkConfig = Mockito.mock(BlobSinkConfig.class);
         List<Descriptors.FieldDescriptor> metadataFieldDescriptor = new ArrayList<>();
         List<WriterPolicy> policies = new ArrayList<>();
+        List<GlobalWriterPolicy> globalWriterPolicies = new ArrayList<>();
         FirehoseInstrumentation firehoseInstrumentation = Mockito.mock(FirehoseInstrumentation.class);
-        LocalStorage storage = new LocalStorage(sinkConfig, null, metadataFieldDescriptor, policies, firehoseInstrumentation);
+        LocalStorage storage = new LocalStorage(sinkConfig, null, metadataFieldDescriptor, policies, globalWriterPolicies, firehoseInstrumentation);
         LocalStorage spy = Mockito.spy(storage);
         Mockito.doNothing().when(spy).deleteLocalFile(Paths.get("/tmp/a"), Paths.get("/tmp/.a.crc"));
         Mockito.when(sinkConfig.getLocalFileWriterType()).thenReturn(Constants.WriterType.PARQUET);
