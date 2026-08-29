@@ -1,6 +1,5 @@
 package com.gotocompany.firehose.serializer;
 
-
 import com.gotocompany.firehose.message.Message;
 import com.gotocompany.firehose.exception.DeserializerException;
 import com.google.gson.ExclusionStrategy;
@@ -17,13 +16,17 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.Date;
 
 /**
  * EsbMessageToJson Serialize protobuff message content into JSON.
@@ -34,6 +37,9 @@ public class MessageToJson implements MessageSerializer {
     private boolean preserveFieldNames;
     private boolean wrapInsideArray;
     private boolean enableSimpleDateFormat;
+
+    private DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm:ss a", Locale.US);
+    private DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
 
     public MessageToJson(Parser protoParser, boolean preserveFieldNames, boolean enableSimpleDateFormat) {
         this(protoParser, preserveFieldNames, false, enableSimpleDateFormat);
@@ -112,13 +118,14 @@ public class MessageToJson implements MessageSerializer {
         JSONObject parentObject = (JSONObject) new JSONParser().parse(jsonObject.get(parentField).toString());
         String timestampObject = parentObject.get(timeStampField).toString();
 
-        Date date;
+        OffsetDateTime dateTime;
         try {
-            date = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse(timestampObject);
-        } catch (java.text.ParseException e) {
-            throw new RuntimeException(String.format("Not able to parse date, %s", timestampObject));
+            dateTime = OffsetDateTime.parse(timestampObject);
+        } catch (DateTimeParseException ignored) {
+            LocalDateTime localDateTime = LocalDateTime.parse(timestampObject, inputFormatter);
+            dateTime = localDateTime.atOffset(ZoneOffset.UTC);
         }
-        parentObject.put(timeStampField, date);
+        parentObject.put(timeStampField, outputFormatter.format(dateTime));
         jsonObject.put(parentField, gson.toJson(parentObject));
 
         return jsonObject;

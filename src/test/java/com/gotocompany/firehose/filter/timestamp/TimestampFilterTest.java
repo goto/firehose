@@ -81,7 +81,9 @@ public class TimestampFilterTest {
         timestampFilter = new TimestampFilter(stencilClient, filterConfig, instrumentation);
         assertNotNull(timestampFilter);
 
-        verify(instrumentation, times(7)).logInfo(anyString(), any());
+        // 7 invocations were failing because 6 were called with one parameter and rest 6 were called with two parameters.
+        verify(instrumentation, times(1)).logInfo(anyString());
+        verify(instrumentation, times(6)).logInfo(anyString(), any());
     }
 
     @Test(expected = IllegalArgumentException.class)
