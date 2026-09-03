@@ -191,21 +191,7 @@ Fixed offset from UTC.
 * Type: `optional`
 * Default value: `firehose-retry-topic`
 
-## `DLQ_KAFKA_TOPIC_CREATE`
-
-When `true`, Firehose creates the DLQ Kafka topic if it does not already exist on the broker. New topics use 3 partitions, replication factor 3, and `DLQ_KAFKA_TOPIC_RETENTION`.
-
-* Example value: `true`
-* Type: `optional`
-* Default value: `false`
-
-## `DLQ_KAFKA_TOPIC_RETENTION`
-
-Retention period in **seconds** for an auto-created DLQ topic. Applied as Kafka `retention.ms` when `DLQ_KAFKA_TOPIC_CREATE=true`.
-
-* Example value: `604800`
-* Type: `optional`
-* Default value: `604800` (7 days)
+When Kafka DLQ is enabled, Firehose creates the topic if it does not already exist. Partition count, replication factor, and retention use the Kafka cluster's broker defaults.
 
 ## `DLQ_KAFKA_(.*)`
 

@@ -8,7 +8,6 @@ import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.KafkaFuture;
-import org.apache.kafka.common.config.TopicConfig;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -67,39 +66,27 @@ public class KafkaDlqTopicCreatorTest {
     }
 
     @Test
-    public void shouldSkipWhenTopicCreateDisabled() throws Exception {
-        Map<String, String> configMap = baseConfig();
-        configMap.put("DLQ_KAFKA_TOPIC_CREATE", "false");
-        DlqKafkaProducerConfig config = ConfigFactory.create(DlqKafkaProducerConfig.class, configMap);
-
-        KafkaDlqTopicCreator.AdminClientFactory factory = properties -> {
-            throw new AssertionError("admin client should not be created");
-        };
-        new KafkaDlqTopicCreator(factory).ensureTopic(config, configMap, instrumentation);
-    }
-
-    @Test
     public void shouldNotCreateWhenTopicAlreadyExists() throws Exception {
         when(namesFuture.get()).thenReturn(new HashSet<>(Collections.singleton("orders-firehose-dlq")));
 
-        creator.ensureTopic(adminClient, "orders-firehose-dlq", 604800, instrumentation);
+        creator.ensureTopic(adminClient, "orders-firehose-dlq", instrumentation);
 
         verify(adminClient, never()).createTopics(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    public void shouldCreateMissingTopicWithDagstreamDefaults() throws Exception {
+    public void shouldCreateMissingTopicWithBrokerDefaults() throws Exception {
         when(namesFuture.get()).thenReturn(Collections.emptySet());
         when(createFuture.get()).thenReturn(null);
 
-        creator.ensureTopic(adminClient, "orders-firehose-dlq", 604800, instrumentation);
+        creator.ensureTopic(adminClient, "orders-firehose-dlq", instrumentation);
 
         verify(adminClient).createTopics(newTopicsCaptor.capture());
         NewTopic newTopic = newTopicsCaptor.getValue().iterator().next();
         assertEquals("orders-firehose-dlq", newTopic.name());
-        assertEquals(KafkaDlqTopicCreator.DEFAULT_PARTITIONS, newTopic.numPartitions());
-        assertEquals(KafkaDlqTopicCreator.DEFAULT_REPLICATION_FACTOR, newTopic.replicationFactor());
-        assertEquals("604800000", newTopic.configs().get(TopicConfig.RETENTION_MS_CONFIG));
+        assertEquals(-1, newTopic.numPartitions());
+        assertEquals(-1, newTopic.replicationFactor());
+        assertTrue(newTopic.configs() == null || newTopic.configs().isEmpty());
     }
 
     @Test
@@ -107,7 +94,7 @@ public class KafkaDlqTopicCreatorTest {
         when(namesFuture.get()).thenReturn(Collections.emptySet());
         when(createFuture.get()).thenThrow(new ExecutionException(new TopicExistsException("exists")));
 
-        creator.ensureTopic(adminClient, "orders-firehose-dlq", 604800, instrumentation);
+        creator.ensureTopic(adminClient, "orders-firehose-dlq", instrumentation);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -115,16 +102,15 @@ public class KafkaDlqTopicCreatorTest {
         when(namesFuture.get()).thenReturn(Collections.emptySet());
         when(createFuture.get()).thenThrow(new ExecutionException(new RuntimeException("broker down")));
 
-        creator.ensureTopic(adminClient, "orders-firehose-dlq", 604800, instrumentation);
+        creator.ensureTopic(adminClient, "orders-firehose-dlq", instrumentation);
     }
 
     @Test
-    public void shouldCreateViaFactoryWhenEnabled() throws Exception {
+    public void shouldCreateViaFactoryWhenTopicMissing() throws Exception {
         when(namesFuture.get()).thenReturn(Collections.emptySet());
         when(createFuture.get()).thenReturn(null);
 
         Map<String, String> configMap = baseConfig();
-        configMap.put("DLQ_KAFKA_TOPIC_CREATE", "true");
         DlqKafkaProducerConfig config = ConfigFactory.create(DlqKafkaProducerConfig.class, configMap);
 
         creator.ensureTopic(config, configMap, instrumentation);
@@ -132,13 +118,6 @@ public class KafkaDlqTopicCreatorTest {
         verify(adminClient).createTopics(newTopicsCaptor.capture());
         assertEquals("orders-firehose-dlq", newTopicsCaptor.getValue().iterator().next().name());
         verify(adminClient).close();
-    }
-
-    @Test
-    public void shouldDefaultCreateDisabledAndRetentionSevenDays() {
-        DlqKafkaProducerConfig config = ConfigFactory.create(DlqKafkaProducerConfig.class, baseConfig());
-        assertFalse(config.isDlqKafkaTopicCreate());
-        assertEquals(Integer.valueOf(604800), config.getDlqKafkaTopicRetention());
     }
 
     private static Map<String, String> baseConfig() {

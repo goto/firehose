@@ -36,12 +36,4 @@ public interface DlqKafkaProducerConfig extends DlqConfig {
     @Key("DLQ_KAFKA_TOPIC")
     @DefaultValue("firehose-retry-topic")
     String getDlqKafkaTopic();
-
-    @Key("DLQ_KAFKA_TOPIC_CREATE")
-    @DefaultValue("false")
-    boolean isDlqKafkaTopicCreate();
-
-    @Key("DLQ_KAFKA_TOPIC_RETENTION")
-    @DefaultValue("604800")
-    Integer getDlqKafkaTopicRetention();
 }
