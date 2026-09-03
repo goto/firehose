@@ -34,7 +34,7 @@ lombok {
 
 group 'com.gotocompany'
 
-version '0.13.1-beta.1'
+version '0.13.1'
 
 def projName = "firehose"
 
