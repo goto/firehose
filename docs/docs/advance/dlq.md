@@ -191,6 +191,22 @@ Fixed offset from UTC.
 * Type: `optional`
 * Default value: `firehose-retry-topic`
 
+## `DLQ_KAFKA_TOPIC_CREATE`
+
+When `true`, Firehose creates the DLQ Kafka topic if it does not already exist on the broker. New topics use 3 partitions, replication factor 3, and `DLQ_KAFKA_TOPIC_RETENTION`. Defaults to `false` so existing deployments are unchanged; ODS Entropy modules should set this to `true`.
+
+* Example value: `true`
+* Type: `optional`
+* Default value: `false`
+
+## `DLQ_KAFKA_TOPIC_RETENTION`
+
+Retention period in **seconds** for an auto-created DLQ topic. Applied as Kafka `retention.ms` when `DLQ_KAFKA_TOPIC_CREATE=true`.
+
+* Example value: `604800`
+* Type: `optional`
+* Default value: `604800` (7 days)
+
 ## `DLQ_KAFKA_(.*)`
 
 * Example property: `DLQ_KAFKA_SASL_JAAS_CONFIG`, `DLQ_KAFKA_SECURITY_PROTOCOL`, `DLQ_KAFKA_SSL_TRUSTSTORE_PASSWORD`, `DLQ_KAFKA_SASL_MECHANISM`
