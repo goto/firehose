@@ -193,7 +193,7 @@ Fixed offset from UTC.
 
 ## `DLQ_KAFKA_TOPIC_CREATE`
 
-When `true`, Firehose creates the DLQ Kafka topic if it does not already exist on the broker. New topics use 3 partitions, replication factor 3, and `DLQ_KAFKA_TOPIC_RETENTION`. Defaults to `false` so existing deployments are unchanged; ODS Entropy modules should set this to `true`.
+When `true`, Firehose creates the DLQ Kafka topic if it does not already exist on the broker. New topics use 3 partitions, replication factor 3, and `DLQ_KAFKA_TOPIC_RETENTION`.
 
 * Example value: `true`
 * Type: `optional`
