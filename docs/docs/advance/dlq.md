@@ -191,8 +191,6 @@ Fixed offset from UTC.
 * Type: `optional`
 * Default value: `firehose-retry-topic`
 
-When Kafka DLQ is enabled, Firehose creates the topic if it does not already exist. Partition count, replication factor, and retention use the Kafka cluster's broker defaults.
-
 ## `DLQ_KAFKA_(.*)`
 
 * Example property: `DLQ_KAFKA_SASL_JAAS_CONFIG`, `DLQ_KAFKA_SECURITY_PROTOCOL`, `DLQ_KAFKA_SSL_TRUSTSTORE_PASSWORD`, `DLQ_KAFKA_SASL_MECHANISM`
