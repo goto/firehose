@@ -6,6 +6,7 @@ import com.gotocompany.firehose.metrics.FirehoseInstrumentation;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorage;
 import com.gotocompany.firehose.sink.common.blobstorage.BlobStorageFactory;
 import com.gotocompany.firehose.sink.dlq.blobstorage.BlobStorageDlqWriter;
+import com.gotocompany.firehose.sink.dlq.kafka.KafkaDlqTopicCreator;
 import com.gotocompany.firehose.sink.dlq.kafka.KafkaDlqWriter;
 import com.gotocompany.firehose.sink.dlq.log.LogDlqWriter;
 import com.gotocompany.firehose.utils.KafkaProducerTypesMetadata;
@@ -26,10 +27,12 @@ public class DlqWriterFactory {
         switch (dlqConfig.getDlqWriterType()) {
             case KAFKA:
                 DlqKafkaProducerConfig dlqKafkaProducerConfig = ConfigFactory.create(DlqKafkaProducerConfig.class, configuration);
+                FirehoseInstrumentation kafkaDlqInstrumentation = new FirehoseInstrumentation(client, KafkaDlqWriter.class);
+                new KafkaDlqTopicCreator().ensureTopic(dlqKafkaProducerConfig, configuration, kafkaDlqInstrumentation);
                 KafkaProducer<byte[], byte[]> kafkaProducer = KafkaUtils.getKafkaProducer(KafkaProducerTypesMetadata.DLQ, dlqKafkaProducerConfig, configuration);
                 TracingKafkaProducer<byte[], byte[]> tracingProducer = new TracingKafkaProducer<>(kafkaProducer, tracer);
 
-                return new KafkaDlqWriter(tracingProducer, dlqKafkaProducerConfig.getDlqKafkaTopic(), new FirehoseInstrumentation(client, KafkaDlqWriter.class));
+                return new KafkaDlqWriter(tracingProducer, dlqKafkaProducerConfig.getDlqKafkaTopic(), kafkaDlqInstrumentation);
 
             case BLOB_STORAGE:
                 switch (dlqConfig.getBlobStorageType()) {

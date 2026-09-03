@@ -83,6 +83,22 @@ public class KafkaUtilsTest {
 
     }
 
+    @Test
+    public void shouldExcludeTopicCreateAndRetentionFromProducerConfig() throws NoSuchFieldException, IllegalAccessException {
+        Map<String, String> properties = getDlqProperties();
+        DlqKafkaProducerConfig kafkaProducerConfig = ConfigFactory.create(DlqKafkaProducerConfig.class, properties);
+
+        KafkaProducer<byte[], byte[]> kafkaProducer = KafkaUtils.getKafkaProducer(KafkaProducerTypesMetadata.DLQ, kafkaProducerConfig, properties);
+        Field producerConfigField = KafkaProducer.class.getDeclaredField("producerConfig");
+        producerConfigField.setAccessible(true);
+        ProducerConfig producerConfig = (ProducerConfig) producerConfigField.get(kafkaProducer);
+
+        Map<String, Object> originals = producerConfig.originals();
+        assertTrue(!originals.containsKey("topic.create"));
+        assertTrue(!originals.containsKey("topic.retention"));
+        assertTrue(!originals.containsKey("topic"));
+    }
+
     private static void assertAcksEquals(String expected, String actual) {
         if ("all".equals(expected) || "-1".equals(expected)) {
             assertTrue("all".equals(actual) || "-1".equals(actual));

@@ -12,9 +12,12 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +35,9 @@ public class KafkaUtils {
     private static final String MAX_POLL_RECORDS = "max.poll.records";
     private static final String SESSION_TIMEOUT_MS = "session.timeout.ms";
     private static final String PARTITION_ASSIGNMENT_STRATEGY = "partition.assignment.strategy";
+
+    private static final Set<String> DLQ_KAFKA_NON_CLIENT_CONFIGS = new HashSet<>(Arrays.asList(
+            "topic", "brokers", "topic.create", "topic.retention"));
 
 
     /**
@@ -100,6 +106,12 @@ public class KafkaUtils {
     public static KafkaProducer<byte[], byte[]> getKafkaProducer(KafkaProducerTypesMetadata kafkaProducerTypesMetadata,
                                                                  DlqKafkaProducerConfig dlqKafkaProducerConfig,
                                                                  Map<String, String> configurations) {
+        return new KafkaProducer<>(getDlqKafkaProducerProperties(kafkaProducerTypesMetadata, dlqKafkaProducerConfig, configurations));
+    }
+
+    public static Properties getDlqKafkaProducerProperties(KafkaProducerTypesMetadata kafkaProducerTypesMetadata,
+                                                           DlqKafkaProducerConfig dlqKafkaProducerConfig,
+                                                           Map<String, String> configurations) {
         Properties props = new Properties();
         props.put("bootstrap.servers", dlqKafkaProducerConfig.getDlqKafkaBrokers());
         props.put("acks", dlqKafkaProducerConfig.getDlqKafkaAcks());
@@ -110,7 +122,20 @@ public class KafkaUtils {
         props.put("key.serializer", dlqKafkaProducerConfig.getDlqKafkaKeySerializer());
         props.put("value.serializer", dlqKafkaProducerConfig.getDlqKafkaValueSerializer());
         props.putAll(getAdditionalKafkaConfiguration(kafkaProducerTypesMetadata, configurations));
-        return new KafkaProducer<>(props);
+        return props;
+    }
+
+    /**
+     * Admin client properties for DLQ topic management. Shares broker and security
+     * settings with the DLQ producer, without serializer keys.
+     */
+    public static Properties getDlqKafkaAdminProperties(KafkaProducerTypesMetadata kafkaProducerTypesMetadata,
+                                                        DlqKafkaProducerConfig dlqKafkaProducerConfig,
+                                                        Map<String, String> configurations) {
+        Properties props = getDlqKafkaProducerProperties(kafkaProducerTypesMetadata, dlqKafkaProducerConfig, configurations);
+        props.remove("key.serializer");
+        props.remove("value.serializer");
+        return props;
     }
 
     private static Properties getAdditionalKafkaConfiguration(KafkaProducerTypesMetadata kafkaProducerTypesMetadata, Map<String, String> configurations) {
@@ -118,7 +143,10 @@ public class KafkaUtils {
         configurations.forEach((key, value) -> {
             Matcher matcher = kafkaProducerTypesMetadata.getConfigurationPattern().matcher(key);
             if (matcher.find()) {
-                additionalProperties.put(matcher.group(1).replaceAll("_", ".").toLowerCase(), value);
+                String kafkaKey = matcher.group(1).replaceAll("_", ".").toLowerCase();
+                if (!DLQ_KAFKA_NON_CLIENT_CONFIGS.contains(kafkaKey)) {
+                    additionalProperties.put(kafkaKey, value);
+                }
             }
         });
         return additionalProperties;
