@@ -121,8 +121,6 @@ public class KafkaUtilsTest {
         properties.put(DLQ_KAFKA_SECURITY_PROTOCOL, "SASL_SSL");
         properties.put(DLQ_KAFKA_SASL_MECHANISM, "OAUTHBEARER");
         properties.put(DLQ_KAFKA_SASL_JAAS_CONFIG, "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;");
-        properties.put("DLQ_KAFKA_TOPIC_CREATE", "true");
-        properties.put("DLQ_KAFKA_TOPIC_RETENTION", "86400");
         return properties;
     }
 }
