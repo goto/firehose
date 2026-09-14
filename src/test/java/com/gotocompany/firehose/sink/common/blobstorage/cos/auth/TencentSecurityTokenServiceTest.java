@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class TencentSecurityTokenServiceTest {
     private static final String SECRET_ID = "test-secret-id";
     private static final String SECRET_KEY = "test-secret-key";

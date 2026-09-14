@@ -58,7 +58,6 @@ public class FirehoseKafkaConsumerTest {
         key = TestKey.newBuilder().setOrderNumber("123").setOrderUrl("abc").build();
         firehoseKafkaConsumer = new FirehoseKafkaConsumer(kafkaConsumer, consumerConfig, firehoseInstrumentation);
         when(consumerConfig.getSourceKafkaPollTimeoutMs()).thenReturn(500L);
-        when(consumerConfig.getSourceKafkaConsumerGroupId()).thenReturn(consumerGroupId);
         when(kafkaConsumer.poll(Duration.ofMillis(500L))).thenReturn(consumerRecords);
     }
 

@@ -14,3 +14,4 @@ generated
 bin
 src/test/resources
 .DS_Store
+LocalDockerfile
