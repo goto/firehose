@@ -49,6 +49,10 @@ Note - final metadata will be generated with merging metadata and the kafka reco
   ```
   Example config : `$com.goto.company.GenericPayload.field: $(com.goto.company.GenericPayload.field_two + '_' + string(com.goto.company.GenericPayload.code))`
   This would result in : `field_name:field_two_400`
+
+  A CEL value (one starting with `$`) may contain commas and colons inside `()`, `[]`, `{}` or quoted strings, so CEL macros and the ternary operator can be used, e.g. `user-email:$(com.goto.company.User.emails.filter(e, e.primary)[0].address),source:app`. Brackets and quotes in a CEL value must be balanced, otherwise the config is rejected at startup.
+
+  Note - this only applies to values. A key always ends at the first colon and at the first comma, so a CEL key must not contain `,` or `:`. Values that do not start with `$` are parsed as before.
   
 
 ### `SINK_GRPC_RESPONSE_SCHEMA_PROTO_CLASS`

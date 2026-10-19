@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.gotocompany.firehose.consumer";
+option java_outer_classname = "SampleTestUser";
+
+message TestUser {
+  string id = 1;
+  repeated TestUserEmail emails = 2;
+}
+
+message TestUserEmail {
+  string address = 1;
+  bool primary = 2;
+}
