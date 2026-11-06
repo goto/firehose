@@ -33,7 +33,6 @@ public class SinkPool implements AutoCloseable {
             if (x.getFuture().isDone()) {
                 try {
                     x.getFuture().get();
-                    workerSinks.put(x.getSink());
                     return true;
                 } catch (InterruptedException e) {
                     throw new SinkTaskFailedException(e);
@@ -53,7 +52,7 @@ public class SinkPool implements AutoCloseable {
             if (workerSink == null) {
                 return null;
             }
-            Future<List<Message>> future = executorService.submit(new SinkTask(workerSink, messages));
+            Future<List<Message>> future = executorService.submit(new SinkTask(workerSink, messages, workerSinks));
             sinkFutures.add(new SinkFuture(future, workerSink));
             return future;
         } catch (InterruptedException e) {
@@ -92,10 +91,15 @@ public class SinkPool implements AutoCloseable {
     protected static class SinkTask implements Callable<List<Message>> {
         private final Sink sink;
         private final List<Message> messages;
+        private final BlockingQueue<Sink> workerSinks;
 
         @Override
         public List<Message> call() throws Exception {
-            return sink.pushMessage(messages);
+            try {
+                return sink.pushMessage(messages);
+            } finally {
+                workerSinks.add(sink);
+            }
         }
     }
 }
